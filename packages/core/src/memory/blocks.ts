@@ -23,4 +23,11 @@ export class BlockService {
   remove(id: string): void {
     this.q.deleteMemoryBlock(id);
   }
+
+  getAllBlocks(taskId?: string): MemoryBlock[] {
+    if (taskId) {
+      return this.q.retrieveMemoryBlocks({ taskIds: [taskId] });
+    }
+    return this.q.retrieveMemoryBlocks({});
+  }
 }

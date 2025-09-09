@@ -11,7 +11,7 @@ export function runInitialSchema(db: Database.Database): void {
   // If schema_versions exists we assume schema is applied
   if (tableExists(db, 'schema_versions')) return;
 
-  const schemaPath = resolve(process.cwd(), 'packages/core/src/database/schema.sql');
+  const schemaPath = resolve(__dirname, 'schema.sql');
   const sql = readFileSync(schemaPath, 'utf8');
   db.exec('BEGIN');
   try {

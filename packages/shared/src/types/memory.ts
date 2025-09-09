@@ -306,6 +306,10 @@ export interface SemanticSearchResult {
   context: string; // Surrounding context for the match
 }
 
+// Alias for hybrid search compatibility
+export type HybridSearchOptions = SemanticSearchOptions;
+export type HybridSearchResult = SemanticSearchResult;
+
 // ============================================================================
 // KNOWLEDGE ENTITIES AND LEARNING
 // ============================================================================

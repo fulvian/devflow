@@ -5,10 +5,10 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CCRFallbackManager } from '../src/coordination/ccr-fallback-manager.js';
-import { SessionLimitDetector } from '../src/coordination/session-limit-detector.js';
-import { ContextPreservation } from '../src/coordination/context-preservation.js';
-import { SQLiteMemoryManager } from '../src/memory/manager.js';
+import { CCRFallbackManager } from '../../coordination/ccr-fallback-manager.js';
+import { SessionLimitDetector } from '../../coordination/session-limit-detector.js';
+import { ContextPreservation } from '../../coordination/context-preservation.js';
+import { SQLiteMemoryManager } from '../../memory/manager.js';
 
 // Mock dependencies
 vi.mock('child_process', () => ({

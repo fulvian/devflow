@@ -17,6 +17,8 @@ import { BlockService } from './blocks.js';
 import { ContextService } from './contexts.js';
 import { SessionService } from './sessions.js';
 import { SearchService } from './search.js';
+import { SemanticSearchService } from './semantic.js';
+import { VectorEmbeddingService } from '../ml/VectorEmbeddingService.js';
 import { compactContext } from './compaction.js';
 
 export class SQLiteMemoryManager implements MemoryManager {
@@ -24,6 +26,7 @@ export class SQLiteMemoryManager implements MemoryManager {
   private ctxSvc;
   private sessSvc;
   private searchSvc;
+  private semanticSvc: SemanticSearchService;
 
   constructor(dbPath?: string) {
     const db = dbPath ? getDB({ path: dbPath }) : getDB();
@@ -32,10 +35,100 @@ export class SQLiteMemoryManager implements MemoryManager {
     this.ctxSvc = new ContextService(db);
     this.sessSvc = new SessionService(db);
     this.searchSvc = new SearchService(db);
+    this.semanticSvc = new SemanticSearchService(db, this.searchSvc, new VectorEmbeddingService());
+  }
+
+  async initialize(): Promise<void> {
+    // Initialize database connections and services
+    await ensureMigrations(getDB());
+  }
+
+  async cleanup(): Promise<void> {
+    // Clean up resources
+    // Database connections are managed by the connection pool
+  }
+
+  getAllBlocks(taskId?: string): MemoryBlock[] {
+    return this.blockSvc.getAllBlocks(taskId);
+  }
+
+  async storeEmergencyContext(taskId: string, sessionId: string, context: any): Promise<void> {
+    // Store emergency context for fallback scenarios
+    const block: Omit<MemoryBlock, 'id' | 'createdAt' | 'lastAccessed' | 'accessCount'> = {
+      taskId,
+      sessionId,
+      blockType: 'context',
+      label: `Emergency Context - ${new Date().toISOString()}`,
+      content: JSON.stringify(context),
+      metadata: { platform: 'claude_code', emergency: true },
+      importanceScore: 0.9,
+      relationships: []
+    };
+    await this.storeMemoryBlock(block);
+  }
+
+  async retrieveEmergencyContext(taskId: string, sessionId: string): Promise<any> {
+    const blocks = this.blockSvc.find({
+      taskIds: [taskId],
+      blockTypes: ['context'],
+      platforms: ['claude_code']
+    });
+    
+    const emergencyBlock = blocks.find(block => 
+      block.metadata?.emergency === true && 
+      block.label?.includes('Emergency Context')
+    );
+    
+    if (emergencyBlock) {
+      return JSON.parse(emergencyBlock.content);
+    }
+    return null;
+  }
+
+  async getSession(sessionId: string): Promise<any> {
+    // Return session info - this is a simplified implementation
+    return {
+      id: sessionId,
+      status: 'active',
+      startTime: new Date(),
+      platform: 'claude_code'
+    };
   }
 
   async storeMemoryBlock(block: Omit<MemoryBlock, 'id' | 'createdAt' | 'lastAccessed' | 'accessCount'>): Promise<string> {
-    return this.blockSvc.create(block);
+    const blockId = this.blockSvc.create(block);
+    
+    // Generate embedding for the new block in background
+    this.generateBlockEmbedding(blockId).catch(error => {
+      console.warn(`Failed to generate embedding for block ${blockId}:`, error);
+    });
+    
+    return blockId;
+  }
+
+  /**
+   * Generate and store embedding for a memory block
+   */
+  private async generateBlockEmbedding(blockId: string): Promise<void> {
+    try {
+      const block = (await this.retrieveMemoryBlocks({ limit: 1 })).find(b => b.id === blockId);
+      if (!block) return;
+
+      const vectorService = new VectorEmbeddingService();
+      const embedding = await vectorService.embedText(block.content);
+      
+      // Store embedding in the vector service's database tables
+      await vectorService.storeMemoryBlockEmbedding(blockId, embedding);
+      
+      // Also store embedding directly in memory_blocks table for performance
+      this.blockSvc.update(blockId, {
+        embedding,
+        embeddingModel: vectorService.defaultModel
+      });
+    } catch (error) {
+      console.error(`Error generating embedding for block ${blockId}:`, error);
+      // Don't throw - embedding generation failure shouldn't break block storage
+    }
   }
   async retrieveMemoryBlocks(query: MemoryQuery): Promise<MemoryBlock[]> {
     return this.blockSvc.find(query);
@@ -90,7 +183,15 @@ export class SQLiteMemoryManager implements MemoryManager {
   }
 
   async semanticSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
-    return this.searchSvc.semantic(query, options);
+    // Use the new hybrid semantic search service
+    const hybridResults = await this.semanticSvc.hybridSearch(query, options);
+    // Convert HybridSearchResult to SemanticSearchResult for backward compatibility
+    return hybridResults.map(result => ({
+      block: result.block,
+      similarity: result.scores.semantic || result.scores.hybrid,
+      relevanceScore: result.relevanceScore,
+      context: result.context
+    }));
   }
 
   // CCR Integration Methods

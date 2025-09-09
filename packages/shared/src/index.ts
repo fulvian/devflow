@@ -22,6 +22,8 @@ export type {
   CompactionResult,
   SemanticSearchOptions,
   SemanticSearchResult,
+  HybridSearchOptions,
+  HybridSearchResult,
   KnowledgeEntity,
   ExtractionSource,
   EntityRelationship,

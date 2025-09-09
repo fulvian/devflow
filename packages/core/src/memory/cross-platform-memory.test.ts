@@ -4,11 +4,11 @@
  * Tests for Phase 1 completion validation
  */
 
-import { CrossPlatformSynchronizer } from './cross-platform-synchronizer';
-import { ConflictResolver } from './conflict-resolver';
-import { ContextOptimizer } from './context-optimizer';
-import { SQLiteStorage } from './sqlite-storage';
-import { UniversalContextFormat } from './universal-context-format';
+import { CrossPlatformSynchronizer } from './cross-platform-synchronizer.js';
+import { ConflictResolver } from './conflict-resolver.js';
+import { ContextOptimizer } from './context-optimizer.js';
+import { SQLiteStorage } from './sqlite-storage.js';
+import { UniversalContextFormat } from './universal-context-format.js';
 
 // Test Suite
 async function runCrossPlatformMemoryTests() {

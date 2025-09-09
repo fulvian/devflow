@@ -4,7 +4,7 @@
  * Optimizes context for memory usage and platform requirements
  */
 
-import { UniversalContextFormat } from './universal-context-format';
+import { UniversalContextFormat } from './universal-context-format.js';
 import * as zlib from 'zlib';
 
 export interface OptimizationOptions {

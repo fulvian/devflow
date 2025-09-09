@@ -154,12 +154,47 @@ DevFlow utilizza Synthetic.new come primary platform con specialization per agen
 
 ### **MANDATORY Synthetic Delegation Rules**
 1. **SEMPRE delegare coding tasks** a Synthetic specialized agents - MAI implementazione diretta
-2. **Automatic Fallback**: Quando Codex raggiunge limiti → Delegazione automatica a Synthetic
-3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-CC-INTEGRATION-001)
-4. **Structured Prompting**: Fornire sempre context completo, requirements e deliverables
+2. **USE MCP TOOLS**: Usare SOLO i tool MCP Synthetic disponibili (NON CCR per delegation)
+3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-P2-VECTOR-001)
+4. **Tool Selection**: synthetic_code | synthetic_reasoning | synthetic_context | synthetic_auto  
 5. **Immediate Implementation**: Codice generato da Synthetic → Implementazione automatica nel progetto
 6. **Quality Control**: Architect review del codice generato prima dell'integrazione
 7. **Memory Persistence**: Aggiornare work logs con risultati e decisioni tecniche
+
+### **MCP SYNTHETIC TOOLS - USAGE PROTOCOL**
+
+#### **Tool 1: synthetic_code** (Qwen3-Coder-480B-A35B-Instruct)
+**When**: Implementation, APIs, refactoring, rapid prototyping
+**Parameters**:
+- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE] 
+- objective: Clear description of code to generate
+- language: typescript | python | javascript | etc
+- requirements: Array of technical requirements
+- context: Existing code or additional context
+
+#### **Tool 2: synthetic_reasoning** (DeepSeek-V3)  
+**When**: Architecture analysis, complex decisions, strategic planning
+**Parameters**:
+- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE]
+- problem: Problem to analyze or reason about  
+- context: Relevant context for reasoning
+- approach: analytical | creative | systematic | comparative
+
+#### **Tool 3: synthetic_context** (Qwen2.5-Coder-32B-Instruct)
+**When**: Large codebase analysis, documentation, context understanding
+**Parameters**: 
+- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE]
+- content: Content to analyze
+- analysis_type: summarize | extract | classify | explain
+- focus: Specific aspect to focus on
+
+#### **Tool 4: synthetic_auto** (Intelligent Model Selection)
+**When**: Mixed tasks or unclear classification
+**Parameters**:
+- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE] 
+- request: Task description for autonomous execution
+- constraints: Array of constraints and requirements
+- approval_required: boolean (default true)
 
 ### **Agent Selection Guidelines**
 - **Code Tasks**: Implementations, functions, APIs, integrations → **Code Agent**

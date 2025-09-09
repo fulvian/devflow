@@ -1,10 +1,14 @@
 import type { 
-  TaskRequest, 
-  TaskResult, 
   PlatformStatus, 
   MultiPlatformConfig,
   PlatformGateway 
 } from '@devflow/shared';
+
+// Import TaskRequest and TaskResult from interfaces to avoid conflicts
+import type { TaskRequest, TaskResult } from '@devflow/shared';
+
+// Re-export for other modules
+export type { TaskRequest, TaskResult };
 
 // Import platform implementations dynamically to avoid circular dependencies
 export interface PlatformImplementations {

@@ -4,7 +4,7 @@
  * WAL mode enabled for concurrent access
  */
 
-import { UniversalContextFormat } from './universal-context-format';
+import { UniversalContextFormat } from './universal-context-format.js';
 import Database from 'sqlite3';
 import * as path from 'path';
 
