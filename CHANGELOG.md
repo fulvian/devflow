@@ -104,6 +104,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - **Context Preservation**: Corretti parametri `storeEmergencyContext` per allineare signature dei metodi
   - **Vector Embedding Service**: Risolti errori di accesso proprietà private e gestione API keys
   - **Semantic Search Service**: Aggiunta proprietà `similarity` mancante nei risultati di ricerca
+- **🔍 Semantic Search Engine API Connection Issues - ✅ RISOLTO**:
+  - **OpenAI API Key Configuration**: Aggiunta configurazione `OPENAI_API_KEY` al file `.env`
+  - **Fallback Mechanism**: Implementato sistema di fallback automatico quando API key non disponibile
+  - **Error Handling**: Migliorata gestione errori con degradazione elegante a keyword-only search
+  - **Test Configuration**: Aggiornata configurazione test per evitare chiamate API reali durante testing
+  - **Production Validation**: Validato funzionamento semantic search con API key reale
+  - **Zero Downtime**: Sistema rimane operativo anche senza API key OpenAI
 
 ### Deprecated
 

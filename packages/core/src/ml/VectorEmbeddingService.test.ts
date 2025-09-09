@@ -97,7 +97,7 @@ describe('VectorEmbeddingService', () => {
       const serviceNoKey = new VectorEmbeddingService('text-embedding-3-small', undefined, ':memory:');
       
       await expect(serviceNoKey.generateEmbeddings('test'))
-        .rejects.toThrow('OpenAI API key not provided');
+        .rejects.toThrow('OpenAI API key not available');
         
       serviceNoKey.dispose();
     });

@@ -43,6 +43,7 @@ export class VectorEmbeddingService {
   private db: Database.Database;
   private cache = new Map<string, { embedding: Float32Array; timestamp: number }>();
   private readonly CACHE_TTL = 24 * 60 * 60 * 1000; // 24 ore
+  private readonly apiKeyAvailable: boolean;
   
   // Provider configurations
   private readonly providers: Record<string, EmbeddingProvider> = {
@@ -70,9 +71,10 @@ export class VectorEmbeddingService {
     this.db = dbPath ? getDB({ path: dbPath }) : getDB();
     this.initializeDatabase();
     
-    // Validate API key
-    if (!this.openaiApiKey && !process.env['OPENAI_API_KEY']) {
-      console.warn('VectorEmbeddingService: No OpenAI API key provided. Some features may not work.');
+    // Validate API key and set fallback mode
+    this.apiKeyAvailable = !!(this.openaiApiKey || process.env['OPENAI_API_KEY']);
+    if (!this.apiKeyAvailable) {
+      console.warn('VectorEmbeddingService: No OpenAI API key provided. Vector search will be disabled. Only keyword search will be available.');
     }
   }
 
@@ -116,6 +118,11 @@ export class VectorEmbeddingService {
     text: string, 
     model: string = this.defaultModel
   ): Promise<EmbeddingResponse> {
+    // Check if API key is available
+    if (!this.apiKeyAvailable) {
+      throw new Error('OpenAI API key not available. Vector embeddings are disabled. Use keyword-only search instead.');
+    }
+
     const cacheKey = `${model}:${this.hashText(text)}`;
     
     // Check cache first
@@ -147,6 +154,13 @@ export class VectorEmbeddingService {
     } catch (error) {
       throw new Error(`Embedding generation failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
     }
+  }
+
+  /**
+   * Check if vector embeddings are available
+   */
+  isVectorSearchAvailable(): boolean {
+    return this.apiKeyAvailable;
   }
 
   /**

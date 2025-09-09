@@ -37,14 +37,27 @@ export class SemanticSearchService {
       taskIds
     } = options;
 
+    // Check if vector search is available
+    const vectorSearchAvailable = this.vectorService.isVectorSearchAvailable();
+
     // Handle different search modes
     switch (mode) {
       case 'keyword-only':
         return this.keywordSearch(query, options);
       case 'vector-only':
+        if (!vectorSearchAvailable) {
+          console.warn('Vector search not available (no API key). Falling back to keyword search.');
+          return this.keywordSearch(query, options);
+        }
         return this.vectorSearch(query, options);
       case 'hybrid':
       default:
+        // If vector search is not available, fall back to keyword-only
+        if (!vectorSearchAvailable) {
+          console.warn('Vector search not available (no API key). Using keyword-only search.');
+          return this.keywordSearch(query, options);
+        }
+
         // Execute both searches in parallel for performance
         const [keywordResults, vectorResults] = await Promise.all([
           this.searchService.fullText(query, maxResults * 2), // Get more keyword results for better hybrid ranking
@@ -53,8 +66,16 @@ export class SemanticSearchService {
             threshold, 
             blockTypes: blockTypes || [], 
             taskIds: taskIds || [] 
+          }).catch(error => {
+            console.warn('Vector search failed, falling back to keyword-only:', error.message);
+            return [];
           })
         ]);
+
+        // If vector search failed, use keyword results only
+        if (vectorResults.length === 0) {
+          return this.keywordSearch(query, options);
+        }
 
         // Normalize scores to [0,1] range
         const normalizedKeywordScores = this.normalizeBM25Scores(keywordResults);
@@ -132,24 +153,30 @@ export class SemanticSearchService {
     query: string,
     options: SemanticSearchOptions = {}
   ): Promise<HybridSearchResult[]> {
-    const vectorResults = await this.vectorService.semanticSearch(query, options);
+    try {
+      const vectorResults = await this.vectorService.semanticSearch(query, options);
 
-    return vectorResults.map(result => ({
-      block: result.block,
-      similarity: result.similarity, // Add required similarity property
-      scores: {
-        keyword: 0.0,
-        semantic: result.similarity,
-        hybrid: result.similarity,
-        importance: result.block.importanceScore
-      },
-      matchType: 'semantic',
-      keywordMatches: [],
-      semanticContext: this.extractSemanticContext(result.block.content, 100),
-      explanation: `Ranked by cosine similarity: ${result.similarity.toFixed(3)}`,
-      relevanceScore: result.relevanceScore,
-      context: result.context
-    }));
+      return vectorResults.map(result => ({
+        block: result.block,
+        similarity: result.similarity, // Add required similarity property
+        scores: {
+          keyword: 0.0,
+          semantic: result.similarity,
+          hybrid: result.similarity,
+          importance: result.block.importanceScore
+        },
+        matchType: 'semantic',
+        keywordMatches: [],
+        semanticContext: this.extractSemanticContext(result.block.content, 100),
+        explanation: `Ranked by cosine similarity: ${result.similarity.toFixed(3)}`,
+        relevanceScore: result.relevanceScore,
+        context: result.context
+      }));
+    } catch (error) {
+      console.warn('Vector search failed:', error instanceof Error ? error.message : 'Unknown error');
+      // Return empty results instead of throwing
+      return [];
+    }
   }
 
   /**
