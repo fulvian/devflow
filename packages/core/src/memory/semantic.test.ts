@@ -25,20 +25,10 @@ describe('SemanticSearchService', () => {
     db = getDB({ path: testDbPath });
     runInitialSchema(db);
     searchService = new SearchService(db);
-    // Use a mock API key for testing to avoid real API calls
-    // Set environment variable to ensure no real API calls are made
-    const originalApiKey = process.env['OPENAI_API_KEY'];
-    process.env['OPENAI_API_KEY'] = 'mock-api-key-for-testing';
-    
-    vectorService = new VectorEmbeddingService('text-embedding-3-small', 'mock-api-key-for-testing', testDbPath);
+    // Use real API key for testing if available, otherwise use mock
+    const apiKey = process.env['OPENAI_API_KEY'] || 'mock-api-key-for-testing';
+    vectorService = new VectorEmbeddingService('text-embedding-3-small', apiKey, testDbPath);
     semanticService = new SemanticSearchService(db, searchService, vectorService);
-    
-    // Restore original API key after test setup
-    if (originalApiKey) {
-      process.env['OPENAI_API_KEY'] = originalApiKey;
-    } else {
-      delete process.env['OPENAI_API_KEY'];
-    }
   });
 
   afterEach(() => {

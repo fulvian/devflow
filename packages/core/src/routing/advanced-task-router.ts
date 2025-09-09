@@ -359,6 +359,3 @@ export class AdvancedTaskRouter {
         this.performanceLearning.close();
     }
 }
-
-// Export for testing
-export { SimpleTaskClassifier, PlatformSpecializationMatrix, PerformanceLearning };
