@@ -1,0 +1,29 @@
+{
+  "name": "@devflow/core",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": ["dist"],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b -w",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts,.tsx",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run src"
+  },
+  "dependencies": {
+    "@devflow/shared": "workspace:*",
+    "@devflow/synthetic": "workspace:*",
+    "@devflow/openrouter": "workspace:*",
+    "better-sqlite3": "^12.2.0",
+    "@modelcontextprotocol/sdk": "*",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.11"
+  }
+}

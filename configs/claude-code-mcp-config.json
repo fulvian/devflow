@@ -1,0 +1,26 @@
+{
+  "mcpServers": {
+    "devflow-synthetic-mcp": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/QwQ-32B-Preview",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-72B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "COST_TRACKING_ENABLED": "true",
+        "AUTONOMOUS_MODE": "false"
+      }
+    },
+    "devflow-openai-codex": {
+      "command": "node", 
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/codex/dist/index.js"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "CODEX_MODEL": "gpt-4",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow"
+      }
+    }
+  }
+}

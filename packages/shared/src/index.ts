@@ -1,0 +1,102 @@
+// Memory types - prefixed to avoid conflicts with platform types
+export type {
+  Platform,
+  TaskPriority,
+  TaskStatus,
+  BlockType,
+  SessionType,
+  EntityType,
+  TaskContext,
+  MemoryBlock,
+  MemoryBlockMetadata,
+  CoordinationSession,
+  HandoffContext,
+  PlatformRoutingPreferences,
+  TaskAnalysis,
+  CapabilityDomain,
+  RiskFactor,
+  TaskDecomposition,
+  MemoryManager,
+  MemoryQuery,
+  SessionEndMetrics,
+  CompactionResult,
+  SemanticSearchOptions,
+  SemanticSearchResult,
+  KnowledgeEntity,
+  ExtractionSource,
+  EntityRelationship,
+  PlatformPerformance,
+  CostAnalytics,
+  DeepPartial,
+  RequiredFields,
+  OptionalFields,
+  DatabaseEntity,
+  ExtractedContext as MemoryExtractedContext,
+  CompactionStrategy as MemoryCompactionStrategy,
+  ValidationResult as MemoryValidationResult
+} from './types/memory.js';
+
+// Platform types - prefixed to avoid conflicts with memory types
+export type {
+  PlatformAdapter,
+  PlatformCapabilities,
+  PerformanceProfile,
+  PlatformConstraints,
+  IntegrationProfile,
+  TaskType,
+  TaskRouter,
+  TaskDescription,
+  TaskRoutingPlan,
+  ExecutionPhase,
+  PlatformRouting,
+  RoutingScore,
+  UniversalTask,
+  TaskMemory,
+  TaskRequirements,
+  TaskExecution,
+  ExecutionExpectations,
+  TaskResult,
+  TaskOutput,
+  ExecutionMetrics,
+  ExtractedMemory,
+  SessionInfo,
+  CurrentContext,
+  ContextActivity,
+  ContextInjectionResult,
+  CompactedContext,
+  CoordinationEngine,
+  ExecutionPlan,
+  PhaseDependency,
+  PhaseResult,
+  OrchestrationResult,
+  CombinedMemory,
+  HandoffResult,
+  AdapterConfig,
+  HealthStatus,
+  SyncResult,
+  MemorySnapshot,
+  PlatformMetrics,
+  PerformanceTracker,
+  PlatformRecommendations,
+  ExtractedContext as PlatformExtractedContext,
+  CompactionStrategy as PlatformCompactionStrategy,
+  ValidationResult as PlatformValidationResult
+} from './types/platform.js';
+
+export const VERSION = '0.1.0';
+
+// Schemas & utilities
+export { z } from 'zod';
+export * from './schemas/env.js';
+
+// Multi-platform interfaces (to avoid circular dependencies)
+export type {
+  PlatformGateway,
+  GenerateInput,
+  GenerateResult,
+  ChatMessage,
+  TaskRequest,
+  TaskResult,
+  PlatformStatus,
+  MultiPlatformConfig
+} from './interfaces/platform.js';

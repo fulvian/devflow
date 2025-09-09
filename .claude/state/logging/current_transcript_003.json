@@ -1,0 +1,480 @@
+[
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01U6VEbuEqBhDsafcFsgfgtp",
+        "name": "Write",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/coordinator/multi-platform-coordinator.ts",
+          "content": "import { SyntheticGateway, type AgentType as SyntheticAgentType } from '@devflow/synthetic';\nimport { OpenRouterGateway } from '@devflow/openrouter';\n\nexport interface TaskRequest {\n  readonly id: string;\n  readonly title?: string;\n  readonly description: string;\n  readonly context?: string;\n  readonly priority: 'low' | 'medium' | 'high' | 'critical';\n  readonly complexity: 'simple' | 'medium' | 'complex';\n  readonly domain: 'code' | 'reasoning' | 'analysis' | 'documentation';\n}\n\nexport interface TaskResult {\n  readonly taskId: string;\n  readonly platform: 'openai-codex' | 'synthetic' | 'openrouter';\n  readonly agent?: string;\n  readonly model: string;\n  readonly content: string;\n  readonly tokensUsed: number;\n  readonly costUsd: number;\n  readonly executionTime: number;\n  readonly confidence: number;\n}\n\nexport interface PlatformStatus {\n  readonly available: boolean;\n  readonly lastError?: string;\n  readonly usageLimit?: {\n    readonly current: number;\n    readonly limit: number;\n    readonly resetTime?: number;\n  };\n}\n\nexport interface MultiPlatformConfig {\n  readonly synthetic?: {\n    enabled: boolean;\n    apiKey?: string;\n    preferredAgents?: Partial<Record<SyntheticAgentType, boolean>>;\n  };\n  readonly openRouter?: {\n    enabled: boolean;\n    apiKey?: string;\n    budgetUsd?: number;\n    preferredModels?: string[];\n  };\n  readonly fallbackChain?: ('synthetic' | 'openrouter')[];\n  readonly costThresholds?: {\n    maxCostPerTask?: number;\n    dailyBudget?: number;\n  };\n}\n\nexport class MultiPlatformCoordinator {\n  private readonly synthetic: SyntheticGateway | null;\n  private readonly openRouter: OpenRouterGateway | null;\n  private readonly config: MultiPlatformConfig;\n  private readonly platformStatus: Map<string, PlatformStatus> = new Map();\n\n  constructor(config: MultiPlatformConfig = {}) {\n    this.config = {\n      fallbackChain: ['synthetic', 'openrouter'],\n      ...config\n    };\n\n    // Initialize Synthetic.new if enabled\n    this.synthetic = config.synthetic?.enabled !== false \n      ? new SyntheticGateway({\n          apiKey: config.synthetic?.apiKey,\n        })\n      : null;\n\n    // Initialize OpenRouter if enabled\n    this.openRouter = config.openRouter?.enabled !== false\n      ? new OpenRouterGateway({\n          apiKey: config.openRouter?.apiKey,\n          budgetUsd: config.openRouter?.budgetUsd,\n          preferredModels: config.openRouter?.preferredModels,\n        })\n      : null;\n\n    this.initializePlatformStatus();\n  }\n\n  /**\n   * Main entry point for task execution with intelligent platform selection\n   */\n  async executeTask(request: TaskRequest): Promise<TaskResult> {\n    const startTime = Date.now();\n    \n    // Step 1: Analyze task requirements\n    const analysis = this.analyzeTask(request);\n    \n    // Step 2: Select optimal platform based on analysis and availability\n    const selectedPlatform = await this.selectPlatform(analysis);\n    \n    // Step 3: Execute task on selected platform\n    const result = await this.executeOnPlatform(request, selectedPlatform, analysis);\n    \n    // Step 4: Update platform status and metrics\n    await this.updatePlatformMetrics(selectedPlatform, result);\n    \n    return {\n      ...result,\n      taskId: request.id,\n      executionTime: Date.now() - startTime,\n    };\n  }\n\n  /**\n   * Analyze task to determine optimal platform and requirements\n   */\n  private analyzeTask(request: TaskRequest) {\n    const { domain, complexity, priority, description, title } = request;\n    \n    // Calculate complexity score\n    const complexityScore = {\n      simple: 0.3,\n      medium: 0.6,\n      complex: 0.9\n    }[complexity];\n\n    // Calculate priority urgency\n    const urgencyScore = {\n      low: 0.25,\n      medium: 0.5,\n      high: 0.75,\n      critical: 1.0\n    }[priority];\n\n    // Domain-specific analysis\n    const domainPreferences = {\n      code: {\n        synthetic: 0.9,        // Excellent for code generation\n        openrouter: 0.7        // Good but more expensive\n      },\n      reasoning: {\n        synthetic: 0.8,        // Very good with DeepSeek models\n        openrouter: 0.9        // Premium models excel here\n      },\n      analysis: {\n        synthetic: 0.7,        // Good for large context analysis\n        openrouter: 0.8        // Better reasoning models\n      },\n      documentation: {\n        synthetic: 0.8,        // Cost-effective for docs\n        openrouter: 0.6        // Overkill for most docs\n      }\n    };\n\n    return {\n      domain,\n      complexity: complexityScore,\n      urgency: urgencyScore,\n      preferences: domainPreferences[domain],\n      estimatedTokens: this.estimateTokens(description, title),\n      requiresHighQuality: priority === 'critical' || complexity === 'complex'\n    };\n  }\n\n  /**\n   * Select the best available platform based on task analysis\n   */\n  private async selectPlatform(analysis: any): Promise<'synthetic' | 'openrouter'> {\n    const fallbackChain = this.config.fallbackChain || ['synthetic', 'openrouter'];\n    \n    for (const platform of fallbackChain) {\n      const status = this.platformStatus.get(platform);\n      \n      // Check platform availability\n      if (!status?.available) {\n        continue;\n      }\n      \n      // Check usage limits\n      if (status.usageLimit && status.usageLimit.current >= status.usageLimit.limit) {\n        continue;\n      }\n      \n      // Check cost thresholds\n      const estimatedCost = this.estimateCost(platform, analysis.estimatedTokens);\n      if (this.config.costThresholds?.maxCostPerTask && \n          estimatedCost > this.config.costThresholds.maxCostPerTask) {\n        continue;\n      }\n      \n      // Platform is available and within limits\n      return platform as 'synthetic' | 'openrouter';\n    }\n    \n    throw new Error('No available platforms within cost/usage limits');\n  }\n\n  /**\n   * Execute task on selected platform\n   */\n  private async executeOnPlatform(\n    request: TaskRequest, \n    platform: 'synthetic' | 'openrouter',\n    analysis: any\n  ): Promise<Omit<TaskResult, 'taskId' | 'executionTime'>> {\n    \n    if (platform === 'synthetic' && this.synthetic) {\n      return this.executeOnSynthetic(request, analysis);\n    }\n    \n    if (platform === 'openrouter' && this.openRouter) {\n      return this.executeOnOpenRouter(request, analysis);\n    }\n    \n    throw new Error(`Platform ${platform} not available or not configured`);\n  }\n\n  /**\n   * Execute task using Synthetic.new\n   */\n  private async executeOnSynthetic(\n    request: TaskRequest,\n    analysis: any\n  ): Promise<Omit<TaskResult, 'taskId' | 'executionTime'>> {\n    if (!this.synthetic) {\n      throw new Error('Synthetic gateway not available');\n    }\n\n    const agentRequest = {\n      title: request.title,\n      description: request.description,\n      messages: [{\n        role: 'user' as const,\n        content: request.description\n      }],\n      context: request.context ? { injected: request.context } : undefined,\n      maxTokens: this.calculateMaxTokens(analysis.estimatedTokens),\n    };\n\n    const response = await this.synthetic.process(agentRequest);\n    \n    return {\n      platform: 'synthetic',\n      agent: response.agent,\n      model: response.model,\n      content: response.text,\n      tokensUsed: response.tokensUsed || 0,\n      costUsd: 20 / 30, // $20/month flat fee allocated daily\n      confidence: response.classification.confidence,\n    };\n  }\n\n  /**\n   * Execute task using OpenRouter\n   */\n  private async executeOnOpenRouter(\n    request: TaskRequest,\n    analysis: any\n  ): Promise<Omit<TaskResult, 'taskId' | 'executionTime'>> {\n    if (!this.openRouter) {\n      throw new Error('OpenRouter gateway not available');\n    }\n\n    const generateInput = {\n      title: request.title,\n      description: request.description,\n      messages: [{\n        role: 'user' as const,\n        content: request.description\n      }],\n      context: request.context ? { injected: request.context } : undefined,\n      maxTokens: this.calculateMaxTokens(analysis.estimatedTokens),\n    };\n\n    const response = await this.openRouter.generate(generateInput);\n    \n    return {\n      platform: 'openrouter',\n      model: response.model,\n      content: response.text,\n      tokensUsed: response.raw.usage?.total_tokens || 0,\n      costUsd: this.estimateOpenRouterCost(response.raw.usage?.total_tokens || 0),\n      confidence: 0.8, // Default confidence for OpenRouter\n    };\n  }\n\n  /**\n   * Get platform status and availability\n   */\n  getPlatformStatus(): Record<string, PlatformStatus> {\n    return Object.fromEntries(this.platformStatus.entries());\n  }\n\n  /**\n   * Get cost statistics across all platforms\n   */\n  getCostStatistics() {\n    return {\n      synthetic: this.synthetic?.getCostStats(),\n      openrouter: null, // TODO: Implement OpenRouter cost stats\n      total: this.calculateTotalCosts(),\n    };\n  }\n\n  /**\n   * Get platform preferences for a given task type\n   */\n  getRecommendations(domain: TaskRequest['domain']) {\n    const analysis = this.analyzeTask({\n      id: 'temp',\n      description: 'Sample task',\n      domain,\n      priority: 'medium',\n      complexity: 'medium'\n    });\n    \n    return {\n      recommended: analysis.preferences,\n      available: Array.from(this.platformStatus.entries())\n        .filter(([, status]) => status.available)\n        .map(([platform]) => platform),\n    };\n  }\n\n  // Private helper methods\n  private initializePlatformStatus() {\n    this.platformStatus.set('synthetic', {\n      available: this.synthetic !== null,\n      usageLimit: {\n        current: 0,\n        limit: 1000000, // High limit for flat fee model\n      }\n    });\n    \n    this.platformStatus.set('openrouter', {\n      available: this.openRouter !== null,\n      usageLimit: this.config.openRouter?.budgetUsd ? {\n        current: 0,\n        limit: this.config.openRouter.budgetUsd,\n      } : undefined\n    });\n  }\n\n  private estimateTokens(description: string, title?: string): number {\n    const text = `${title || ''} ${description}`;\n    return Math.ceil(text.length / 4); // Rough estimate: 4 chars per token\n  }\n\n  private estimateCost(platform: string, tokens: number): number {\n    if (platform === 'synthetic') {\n      return 20 / 30 / 1000; // Daily allocation per 1000 tokens\n    }\n    if (platform === 'openrouter') {\n      return tokens * 0.002; // Rough estimate\n    }\n    return 0;\n  }\n\n  private calculateMaxTokens(estimatedTokens: number): number {\n    return Math.min(Math.max(estimatedTokens * 2, 150), 2000);\n  }\n\n  private estimateOpenRouterCost(tokens: number): number {\n    return tokens * 0.002; // Rough estimate, should use actual model pricing\n  }\n\n  private async updatePlatformMetrics(platform: string, result: any) {\n    // Update usage statistics\n    const status = this.platformStatus.get(platform);\n    if (status?.usageLimit) {\n      status.usageLimit.current += result.costUsd || 0;\n    }\n  }\n\n  private calculateTotalCosts() {\n    const synthetic = this.synthetic?.getCostStats();\n    return {\n      daily: (synthetic?.monthlyCostUsd || 0) / 30,\n      monthly: synthetic?.monthlyCostUsd || 0,\n      requests: synthetic?.totalRequests || 0,\n    };\n  }\n}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01U6VEbuEqBhDsafcFsgfgtp",
+        "type": "tool_result",
+        "content": "File created successfully at: /Users/fulvioventura/devflow/packages/core/src/coordinator/multi-platform-coordinator.ts"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Write operation feedback:\n- [$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py]: [DAIC Reminder] When you're done implementing, run: daic\n"
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_019BVgcDuxqegkDeYsspizUZ",
+        "name": "TodoWrite",
+        "input": {
+          "todos": [
+            {
+              "content": "Create multi-platform coordinator integrating Synthetic.new",
+              "status": "completed",
+              "activeForm": "Creating multi-platform coordinator integrating Synthetic.new"
+            },
+            {
+              "content": "Update task router to include Synthetic agents in delegation hierarchy",
+              "status": "in_progress",
+              "activeForm": "Updating task router to include Synthetic agents in delegation hierarchy"
+            },
+            {
+              "content": "Integrate Synthetic.new into existing OpenRouter smart gateway",
+              "status": "pending",
+              "activeForm": "Integrating Synthetic.new into existing OpenRouter smart gateway"
+            },
+            {
+              "content": "Create unified cost tracking across all platforms",
+              "status": "pending",
+              "activeForm": "Creating unified cost tracking across all platforms"
+            },
+            {
+              "content": "Test complete workflow: Claude Code → Synthetic.new → OpenRouter fallback",
+              "status": "pending",
+              "activeForm": "Testing complete workflow: Claude Code → Synthetic.new → OpenRouter fallback"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_019BVgcDuxqegkDeYsspizUZ",
+        "type": "tool_result",
+        "content": "Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "## Step 2: Create Enhanced Task Router\n\nOra creiamo un task router intelligente che implementa la gerarchia di delegazione:"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01MZ4cp7cLAgZySB8ddQpYZo",
+        "name": "Write",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/routing/enhanced-task-router.ts",
+          "content": "import type { TaskRequest, TaskResult } from '../coordinator/multi-platform-coordinator.js';\n\nexport interface RoutingDecision {\n  readonly platform: 'openai-codex' | 'synthetic' | 'openrouter';\n  readonly reason: string;\n  readonly confidence: number;\n  readonly estimatedCost: number;\n  readonly fallbacks: ReadonlyArray<string>;\n}\n\nexport interface RoutingRule {\n  readonly name: string;\n  readonly condition: (task: TaskRequest) => boolean;\n  readonly priority: number;\n  readonly platformPreferences: ReadonlyArray<{\n    platform: string;\n    score: number;\n    conditions?: ReadonlyArray<string>;\n  }>;\n}\n\nexport interface PlatformCapabilities {\n  readonly platform: string;\n  readonly strengths: ReadonlyArray<string>;\n  readonly costPerToken: number;\n  readonly contextLimit: number;\n  readonly availabilityScore: number; // 0.0-1.0\n  readonly qualityScore: number;      // 0.0-1.0\n  readonly speedScore: number;        // 0.0-1.0\n}\n\nexport class EnhancedTaskRouter {\n  private readonly capabilities: Map<string, PlatformCapabilities> = new Map();\n  private readonly routingRules: RoutingRule[] = [];\n  private readonly usageHistory: Map<string, Array<{ cost: number; quality: number; speed: number }>> = new Map();\n\n  constructor() {\n    this.initializePlatformCapabilities();\n    this.initializeRoutingRules();\n  }\n\n  /**\n   * Determine the best platform for a given task\n   */\n  route(task: TaskRequest): RoutingDecision {\n    // Step 1: Apply routing rules to get initial preferences\n    const ruleBasedScores = this.applyRoutingRules(task);\n    \n    // Step 2: Factor in current platform availability and performance\n    const availabilityScores = this.calculateAvailabilityScores();\n    \n    // Step 3: Calculate cost-benefit scores\n    const costBenefitScores = this.calculateCostBenefitScores(task);\n    \n    // Step 4: Combine all factors to get final scores\n    const finalScores = this.combineScoringFactors({\n      ruleBased: ruleBasedScores,\n      availability: availabilityScores,\n      costBenefit: costBenefitScores,\n    });\n    \n    // Step 5: Select platform and generate decision\n    return this.selectPlatform(task, finalScores);\n  }\n\n  /**\n   * Learn from execution results to improve future routing\n   */\n  updateFromResult(task: TaskRequest, result: TaskResult): void {\n    const platform = result.platform;\n    \n    // Calculate quality score (0.0-1.0) based on multiple factors\n    const qualityScore = Math.min(1.0, \n      result.confidence * 0.6 + \n      (result.tokensUsed > 50 ? 0.3 : 0.1) + // Substantial response\n      (result.executionTime < 10000 ? 0.1 : 0.0) // Fast execution\n    );\n    \n    // Calculate speed score (inverse of execution time, normalized)\n    const speedScore = Math.max(0.1, Math.min(1.0, 10000 / result.executionTime));\n    \n    // Store in history\n    if (!this.usageHistory.has(platform)) {\n      this.usageHistory.set(platform, []);\n    }\n    \n    const history = this.usageHistory.get(platform)!;\n    history.push({\n      cost: result.costUsd,\n      quality: qualityScore,\n      speed: speedScore,\n    });\n    \n    // Keep only recent history (last 100 entries)\n    if (history.length > 100) {\n      history.shift();\n    }\n    \n    // Update platform capabilities based on recent performance\n    this.updatePlatformCapabilities(platform);\n  }\n\n  /**\n   * Get routing recommendations for different task types\n   */\n  getRecommendations(): Record<string, { platform: string; confidence: number; reasoning: string }> {\n    const taskTypes = [\n      { domain: 'code', complexity: 'simple', priority: 'medium' },\n      { domain: 'code', complexity: 'complex', priority: 'high' },\n      { domain: 'reasoning', complexity: 'medium', priority: 'medium' },\n      { domain: 'analysis', complexity: 'complex', priority: 'low' },\n      { domain: 'documentation', complexity: 'simple', priority: 'low' },\n    ] as const;\n\n    const recommendations: Record<string, any> = {};\n    \n    taskTypes.forEach((taskType, index) => {\n      const mockTask: TaskRequest = {\n        id: `test-${index}`,\n        description: `Sample ${taskType.domain} task`,\n        domain: taskType.domain,\n        complexity: taskType.complexity,\n        priority: taskType.priority,\n      };\n      \n      const decision = this.route(mockTask);\n      const key = `${taskType.domain}_${taskType.complexity}_${taskType.priority}`;\n      \n      recommendations[key] = {\n        platform: decision.platform,\n        confidence: decision.confidence,\n        reasoning: decision.reason,\n      };\n    });\n    \n    return recommendations;\n  }\n\n  /**\n   * Get current platform performance metrics\n   */\n  getPlatformMetrics(): Record<string, any> {\n    const metrics: Record<string, any> = {};\n    \n    for (const [platform, capabilities] of this.capabilities.entries()) {\n      const history = this.usageHistory.get(platform) || [];\n      const recent = history.slice(-10); // Last 10 requests\n      \n      metrics[platform] = {\n        capabilities: {\n          availability: capabilities.availabilityScore,\n          quality: capabilities.qualityScore,\n          speed: capabilities.speedScore,\n          costPerToken: capabilities.costPerToken,\n        },\n        recentPerformance: recent.length > 0 ? {\n          avgQuality: recent.reduce((sum, h) => sum + h.quality, 0) / recent.length,\n          avgSpeed: recent.reduce((sum, h) => sum + h.speed, 0) / recent.length,\n          avgCost: recent.reduce((sum, h) => sum + h.cost, 0) / recent.length,\n          requestCount: recent.length,\n        } : null,\n        strengths: capabilities.strengths,\n      };\n    }\n    \n    return metrics;\n  }\n\n  // Private implementation methods\n  private initializePlatformCapabilities(): void {\n    // OpenAI Codex (Primary implementation engine)\n    this.capabilities.set('openai-codex', {\n      platform: 'openai-codex',\n      strengths: ['code_generation', 'api_integration', 'pattern_following', 'rapid_implementation'],\n      costPerToken: 0.002, // Estimated\n      contextLimit: 8192,\n      availabilityScore: 0.8, // Usage limits\n      qualityScore: 0.9,      // High quality\n      speedScore: 0.9,        // Fast\n    });\n\n    // Synthetic.new (Cost-effective secondary)\n    this.capabilities.set('synthetic', {\n      platform: 'synthetic',\n      strengths: ['code_generation', 'reasoning', 'cost_effective', 'large_context'],\n      costPerToken: 0.0, // Flat fee model\n      contextLimit: 131072, // Varies by model\n      availabilityScore: 0.95, // High availability\n      qualityScore: 0.8,       // Good quality\n      speedScore: 0.7,         // Moderate speed\n    });\n\n    // OpenRouter (Premium fallback)\n    this.capabilities.set('openrouter', {\n      platform: 'openrouter',\n      strengths: ['reasoning', 'complex_analysis', 'high_quality', 'premium_models'],\n      costPerToken: 0.015, // Higher cost\n      contextLimit: 32768,\n      availabilityScore: 0.99, // Very high availability\n      qualityScore: 0.95,      // Premium quality\n      speedScore: 0.6,         // Slower but thorough\n    });\n  }\n\n  private initializeRoutingRules(): void {\n    this.routingRules.push(\n      // Rule 1: Simple code tasks → Synthetic first, then Codex\n      {\n        name: 'simple_code_tasks',\n        condition: (task) => task.domain === 'code' && task.complexity === 'simple',\n        priority: 10,\n        platformPreferences: [\n          { platform: 'synthetic', score: 0.9, conditions: ['available', 'under_budget'] },\n          { platform: 'openai-codex', score: 0.8, conditions: ['available'] },\n          { platform: 'openrouter', score: 0.3 },\n        ],\n      },\n      \n      // Rule 2: Complex code tasks → Codex first, then Synthetic\n      {\n        name: 'complex_code_tasks',\n        condition: (task) => task.domain === 'code' && task.complexity === 'complex',\n        priority: 15,\n        platformPreferences: [\n          { platform: 'openai-codex', score: 0.9, conditions: ['available'] },\n          { platform: 'synthetic', score: 0.7, conditions: ['available'] },\n          { platform: 'openrouter', score: 0.8 },\n        ],\n      },\n\n      // Rule 3: Reasoning tasks → Synthetic then OpenRouter\n      {\n        name: 'reasoning_tasks',\n        condition: (task) => task.domain === 'reasoning',\n        priority: 12,\n        platformPreferences: [\n          { platform: 'synthetic', score: 0.85, conditions: ['available'] },\n          { platform: 'openrouter', score: 0.9 },\n          { platform: 'openai-codex', score: 0.4 },\n        ],\n      },\n\n      // Rule 4: Critical priority → Best available regardless of cost\n      {\n        name: 'critical_priority',\n        condition: (task) => task.priority === 'critical',\n        priority: 20,\n        platformPreferences: [\n          { platform: 'openrouter', score: 0.95 },\n          { platform: 'openai-codex', score: 0.9, conditions: ['available'] },\n          { platform: 'synthetic', score: 0.8, conditions: ['available'] },\n        ],\n      },\n\n      // Rule 5: Documentation tasks → Synthetic (cost-effective)\n      {\n        name: 'documentation_tasks',\n        condition: (task) => task.domain === 'documentation',\n        priority: 8,\n        platformPreferences: [\n          { platform: 'synthetic', score: 0.9, conditions: ['available'] },\n          { platform: 'openai-codex', score: 0.6, conditions: ['available'] },\n          { platform: 'openrouter', score: 0.4 },\n        ],\n      }\n    );\n  }\n\n  private applyRoutingRules(task: TaskRequest): Map<string, number> {\n    const scores = new Map<string, number>();\n    \n    // Initialize all platforms with base score\n    for (const platform of this.capabilities.keys()) {\n      scores.set(platform, 0.1);\n    }\n    \n    // Apply matching rules\n    const applicableRules = this.routingRules\n      .filter(rule => rule.condition(task))\n      .sort((a, b) => b.priority - a.priority);\n    \n    for (const rule of applicableRules) {\n      for (const preference of rule.platformPreferences) {\n        const currentScore = scores.get(preference.platform) || 0;\n        const ruleScore = preference.score * (rule.priority / 20); // Normalize by max priority\n        scores.set(preference.platform, Math.max(currentScore, ruleScore));\n      }\n    }\n    \n    return scores;\n  }\n\n  private calculateAvailabilityScores(): Map<string, number> {\n    const scores = new Map<string, number>();\n    \n    for (const [platform, capabilities] of this.capabilities.entries()) {\n      scores.set(platform, capabilities.availabilityScore);\n    }\n    \n    return scores;\n  }\n\n  private calculateCostBenefitScores(task: TaskRequest): Map<string, number> {\n    const scores = new Map<string, number>();\n    const estimatedTokens = this.estimateTokens(task);\n    \n    for (const [platform, capabilities] of this.capabilities.entries()) {\n      const estimatedCost = estimatedTokens * capabilities.costPerToken;\n      const qualityPerDollar = capabilities.qualityScore / Math.max(0.001, estimatedCost);\n      \n      // Normalize score (higher is better)\n      scores.set(platform, Math.min(1.0, qualityPerDollar / 100));\n    }\n    \n    return scores;\n  }\n\n  private combineScoringFactors(factors: {\n    ruleBased: Map<string, number>;\n    availability: Map<string, number>;\n    costBenefit: Map<string, number>;\n  }): Map<string, number> {\n    const finalScores = new Map<string, number>();\n    \n    for (const platform of this.capabilities.keys()) {\n      const ruleScore = factors.ruleBased.get(platform) || 0;\n      const availScore = factors.availability.get(platform) || 0;\n      const costScore = factors.costBenefit.get(platform) || 0;\n      \n      // Weighted combination\n      const finalScore = \n        ruleScore * 0.5 +      // 50% rule-based preference\n        availScore * 0.3 +     // 30% availability\n        costScore * 0.2;       // 20% cost-benefit\n      \n      finalScores.set(platform, finalScore);\n    }\n    \n    return finalScores;\n  }\n\n  private selectPlatform(task: TaskRequest, scores: Map<string, number>): RoutingDecision {\n    // Sort platforms by score\n    const sortedPlatforms = Array.from(scores.entries())\n      .sort(([,a], [,b]) => b - a);\n    \n    const [selectedPlatform, score] = sortedPlatforms[0];\n    const fallbacks = sortedPlatforms.slice(1).map(([platform]) => platform);\n    \n    const estimatedCost = this.estimateTaskCost(task, selectedPlatform);\n    \n    return {\n      platform: selectedPlatform as any,\n      confidence: score,\n      reason: this.generateRoutingReason(task, selectedPlatform, score),\n      estimatedCost,\n      fallbacks,\n    };\n  }\n\n  private estimateTokens(task: TaskRequest): number {\n    const text = `${task.title || ''} ${task.description}`;\n    return Math.ceil(text.length / 4); // Rough estimate\n  }\n\n  private estimateTaskCost(task: TaskRequest, platform: string): number {\n    const capabilities = this.capabilities.get(platform);\n    if (!capabilities) return 0;\n    \n    const estimatedTokens = this.estimateTokens(task);\n    return estimatedTokens * capabilities.costPerToken;\n  }\n\n  private generateRoutingReason(task: TaskRequest, platform: string, score: number): string {\n    const capabilities = this.capabilities.get(platform);\n    if (!capabilities) return 'Unknown platform';\n    \n    const reasons = [\n      `Best match for ${task.domain} tasks`,\n      `${task.complexity} complexity well-suited for ${platform}`,\n      `${task.priority} priority optimization`,\n      `Strong in: ${capabilities.strengths.join(', ')}`,\n    ];\n    \n    return `${reasons.join('. ')}. Confidence: ${(score * 100).toFixed(0)}%`;\n  }\n\n  private updatePlatformCapabilities(platform: string): void {\n    const capabilities = this.capabilities.get(platform);\n    const history = this.usageHistory.get(platform);\n    \n    if (!capabilities || !history || history.length === 0) return;\n    \n    const recent = history.slice(-20); // Last 20 requests\n    const avgQuality = recent.reduce((sum, h) => sum + h.quality, 0) / recent.length;\n    const avgSpeed = recent.reduce((sum, h) => sum + h.speed, 0) / recent.length;\n    \n    // Update capabilities based on recent performance\n    capabilities.qualityScore = avgQuality * 0.3 + capabilities.qualityScore * 0.7;\n    capabilities.speedScore = avgSpeed * 0.3 + capabilities.speedScore * 0.7;\n  }\n}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01MZ4cp7cLAgZySB8ddQpYZo",
+        "type": "tool_result",
+        "content": "File created successfully at: /Users/fulvioventura/devflow/packages/core/src/routing/enhanced-task-router.ts"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Write operation feedback:\n- [$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py]: [DAIC Reminder] When you're done implementing, run: daic\n"
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01FzbuoBHbsnbpFffJ9Wyxyw",
+        "name": "TodoWrite",
+        "input": {
+          "todos": [
+            {
+              "content": "Create multi-platform coordinator integrating Synthetic.new",
+              "status": "completed",
+              "activeForm": "Creating multi-platform coordinator integrating Synthetic.new"
+            },
+            {
+              "content": "Update task router to include Synthetic agents in delegation hierarchy",
+              "status": "completed",
+              "activeForm": "Updating task router to include Synthetic agents in delegation hierarchy"
+            },
+            {
+              "content": "Integrate Synthetic.new into existing OpenRouter smart gateway",
+              "status": "in_progress",
+              "activeForm": "Integrating Synthetic.new into existing OpenRouter smart gateway"
+            },
+            {
+              "content": "Create unified cost tracking across all platforms",
+              "status": "pending",
+              "activeForm": "Creating unified cost tracking across all platforms"
+            },
+            {
+              "content": "Test complete workflow: Claude Code → Synthetic.new → OpenRouter fallback",
+              "status": "pending",
+              "activeForm": "Testing complete workflow: Claude Code → Synthetic.new → OpenRouter fallback"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01FzbuoBHbsnbpFffJ9Wyxyw",
+        "type": "tool_result",
+        "content": "Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "## Step 3: Create Unified Smart Gateway\n\nOra creiamo un gateway unificato che integra Synthetic.new con l'esistente OpenRouter gateway, fornendo un'interfaccia unica per il multi-platform routing:"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01UsfZ4qmT7Uzi3DYNz2YsPD",
+        "name": "Write",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/gateway/unified-smart-gateway.ts",
+          "content": "import { SyntheticGateway } from '@devflow/synthetic';\nimport { OpenRouterGateway } from '@devflow/openrouter';\nimport { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from '../coordinator/multi-platform-coordinator.js';\nimport { EnhancedTaskRouter, type RoutingDecision } from '../routing/enhanced-task-router.js';\n\nexport interface UnifiedGatewayConfig {\n  readonly synthetic?: {\n    apiKey?: string;\n    enabled?: boolean;\n  };\n  readonly openRouter?: {\n    apiKey?: string;\n    enabled?: boolean;\n    budgetUsd?: number;\n    preferredModels?: string[];\n  };\n  readonly routing?: {\n    enableLearning?: boolean;\n    costOptimization?: boolean;\n    qualityThreshold?: number;\n  };\n  readonly fallbackChain?: ('synthetic' | 'openrouter')[];\n}\n\nexport interface ExecutionOptions {\n  readonly preferredPlatform?: 'synthetic' | 'openrouter' | 'auto';\n  readonly maxCost?: number;\n  readonly requireHighQuality?: boolean;\n  readonly timeout?: number;\n  readonly retries?: number;\n}\n\nexport interface ExecutionResult extends TaskResult {\n  readonly routingDecision: RoutingDecision;\n  readonly fallbacksUsed: string[];\n  readonly totalCost: number;\n  readonly qualityScore: number;\n}\n\nexport class UnifiedSmartGateway {\n  private readonly coordinator: MultiPlatformCoordinator;\n  private readonly router: EnhancedTaskRouter;\n  private readonly config: UnifiedGatewayConfig;\n  private executionCount = 0;\n\n  constructor(config: UnifiedGatewayConfig = {}) {\n    this.config = {\n      routing: {\n        enableLearning: true,\n        costOptimization: true,\n        qualityThreshold: 0.7,\n        ...config.routing,\n      },\n      fallbackChain: ['synthetic', 'openrouter'],\n      ...config,\n    };\n\n    this.coordinator = new MultiPlatformCoordinator({\n      synthetic: config.synthetic,\n      openRouter: config.openRouter,\n      fallbackChain: this.config.fallbackChain,\n    });\n\n    this.router = new EnhancedTaskRouter();\n  }\n\n  /**\n   * Main execution method with intelligent routing and fallback handling\n   */\n  async execute(\n    request: Omit<TaskRequest, 'id'>,\n    options: ExecutionOptions = {}\n  ): Promise<ExecutionResult> {\n    const taskId = `task-${Date.now()}-${++this.executionCount}`;\n    const fullRequest: TaskRequest = { ...request, id: taskId };\n    \n    const startTime = Date.now();\n    const fallbacksUsed: string[] = [];\n    let lastError: Error | null = null;\n\n    // Step 1: Get routing decision\n    const routingDecision = options.preferredPlatform === 'auto' || !options.preferredPlatform\n      ? this.router.route(fullRequest)\n      : this.createDirectRoutingDecision(options.preferredPlatform, fullRequest);\n\n    // Step 2: Validate routing decision against options\n    if (options.maxCost && routingDecision.estimatedCost > options.maxCost) {\n      throw new Error(`Estimated cost ($${routingDecision.estimatedCost.toFixed(4)}) exceeds maximum ($${options.maxCost})`);\n    }\n\n    // Step 3: Execute with fallback handling\n    const platformsToTry = [routingDecision.platform, ...routingDecision.fallbacks];\n    const maxRetries = options.retries ?? 2;\n    \n    for (let attempt = 0; attempt < maxRetries + 1; attempt++) {\n      for (const platform of platformsToTry) {\n        try {\n          // Skip platforms not supported by coordinator\n          if (!this.isPlatformSupported(platform)) {\n            fallbacksUsed.push(`${platform}:not_supported`);\n            continue;\n          }\n\n          const result = await this.executeWithTimeout(\n            { ...fullRequest, id: `${taskId}-${platform}-${attempt}` },\n            platform as any,\n            options.timeout ?? 30000\n          );\n\n          // Validate quality if threshold specified\n          if (options.requireHighQuality && result.confidence < (this.config.routing?.qualityThreshold ?? 0.7)) {\n            fallbacksUsed.push(`${platform}:quality_too_low`);\n            continue;\n          }\n\n          // Success! Update router learning and return result\n          if (this.config.routing?.enableLearning) {\n            this.router.updateFromResult(fullRequest, result);\n          }\n\n          const executionResult: ExecutionResult = {\n            ...result,\n            routingDecision,\n            fallbacksUsed,\n            totalCost: result.costUsd,\n            qualityScore: result.confidence,\n          };\n\n          return executionResult;\n\n        } catch (error) {\n          lastError = error as Error;\n          fallbacksUsed.push(`${platform}:${error instanceof Error ? error.message : 'unknown_error'}`);\n          \n          // If this was the primary platform, try fallbacks\n          if (platform === routingDecision.platform) {\n            continue;\n          }\n        }\n      }\n    }\n\n    // All platforms failed\n    throw new Error(\n      `Task execution failed on all platforms. Last error: ${lastError?.message || 'Unknown'}. ` +\n      `Fallbacks attempted: ${fallbacksUsed.join(', ')}`\n    );\n  }\n\n  /**\n   * Execute a simple text completion (simplified interface)\n   */\n  async complete(\n    prompt: string,\n    options: ExecutionOptions & { maxTokens?: number; temperature?: number } = {}\n  ): Promise<string> {\n    const result = await this.execute({\n      description: prompt,\n      domain: 'code', // Default domain\n      priority: 'medium',\n      complexity: 'medium',\n    }, options);\n\n    return result.content;\n  }\n\n  /**\n   * Get cost analysis and recommendations\n   */\n  async analyzeCosts(): Promise<{\n    current: any;\n    recommendations: any;\n    projections: any;\n  }> {\n    const stats = this.coordinator.getCostStatistics();\n    const platformMetrics = this.router.getPlatformMetrics();\n    const recommendations = this.router.getRecommendations();\n\n    return {\n      current: {\n        platforms: stats,\n        total: stats.total,\n      },\n      recommendations: {\n        byTaskType: recommendations,\n        platformRankings: this.calculatePlatformRankings(platformMetrics),\n      },\n      projections: this.calculateCostProjections(stats),\n    };\n  }\n\n  /**\n   * Get real-time platform status\n   */\n  getPlatformStatus() {\n    return {\n      coordinator: this.coordinator.getPlatformStatus(),\n      router: this.router.getPlatformMetrics(),\n      gateway: {\n        executionCount: this.executionCount,\n        config: this.config,\n      },\n    };\n  }\n\n  /**\n   * Update gateway configuration\n   */\n  updateConfig(newConfig: Partial<UnifiedGatewayConfig>): void {\n    Object.assign(this.config, newConfig);\n  }\n\n  /**\n   * Get usage statistics and insights\n   */\n  getInsights(): {\n    performance: any;\n    costs: any;\n    reliability: any;\n    recommendations: string[];\n  } {\n    const platformStatus = this.coordinator.getPlatformStatus();\n    const routerMetrics = this.router.getPlatformMetrics();\n    const costStats = this.coordinator.getCostStatistics();\n\n    const recommendations: string[] = [];\n\n    // Analyze and generate recommendations\n    if (costStats.synthetic?.totalRequests > 50 && costStats.synthetic.monthlyCostUsd > 15) {\n      recommendations.push('Consider upgrading Synthetic.new usage - you\\'re getting good value from the flat fee');\n    }\n\n    if (platformStatus.synthetic?.available && platformStatus.openrouter?.available) {\n      recommendations.push('Multi-platform setup optimal - good fallback coverage');\n    }\n\n    Object.entries(routerMetrics).forEach(([platform, metrics]) => {\n      if (metrics.recentPerformance?.avgQuality < 0.6) {\n        recommendations.push(`Consider reducing ${platform} usage - quality below threshold`);\n      }\n    });\n\n    return {\n      performance: routerMetrics,\n      costs: costStats,\n      reliability: {\n        platformAvailability: Object.fromEntries(\n          Object.entries(platformStatus).map(([k, v]) => [k, v.available])\n        ),\n        fallbackCoverage: this.config.fallbackChain?.length || 0,\n      },\n      recommendations,\n    };\n  }\n\n  // Private helper methods\n  private async executeWithTimeout(\n    request: TaskRequest,\n    platform: 'synthetic' | 'openrouter',\n    timeoutMs: number\n  ): Promise<TaskResult> {\n    const timeoutPromise = new Promise<never>((_, reject) => {\n      setTimeout(() => reject(new Error(`Execution timeout after ${timeoutMs}ms`)), timeoutMs);\n    });\n\n    const executionPromise = this.coordinator.executeTask(request);\n\n    return Promise.race([executionPromise, timeoutPromise]);\n  }\n\n  private isPlatformSupported(platform: string): boolean {\n    const status = this.coordinator.getPlatformStatus();\n    return status[platform]?.available ?? false;\n  }\n\n  private createDirectRoutingDecision(\n    platform: 'synthetic' | 'openrouter',\n    request: TaskRequest\n  ): RoutingDecision {\n    const otherPlatforms = ['synthetic', 'openrouter'].filter(p => p !== platform);\n    \n    return {\n      platform: platform as any,\n      reason: `Direct platform selection: ${platform}`,\n      confidence: 0.8,\n      estimatedCost: this.estimateDirectCost(platform, request),\n      fallbacks: otherPlatforms,\n    };\n  }\n\n  private estimateDirectCost(platform: string, request: TaskRequest): number {\n    const tokens = Math.ceil((request.description.length + (request.title?.length || 0)) / 4);\n    \n    if (platform === 'synthetic') return 20 / 30 / 1000; // Daily allocation per 1000 tokens\n    if (platform === 'openrouter') return tokens * 0.002; // Rough estimate\n    return 0;\n  }\n\n  private calculatePlatformRankings(metrics: any): Array<{\n    platform: string;\n    score: number;\n    strengths: string[];\n    ranking: number;\n  }> {\n    const rankings = Object.entries(metrics)\n      .map(([platform, data]: [string, any]) => ({\n        platform,\n        score: (data.capabilities?.quality || 0) * 0.4 + \n               (data.capabilities?.availability || 0) * 0.3 +\n               (data.capabilities?.speed || 0) * 0.2 +\n               (1 / Math.max(0.001, data.capabilities?.costPerToken || 0.001)) * 0.1,\n        strengths: data.strengths || [],\n      }))\n      .sort((a, b) => b.score - a.score)\n      .map((item, index) => ({ ...item, ranking: index + 1 }));\n\n    return rankings;\n  }\n\n  private calculateCostProjections(stats: any): any {\n    const currentMonthly = stats.total?.monthly || 0;\n    \n    return {\n      monthly: {\n        current: currentMonthly,\n        projected: currentMonthly * 1.2, // 20% growth assumption\n        savings: currentMonthly > 50 ? currentMonthly * 0.3 : 0, // Potential 30% savings\n      },\n      breakdown: {\n        synthetic: stats.synthetic?.monthlyCostUsd || 0,\n        openrouter: 0, // TODO: Get actual OpenRouter costs\n      },\n      recommendations: currentMonthly > 100 ? \n        ['Consider enterprise plans for better rates'] :\n        ['Current usage is cost-efficient'],\n    };\n  }\n}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01UsfZ4qmT7Uzi3DYNz2YsPD",
+        "type": "tool_result",
+        "content": "File created successfully at: /Users/fulvioventura/devflow/packages/core/src/gateway/unified-smart-gateway.ts"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Write operation feedback:\n- [$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py]: [DAIC Reminder] When you're done implementing, run: daic\n"
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01KAebEAuTsxp7qRTK5ae6Mg",
+        "name": "TodoWrite",
+        "input": {
+          "todos": [
+            {
+              "content": "Create multi-platform coordinator integrating Synthetic.new",
+              "status": "completed",
+              "activeForm": "Creating multi-platform coordinator integrating Synthetic.new"
+            },
+            {
+              "content": "Update task router to include Synthetic agents in delegation hierarchy",
+              "status": "completed",
+              "activeForm": "Updating task router to include Synthetic agents in delegation hierarchy"
+            },
+            {
+              "content": "Integrate Synthetic.new into existing OpenRouter smart gateway",
+              "status": "completed",
+              "activeForm": "Integrating Synthetic.new into existing OpenRouter smart gateway"
+            },
+            {
+              "content": "Create unified cost tracking across all platforms",
+              "status": "in_progress",
+              "activeForm": "Creating unified cost tracking across all platforms"
+            },
+            {
+              "content": "Test complete workflow: Claude Code → Synthetic.new → OpenRouter fallback",
+              "status": "pending",
+              "activeForm": "Testing complete workflow: Claude Code → Synthetic.new → OpenRouter fallback"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01KAebEAuTsxp7qRTK5ae6Mg",
+        "type": "tool_result",
+        "content": "Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "## Step 4: Create Unified Cost Tracking System\n\nOra creiamo un sistema di cost tracking unificato che aggrega costi e metriche da tutte le piattaforme:"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01TYW5gbbD33SzsW9Hc7dQeY",
+        "name": "Write",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/analytics/unified-cost-tracker.ts",
+          "content": "export interface CostEvent {\n  readonly timestamp: number;\n  readonly platform: 'claude-code' | 'openai-codex' | 'synthetic' | 'openrouter';\n  readonly taskId: string;\n  readonly model?: string;\n  readonly agent?: string;\n  readonly inputTokens: number;\n  readonly outputTokens: number;\n  readonly totalTokens: number;\n  readonly costUsd: number;\n  readonly executionTime: number;\n  readonly quality: number;\n  readonly success: boolean;\n  readonly metadata?: Record<string, any>;\n}\n\nexport interface CostSummary {\n  readonly platform: string;\n  readonly totalRequests: number;\n  readonly totalTokens: number;\n  readonly totalCostUsd: number;\n  readonly avgCostPerRequest: number;\n  readonly avgCostPerToken: number;\n  readonly avgQuality: number;\n  readonly successRate: number;\n  readonly avgExecutionTime: number;\n}\n\nexport interface BudgetAlert {\n  readonly type: 'daily' | 'weekly' | 'monthly' | 'per_request';\n  readonly threshold: number;\n  readonly current: number;\n  readonly percentage: number;\n  readonly severity: 'info' | 'warning' | 'critical';\n  readonly message: string;\n  readonly timestamp: number;\n}\n\nexport interface CostOptimizationRecommendation {\n  readonly type: 'platform_switch' | 'model_downgrade' | 'batch_requests' | 'usage_pattern';\n  readonly description: string;\n  readonly estimatedSavings: number;\n  readonly confidence: number;\n  readonly actionRequired: string;\n}\n\nexport interface BudgetLimits {\n  readonly daily?: number;\n  readonly weekly?: number;\n  readonly monthly?: number;\n  readonly perRequest?: number;\n  readonly alertThresholds?: {\n    readonly warning: number; // 0.0-1.0 (50% = 0.5)\n    readonly critical: number; // 0.0-1.0 (80% = 0.8)\n  };\n}\n\nexport class UnifiedCostTracker {\n  private readonly events: CostEvent[] = [];\n  private readonly budgetLimits: BudgetLimits;\n  private readonly alerts: BudgetAlert[] = [];\n  private readonly maxEvents = 10000; // Keep last 10k events\n\n  constructor(budgetLimits: BudgetLimits = {}) {\n    this.budgetLimits = {\n      alertThresholds: {\n        warning: 0.5,\n        critical: 0.8,\n      },\n      ...budgetLimits,\n    };\n  }\n\n  /**\n   * Record a cost event from any platform\n   */\n  recordEvent(event: Omit<CostEvent, 'timestamp'>): CostEvent {\n    const fullEvent: CostEvent = {\n      ...event,\n      timestamp: Date.now(),\n    };\n\n    this.events.push(fullEvent);\n\n    // Keep only recent events\n    if (this.events.length > this.maxEvents) {\n      this.events.shift();\n    }\n\n    // Check budget alerts\n    this.checkBudgetAlerts(fullEvent);\n\n    return fullEvent;\n  }\n\n  /**\n   * Get cost summary for all platforms or specific platform\n   */\n  getSummary(\n    platform?: string,\n    rangeMs: number = 30 * 24 * 60 * 60 * 1000 // Default: 30 days\n  ): CostSummary | Record<string, CostSummary> {\n    const now = Date.now();\n    const relevantEvents = this.events.filter(e => \n      now - e.timestamp <= rangeMs &&\n      (!platform || e.platform === platform)\n    );\n\n    if (platform) {\n      return this.calculateSummaryForEvents(relevantEvents, platform);\n    }\n\n    // Return summary for all platforms\n    const platforms = [...new Set(relevantEvents.map(e => e.platform))];\n    const summaries: Record<string, CostSummary> = {};\n\n    for (const plt of platforms) {\n      const platformEvents = relevantEvents.filter(e => e.platform === plt);\n      summaries[plt] = this.calculateSummaryForEvents(platformEvents, plt);\n    }\n\n    return summaries;\n  }\n\n  /**\n   * Get cost breakdown by time period\n   */\n  getCostBreakdown(\n    period: 'hour' | 'day' | 'week' | 'month',\n    count: number = 7\n  ): Array<{\n    period: string;\n    platforms: Record<string, number>;\n    total: number;\n  }> {\n    const periodMs = {\n      hour: 60 * 60 * 1000,\n      day: 24 * 60 * 60 * 1000,\n      week: 7 * 24 * 60 * 60 * 1000,\n      month: 30 * 24 * 60 * 60 * 1000,\n    }[period];\n\n    const breakdown: Array<any> = [];\n    const now = Date.now();\n\n    for (let i = 0; i < count; i++) {\n      const endTime = now - (i * periodMs);\n      const startTime = endTime - periodMs;\n      \n      const periodEvents = this.events.filter(e => \n        e.timestamp >= startTime && e.timestamp < endTime\n      );\n\n      const platforms: Record<string, number> = {};\n      let total = 0;\n\n      for (const event of periodEvents) {\n        platforms[event.platform] = (platforms[event.platform] || 0) + event.costUsd;\n        total += event.costUsd;\n      }\n\n      breakdown.unshift({\n        period: this.formatPeriod(startTime, period),\n        platforms,\n        total: Number(total.toFixed(4)),\n      });\n    }\n\n    return breakdown;\n  }\n\n  /**\n   * Get current budget status\n   */\n  getBudgetStatus(): {\n    limits: BudgetLimits;\n    current: {\n      daily: number;\n      weekly: number;\n      monthly: number;\n    };\n    alerts: BudgetAlert[];\n    projections: {\n      dailyBurn: number;\n      monthlyProjection: number;\n    };\n  } {\n    const now = Date.now();\n    const dayMs = 24 * 60 * 60 * 1000;\n    const weekMs = 7 * dayMs;\n    const monthMs = 30 * dayMs;\n\n    const dailyCost = this.getCostForPeriod(now - dayMs, now);\n    const weeklyCost = this.getCostForPeriod(now - weekMs, now);\n    const monthlyCost = this.getCostForPeriod(now - monthMs, now);\n\n    // Calculate daily burn rate from last 7 days\n    const dailyBurn = weeklyCost / 7;\n    const monthlyProjection = dailyBurn * 30;\n\n    return {\n      limits: this.budgetLimits,\n      current: {\n        daily: Number(dailyCost.toFixed(4)),\n        weekly: Number(weeklyCost.toFixed(4)),\n        monthly: Number(monthlyCost.toFixed(4)),\n      },\n      alerts: this.alerts.slice(-10), // Last 10 alerts\n      projections: {\n        dailyBurn: Number(dailyBurn.toFixed(4)),\n        monthlyProjection: Number(monthlyProjection.toFixed(2)),\n      },\n    };\n  }\n\n  /**\n   * Get cost optimization recommendations\n   */\n  getOptimizationRecommendations(): CostOptimizationRecommendation[] {\n    const recommendations: CostOptimizationRecommendation[] = [];\n    const summaries = this.getSummary() as Record<string, CostSummary>;\n\n    // Recommendation 1: Platform efficiency analysis\n    const platformEfficiency = Object.entries(summaries)\n      .map(([platform, summary]) => ({\n        platform,\n        costPerQualityPoint: summary.avgCostPerRequest / Math.max(0.1, summary.avgQuality),\n        avgCost: summary.avgCostPerRequest,\n        quality: summary.avgQuality,\n      }))\n      .sort((a, b) => a.costPerQualityPoint - b.costPerQualityPoint);\n\n    if (platformEfficiency.length > 1) {\n      const best = platformEfficiency[0];\n      const worst = platformEfficiency[platformEfficiency.length - 1];\n      \n      if (worst.costPerQualityPoint > best.costPerQualityPoint * 2) {\n        recommendations.push({\n          type: 'platform_switch',\n          description: `Consider using ${best.platform} more often instead of ${worst.platform}`,\n          estimatedSavings: summaries[worst.platform].totalCostUsd * 0.3,\n          confidence: 0.8,\n          actionRequired: `Route similar tasks to ${best.platform} first`,\n        });\n      }\n    }\n\n    // Recommendation 2: High-cost request analysis\n    const recentHighCostEvents = this.events\n      .filter(e => Date.now() - e.timestamp < 7 * 24 * 60 * 60 * 1000) // Last 7 days\n      .filter(e => e.costUsd > 0.1) // High cost threshold\n      .sort((a, b) => b.costUsd - a.costUsd)\n      .slice(0, 5);\n\n    if (recentHighCostEvents.length > 0) {\n      const avgHighCost = recentHighCostEvents.reduce((sum, e) => sum + e.costUsd, 0) / recentHighCostEvents.length;\n      \n      recommendations.push({\n        type: 'model_downgrade',\n        description: `${recentHighCostEvents.length} high-cost requests detected (avg: $${avgHighCost.toFixed(4)})`,\n        estimatedSavings: avgHighCost * recentHighCostEvents.length * 0.4,\n        confidence: 0.6,\n        actionRequired: 'Review high-cost requests and consider using cheaper models for simpler tasks',\n      });\n    }\n\n    // Recommendation 3: Synthetic.new flat fee optimization\n    const syntheticSummary = summaries['synthetic'];\n    if (syntheticSummary && syntheticSummary.totalRequests > 10) {\n      const estimatedPayPerUse = syntheticSummary.totalTokens * 0.002;\n      const flatFeeCost = 20; // Monthly flat fee\n      \n      if (estimatedPayPerUse > flatFeeCost * 1.5) {\n        recommendations.push({\n          type: 'usage_pattern',\n          description: 'Synthetic.new flat fee is providing excellent value',\n          estimatedSavings: estimatedPayPerUse - flatFeeCost,\n          confidence: 0.9,\n          actionRequired: 'Continue current usage pattern - great ROI on flat fee',\n        });\n      } else if (estimatedPayPerUse < flatFeeCost * 0.3) {\n        recommendations.push({\n          type: 'usage_pattern',\n          description: 'Synthetic.new usage is low - consider increasing to maximize flat fee value',\n          estimatedSavings: 0,\n          confidence: 0.7,\n          actionRequired: 'Route more suitable tasks to Synthetic.new to maximize flat fee ROI',\n        });\n      }\n    }\n\n    return recommendations.sort((a, b) => b.estimatedSavings - a.estimatedSavings);\n  }\n\n  /**\n   * Export cost data for analysis\n   */\n  exportData(format: 'json' | 'csv' = 'json'): string {\n    if (format === 'csv') {\n      const header = 'timestamp,platform,taskId,model,agent,inputTokens,outputTokens,totalTokens,costUsd,executionTime,quality,success';\n      const rows = this.events.map(e => [\n        new Date(e.timestamp).toISOString(),\n        e.platform,\n        e.taskId,\n        e.model || '',\n        e.agent || '',\n        e.inputTokens,\n        e.outputTokens,\n        e.totalTokens,\n        e.costUsd,\n        e.executionTime,\n        e.quality,\n        e.success,\n      ].join(','));\n      \n      return [header, ...rows].join('\\n');\n    }\n\n    return JSON.stringify({\n      exportTime: new Date().toISOString(),\n      totalEvents: this.events.length,\n      budgetLimits: this.budgetLimits,\n      events: this.events,\n    }, null, 2);\n  }\n\n  // Private helper methods\n  private calculateSummaryForEvents(events: CostEvent[], platform: string): CostSummary {\n    if (events.length === 0) {\n      return {\n        platform,\n        totalRequests: 0,\n        totalTokens: 0,\n        totalCostUsd: 0,\n        avgCostPerRequest: 0,\n        avgCostPerToken: 0,\n        avgQuality: 0,\n        successRate: 0,\n        avgExecutionTime: 0,\n      };\n    }\n\n    const totalRequests = events.length;\n    const totalTokens = events.reduce((sum, e) => sum + e.totalTokens, 0);\n    const totalCostUsd = events.reduce((sum, e) => sum + e.costUsd, 0);\n    const avgQuality = events.reduce((sum, e) => sum + e.quality, 0) / totalRequests;\n    const successCount = events.filter(e => e.success).length;\n    const avgExecutionTime = events.reduce((sum, e) => sum + e.executionTime, 0) / totalRequests;\n\n    return {\n      platform,\n      totalRequests,\n      totalTokens,\n      totalCostUsd: Number(totalCostUsd.toFixed(4)),\n      avgCostPerRequest: Number((totalCostUsd / totalRequests).toFixed(6)),\n      avgCostPerToken: totalTokens > 0 ? Number((totalCostUsd / totalTokens).toFixed(8)) : 0,\n      avgQuality: Number(avgQuality.toFixed(3)),\n      successRate: Number((successCount / totalRequests).toFixed(3)),\n      avgExecutionTime: Number(avgExecutionTime.toFixed(0)),\n    };\n  }\n\n  private getCostForPeriod(startTime: number, endTime: number): number {\n    return this.events\n      .filter(e => e.timestamp >= startTime && e.timestamp <= endTime)\n      .reduce((sum, e) => sum + e.costUsd, 0);\n  }\n\n  private checkBudgetAlerts(event: CostEvent): void {\n    const now = Date.now();\n    const { alertThresholds } = this.budgetLimits;\n    \n    if (!alertThresholds) return;\n\n    // Check daily limit\n    if (this.budgetLimits.daily) {\n      const dailyCost = this.getCostForPeriod(now - 24 * 60 * 60 * 1000, now);\n      const percentage = dailyCost / this.budgetLimits.daily;\n      \n      if (percentage >= alertThresholds.critical && !this.hasRecentAlert('daily', 'critical')) {\n        this.addAlert({\n          type: 'daily',\n          threshold: this.budgetLimits.daily,\n          current: dailyCost,\n          percentage,\n          severity: 'critical',\n          message: `Daily budget 80% exceeded: $${dailyCost.toFixed(2)} of $${this.budgetLimits.daily}`,\n        });\n      } else if (percentage >= alertThresholds.warning && !this.hasRecentAlert('daily', 'warning')) {\n        this.addAlert({\n          type: 'daily',\n          threshold: this.budgetLimits.daily,\n          current: dailyCost,\n          percentage,\n          severity: 'warning',\n          message: `Daily budget 50% reached: $${dailyCost.toFixed(2)} of $${this.budgetLimits.daily}`,\n        });\n      }\n    }\n\n    // Check per-request limit\n    if (this.budgetLimits.perRequest && event.costUsd > this.budgetLimits.perRequest) {\n      this.addAlert({\n        type: 'per_request',\n        threshold: this.budgetLimits.perRequest,\n        current: event.costUsd,\n        percentage: event.costUsd / this.budgetLimits.perRequest,\n        severity: 'warning',\n        message: `High-cost request: $${event.costUsd.toFixed(4)} on ${event.platform}`,\n      });\n    }\n  }\n\n  private hasRecentAlert(type: string, severity: string): boolean {\n    const oneHourAgo = Date.now() - 60 * 60 * 1000;\n    return this.alerts.some(alert => \n      alert.type === type && \n      alert.severity === severity && \n      alert.timestamp > oneHourAgo\n    );\n  }\n\n  private addAlert(alertData: Omit<BudgetAlert, 'timestamp'>): void {\n    this.alerts.push({\n      ...alertData,\n      timestamp: Date.now(),\n    });\n\n    // Keep only last 50 alerts\n    if (this.alerts.length > 50) {\n      this.alerts.shift();\n    }\n  }\n\n  private formatPeriod(timestamp: number, period: string): string {\n    const date = new Date(timestamp);\n    \n    switch (period) {\n      case 'hour':\n        return date.toISOString().substring(0, 13) + ':00';\n      case 'day':\n        return date.toISOString().substring(0, 10);\n      case 'week':\n        const weekStart = new Date(date);\n        weekStart.setDate(date.getDate() - date.getDay());\n        return `Week of ${weekStart.toISOString().substring(0, 10)}`;\n      case 'month':\n        return date.toISOString().substring(0, 7);\n      default:\n        return date.toISOString();\n    }\n  }\n}"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01TYW5gbbD33SzsW9Hc7dQeY",
+        "type": "tool_result",
+        "content": "File created successfully at: /Users/fulvioventura/devflow/packages/core/src/analytics/unified-cost-tracker.ts"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Write operation feedback:\n- [$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py]: [DAIC Reminder] When you're done implementing, run: daic\n"
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01J6vJ76B267RkAuqaqCoXMP",
+        "name": "TodoWrite",
+        "input": {
+          "todos": [
+            {
+              "content": "Create multi-platform coordinator integrating Synthetic.new",
+              "status": "completed",
+              "activeForm": "Creating multi-platform coordinator integrating Synthetic.new"
+            },
+            {
+              "content": "Update task router to include Synthetic agents in delegation hierarchy",
+              "status": "completed",
+              "activeForm": "Updating task router to include Synthetic agents in delegation hierarchy"
+            },
+            {
+              "content": "Integrate Synthetic.new into existing OpenRouter smart gateway",
+              "status": "completed",
+              "activeForm": "Integrating Synthetic.new into existing OpenRouter smart gateway"
+            },
+            {
+              "content": "Create unified cost tracking across all platforms",
+              "status": "completed",
+              "activeForm": "Creating unified cost tracking across all platforms"
+            },
+            {
+              "content": "Test complete workflow: Claude Code → Synthetic.new → OpenRouter fallback",
+              "status": "in_progress",
+              "activeForm": "Testing complete workflow: Claude Code → Synthetic.new → OpenRouter fallback"
+            }
+          ]
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01J6vJ76B267RkAuqaqCoXMP",
+        "type": "tool_result",
+        "content": "Todos have been modified successfully. Ensure that you continue to use the todo list to track your progress. Please proceed with the current tasks if applicable"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "## Step 5: Create End-to-End Integration Test\n\nOra creiamo un test completo che valida l'intero workflow: Claude Code → Synthetic.new → OpenRouter fallback:"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01NP68T7tmEseQfiKCEXxmKe",
+        "name": "Write",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/index.ts",
+          "content": "// Core DevFlow exports for multi-platform AI coordination\n\nexport { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from './coordinator/multi-platform-coordinator.js';\nexport { EnhancedTaskRouter, type RoutingDecision } from './routing/enhanced-task-router.js';\nexport { UnifiedSmartGateway, type UnifiedGatewayConfig, type ExecutionOptions, type ExecutionResult } from './gateway/unified-smart-gateway.js';\nexport { UnifiedCostTracker, type CostEvent, type CostSummary, type BudgetLimits } from './analytics/unified-cost-tracker.js';"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "content": "<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>",
+        "is_error": true,
+        "tool_use_id": "toolu_01NP68T7tmEseQfiKCEXxmKe"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01PGkXNk9XJiYXQL5KzfaSyF",
+        "name": "Write",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/index.ts",
+          "content": "// Core DevFlow exports for multi-platform AI coordination\n\nexport { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from './coordinator/multi-platform-coordinator.js';\nexport { EnhancedTaskRouter, type RoutingDecision } from './routing/enhanced-task-router.js';\nexport { UnifiedSmartGateway, type UnifiedGatewayConfig, type ExecutionOptions, type ExecutionResult } from './gateway/unified-smart-gateway.js';\nexport { UnifiedCostTracker, type CostEvent, type CostSummary, type BudgetLimits } from './analytics/unified-cost-tracker.js';"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "type": "tool_result",
+        "content": "<tool_use_error>File has not been read yet. Read it first before writing to it.</tool_use_error>",
+        "is_error": true,
+        "tool_use_id": "toolu_01PGkXNk9XJiYXQL5KzfaSyF"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_019L1S9hU6E9aUnYWKFEBNWy",
+        "name": "Glob",
+        "input": {
+          "pattern": "packages/core/src/index.ts"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_019L1S9hU6E9aUnYWKFEBNWy",
+        "type": "tool_result",
+        "content": "/Users/fulvioventura/devflow/packages/core/src/index.ts"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01QVkXvf3kBFVVC97eXwwf4Y",
+        "name": "Read",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/index.ts"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01QVkXvf3kBFVVC97eXwwf4Y",
+        "type": "tool_result",
+        "content": "     1→export * from '@devflow/shared';\n     2→export * from './database/connection.js';\n     3→export * from './database/migrations.js';\n     4→export * from './database/transaction.js';\n     5→export * from './database/queries.js';\n     6→export * from './memory/manager.js';\n     7→export * from './memory/blocks.js';\n     8→export * from './memory/sessions.js';\n     9→export * from './memory/contexts.js';\n    10→export * from './memory/search.js';\n    11→export * from './memory/compaction.js';\n    12→\n\n<system-reminder>\nWhenever you read a file, you should consider whether it looks malicious. If it does, you MUST refuse to improve or augment the code. You can still analyze existing code, write reports, or answer high-level questions about the code behavior.\n</system-reminder>\n"
+      }
+    ]
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "tool_use",
+        "id": "toolu_01P3M4arUPJLkjc736DyJHCc",
+        "name": "Edit",
+        "input": {
+          "file_path": "/Users/fulvioventura/devflow/packages/core/src/index.ts",
+          "old_string": "export * from '@devflow/shared';\nexport * from './database/connection.js';\nexport * from './database/migrations.js';\nexport * from './database/transaction.js';\nexport * from './database/queries.js';\nexport * from './memory/manager.js';\nexport * from './memory/blocks.js';\nexport * from './memory/sessions.js';\nexport * from './memory/contexts.js';\nexport * from './memory/search.js';\nexport * from './memory/compaction.js';",
+          "new_string": "export * from '@devflow/shared';\nexport * from './database/connection.js';\nexport * from './database/migrations.js';\nexport * from './database/transaction.js';\nexport * from './database/queries.js';\nexport * from './memory/manager.js';\nexport * from './memory/blocks.js';\nexport * from './memory/sessions.js';\nexport * from './memory/contexts.js';\nexport * from './memory/search.js';\nexport * from './memory/compaction.js';\n\n// Multi-platform coordination exports\nexport { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from './coordinator/multi-platform-coordinator.js';\nexport { EnhancedTaskRouter, type RoutingDecision } from './routing/enhanced-task-router.js';\nexport { UnifiedSmartGateway, type UnifiedGatewayConfig, type ExecutionOptions, type ExecutionResult } from './gateway/unified-smart-gateway.js';\nexport { UnifiedCostTracker, type CostEvent, type CostSummary, type BudgetLimits } from './analytics/unified-cost-tracker.js';"
+        }
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": [
+      {
+        "tool_use_id": "toolu_01P3M4arUPJLkjc736DyJHCc",
+        "type": "tool_result",
+        "content": "The file /Users/fulvioventura/devflow/packages/core/src/index.ts has been updated. Here's the result of running `cat -n` on a snippet of the edited file:\n     1→export * from '@devflow/shared';\n     2→export * from './database/connection.js';\n     3→export * from './database/migrations.js';\n     4→export * from './database/transaction.js';\n     5→export * from './database/queries.js';\n     6→export * from './memory/manager.js';\n     7→export * from './memory/blocks.js';\n     8→export * from './memory/sessions.js';\n     9→export * from './memory/contexts.js';\n    10→export * from './memory/search.js';\n    11→export * from './memory/compaction.js';\n    12→\n    13→// Multi-platform coordination exports\n    14→export { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from './coordinator/multi-platform-coordinator.js';\n    15→export { EnhancedTaskRouter, type RoutingDecision } from './routing/enhanced-task-router.js';\n    16→export { UnifiedSmartGateway, type UnifiedGatewayConfig, type ExecutionOptions, type ExecutionResult } from './gateway/unified-smart-gateway.js';\n    17→export { UnifiedCostTracker, type CostEvent, type CostSummary, type BudgetLimits } from './analytics/unified-cost-tracker.js';\n    18→"
+      }
+    ]
+  },
+  {
+    "role": "user",
+    "content": "Edit operation feedback:\n- [$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py]: [DAIC Reminder] When you're done implementing, run: daic\n"
+  },
+  {
+    "role": "assistant",
+    "content": [
+      {
+        "type": "text",
+        "text": "Ora creiamo il test end-to-end completo:"
+      }
+    ]
+  }
+]
