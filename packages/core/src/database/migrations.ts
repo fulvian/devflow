@@ -8,19 +8,22 @@ function tableExists(db: Database.Database, name: string): boolean {
 }
 
 export function runInitialSchema(db: Database.Database): void {
-  // If schema_versions exists we assume schema is applied
-  if (tableExists(db, 'schema_versions')) return;
+  // Check if any core tables exist to determine if schema is already applied
+  const coreTables = ['task_contexts', 'memory_blocks', 'coordination_sessions', 'schema_versions'];
+  const existingTables = coreTables.filter(table => tableExists(db, table));
+  
+  // If we have most core tables, assume schema is applied
+  if (existingTables.length >= 3) {
+    console.log(`Schema already applied. Found tables: ${existingTables.join(', ')}`);
+    return;
+  }
 
   const schemaPath = resolve(__dirname, 'schema.sql');
   const sql = readFileSync(schemaPath, 'utf8');
-  db.exec('BEGIN');
-  try {
-    db.exec(sql);
-    db.exec('COMMIT');
-  } catch (err) {
-    db.exec('ROLLBACK');
-    throw err;
-  }
+  
+  // Execute the entire schema without transactions for now
+  // This avoids PRAGMA issues in transactions
+  db.exec(sql);
 }
 
 export function ensureMigrations(db: Database.Database): void {

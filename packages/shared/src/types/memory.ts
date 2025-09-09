@@ -10,7 +10,7 @@
 export type Platform = 'claude_code' | 'openai_codex' | 'gemini_cli' | 'cursor' | 'openrouter';
 export type TaskPriority = 'h-' | 'm-' | 'l-' | '?-';
 export type TaskStatus = 'planning' | 'active' | 'blocked' | 'completed' | 'archived';
-export type BlockType = 'architectural' | 'implementation' | 'debugging' | 'maintenance' | 'context' | 'decision';
+export type BlockType = 'architectural' | 'implementation' | 'debugging' | 'maintenance' | 'context' | 'decision' | 'emergency_context' | 'context_snapshot';
 export type SessionType = 'development' | 'review' | 'debugging' | 'handoff' | 'planning';
 export type EntityType = 'person' | 'technology' | 'pattern' | 'antipattern' | 'rule' | 'preference';
 
@@ -297,6 +297,10 @@ export interface SemanticSearchOptions {
   platforms?: Platform[];
   blockTypes?: BlockType[];
   taskIds?: string[];
+  // Hybrid search options
+  mode?: 'keyword-only' | 'vector-only' | 'hybrid';
+  weights?: { keyword: number; semantic: number };
+  fusionMethod?: 'weighted' | 'harmonic' | 'geometric';
 }
 
 export interface SemanticSearchResult {
@@ -308,7 +312,18 @@ export interface SemanticSearchResult {
 
 // Alias for hybrid search compatibility
 export type HybridSearchOptions = SemanticSearchOptions;
-export type HybridSearchResult = SemanticSearchResult;
+export interface HybridSearchResult extends SemanticSearchResult {
+  scores: {
+    keyword: number;
+    semantic: number;
+    hybrid: number;
+    importance: number;
+  };
+  matchType: 'keyword' | 'semantic' | 'both';
+  keywordMatches: string[];
+  semanticContext: string;
+  explanation: string;
+}
 
 // ============================================================================
 // KNOWLEDGE ENTITIES AND LEARNING

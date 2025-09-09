@@ -15,9 +15,9 @@ import type Database from 'better-sqlite3';
  */
 export class SemanticSearchService {
   constructor(
-    private db: Database.Database,
-    private searchService: SearchService,
-    private vectorService: VectorEmbeddingService
+    private readonly db: Database.Database,
+    private readonly searchService: SearchService,
+    private readonly vectorService: VectorEmbeddingService
   ) {}
 
   /**
@@ -48,7 +48,12 @@ export class SemanticSearchService {
         // Execute both searches in parallel for performance
         const [keywordResults, vectorResults] = await Promise.all([
           this.searchService.fullText(query, maxResults * 2), // Get more keyword results for better hybrid ranking
-          this.vectorService.semanticSearch(query, { maxResults: maxResults * 2, threshold, blockTypes, taskIds })
+          this.vectorService.semanticSearch(query, { 
+            maxResults: maxResults * 2, 
+            threshold, 
+            blockTypes: blockTypes || [], 
+            taskIds: taskIds || [] 
+          })
         ]);
 
         // Normalize scores to [0,1] range
@@ -69,6 +74,7 @@ export class SemanticSearchService {
 
           return {
             block: result,
+            similarity: hybridScore, // Add required similarity property
             scores: {
               keyword: keywordScore,
               semantic: semanticScore,
@@ -103,6 +109,7 @@ export class SemanticSearchService {
 
     return keywordResults.map(block => ({
       block,
+      similarity: 1.0, // Add required similarity property
       scores: {
         keyword: 1.0, // Maximum keyword score since these are FTS5 matches
         semantic: 0.0,
@@ -129,6 +136,7 @@ export class SemanticSearchService {
 
     return vectorResults.map(result => ({
       block: result.block,
+      similarity: result.similarity, // Add required similarity property
       scores: {
         keyword: 0.0,
         semantic: result.similarity,
@@ -208,8 +216,8 @@ export class SemanticSearchService {
         // Merge: prefer the vector result's embedding and metadata
         merged.set(result.block.id, {
           ...existing,
-          embedding: result.block.embedding,
-          embeddingModel: result.block.embeddingModel
+          embedding: result.block.embedding ?? existing.embedding,
+          embeddingModel: result.block.embeddingModel ?? existing.embeddingModel
         });
       } else {
         merged.set(result.block.id, result.block);

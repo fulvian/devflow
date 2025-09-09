@@ -1,11 +1,22 @@
-import { describe, it, expect, beforeAll } from 'vitest';
+import { describe, it, expect, beforeAll, beforeEach } from 'vitest';
 import { SQLiteMemoryManager } from '../memory/manager.js';
+import { unlinkSync } from 'fs';
+
 const SKIP_NATIVE = process.env['SKIP_NATIVE'] === '1';
 const suite = SKIP_NATIVE ? describe.skip : describe;
 
 suite('SQLiteMemoryManager basic flow', () => {
   beforeAll(() => {
     process.env['DEVFLOW_DB_PATH'] = process.env['DEVFLOW_DB_PATH'] ?? 'devflow.test.sqlite';
+  });
+
+  beforeEach(() => {
+    // Clean up test database before each test
+    try {
+      unlinkSync(process.env['DEVFLOW_DB_PATH']!);
+    } catch (e) {
+      // Database doesn't exist, that's fine
+    }
   });
 
   it('creates context, session, block and queries them', async () => {

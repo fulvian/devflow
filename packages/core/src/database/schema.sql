@@ -47,15 +47,7 @@ CREATE TABLE task_contexts (
     -- Metadata and lifecycle
     created_at TEXT DEFAULT (datetime('now', 'utc')),
     updated_at TEXT DEFAULT (datetime('now', 'utc')),
-    completed_at TEXT,
-    
-    -- Indexes
-    INDEX idx_task_status (status),
-    INDEX idx_task_priority (priority),
-    INDEX idx_task_platform (primary_platform),
-    INDEX idx_task_complexity (complexity_score),
-    INDEX idx_task_created (created_at),
-    INDEX idx_task_cc_session (cc_session_id)
+    completed_at TEXT
 );
 
 -- Memory blocks - Structured persistent memory with semantic capabilities
@@ -65,7 +57,7 @@ CREATE TABLE memory_blocks (
     session_id TEXT NOT NULL,
     
     -- Block classification
-    block_type TEXT NOT NULL CHECK(block_type IN ('architectural', 'implementation', 'debugging', 'maintenance', 'context', 'decision')),
+    block_type TEXT NOT NULL CHECK(block_type IN ('architectural', 'implementation', 'debugging', 'maintenance', 'context', 'decision', 'emergency_context', 'context_snapshot')),
     label TEXT NOT NULL, -- Human-readable identifier
     content TEXT NOT NULL,
     
@@ -81,15 +73,7 @@ CREATE TABLE memory_blocks (
     -- Lifecycle tracking
     created_at TEXT DEFAULT (datetime('now', 'utc')),
     last_accessed TEXT DEFAULT (datetime('now', 'utc')),
-    access_count INTEGER DEFAULT 1,
-    
-    -- Indexes for performance
-    INDEX idx_memory_task (task_id),
-    INDEX idx_memory_session (session_id),
-    INDEX idx_memory_type (block_type),
-    INDEX idx_memory_importance (importance_score DESC),
-    INDEX idx_memory_created (created_at),
-    INDEX idx_memory_accessed (last_accessed DESC)
+    access_count INTEGER DEFAULT 1
 );
 
 -- Coordination sessions - Track cross-platform AI interactions
@@ -133,15 +117,7 @@ CREATE TABLE coordination_sessions (
     errors_encountered INTEGER DEFAULT 0,
     
     -- Session metadata
-    metadata TEXT DEFAULT '{}', -- JSON for session-specific data
-    
-    -- Indexes
-    INDEX idx_session_task (task_id),
-    INDEX idx_session_platform (platform),
-    INDEX idx_session_time (start_time, end_time),
-    INDEX idx_session_cost (estimated_cost_usd),
-    INDEX idx_session_handoff_from (handoff_from_session),
-    INDEX idx_session_handoff_to (handoff_to_session)
+    metadata TEXT DEFAULT '{}' -- JSON for session-specific data
 );
 
 -- ============================================================================
@@ -198,10 +174,7 @@ CREATE TABLE cost_analytics (
     
     created_at TEXT DEFAULT (datetime('now', 'utc')),
     
-    UNIQUE(date, platform, model),
-    INDEX idx_cost_date (date),
-    INDEX idx_cost_platform (platform),
-    INDEX idx_cost_total (total_cost_usd DESC)
+    UNIQUE(date, platform, model)
 );
 
 -- ============================================================================
@@ -230,10 +203,7 @@ CREATE TABLE knowledge_entities (
     embedding BLOB, -- Vector embeddings for semantic search
     tags TEXT DEFAULT '[]', -- JSON array of searchable tags
     
-    UNIQUE(entity_type, name),
-    INDEX idx_entity_type (entity_type),
-    INDEX idx_entity_confidence (confidence_score DESC),
-    INDEX idx_entity_usage (usage_count DESC)
+    UNIQUE(entity_type, name)
 );
 
 -- Entity relationships - Capture knowledge graph connections
@@ -250,10 +220,7 @@ CREATE TABLE entity_relationships (
     confirmed_count INTEGER DEFAULT 1,
     last_confirmed TEXT DEFAULT (datetime('now', 'utc')),
     
-    UNIQUE(source_entity_id, target_entity_id, relationship_type),
-    INDEX idx_relationship_source (source_entity_id),
-    INDEX idx_relationship_target (target_entity_id),
-    INDEX idx_relationship_strength (relationship_strength DESC)
+    UNIQUE(source_entity_id, target_entity_id, relationship_type)
 );
 
 -- ============================================================================
@@ -420,6 +387,49 @@ CREATE TABLE schema_versions (
 
 INSERT INTO schema_versions (version, description) VALUES 
 ('1.0.0', 'Initial DevFlow Foundation schema with memory blocks, task contexts, and coordination sessions');
+
+-- ============================================================================
+-- INDEXES FOR PERFORMANCE
+-- ============================================================================
+
+-- Task contexts indexes
+CREATE INDEX idx_task_status ON task_contexts(status);
+CREATE INDEX idx_task_priority ON task_contexts(priority);
+CREATE INDEX idx_task_platform ON task_contexts(primary_platform);
+CREATE INDEX idx_task_complexity ON task_contexts(complexity_score);
+CREATE INDEX idx_task_created ON task_contexts(created_at);
+CREATE INDEX idx_task_cc_session ON task_contexts(cc_session_id);
+
+-- Memory blocks indexes
+CREATE INDEX idx_memory_task ON memory_blocks(task_id);
+CREATE INDEX idx_memory_session ON memory_blocks(session_id);
+CREATE INDEX idx_memory_type ON memory_blocks(block_type);
+CREATE INDEX idx_memory_importance ON memory_blocks(importance_score DESC);
+CREATE INDEX idx_memory_created ON memory_blocks(created_at);
+CREATE INDEX idx_memory_accessed ON memory_blocks(last_accessed DESC);
+
+-- Coordination sessions indexes
+CREATE INDEX idx_session_task ON coordination_sessions(task_id);
+CREATE INDEX idx_session_platform ON coordination_sessions(platform);
+CREATE INDEX idx_session_time ON coordination_sessions(start_time, end_time);
+CREATE INDEX idx_session_cost ON coordination_sessions(estimated_cost_usd);
+CREATE INDEX idx_session_handoff_from ON coordination_sessions(handoff_from_session);
+CREATE INDEX idx_session_handoff_to ON coordination_sessions(handoff_to_session);
+
+-- Cost analytics indexes
+CREATE INDEX idx_cost_date ON cost_analytics(date);
+CREATE INDEX idx_cost_platform ON cost_analytics(platform);
+CREATE INDEX idx_cost_total ON cost_analytics(total_cost_usd DESC);
+
+-- Knowledge entities indexes
+CREATE INDEX idx_entity_type ON knowledge_entities(entity_type);
+CREATE INDEX idx_entity_confidence ON knowledge_entities(confidence_score DESC);
+CREATE INDEX idx_entity_usage ON knowledge_entities(usage_count DESC);
+
+-- Entity relationships indexes
+CREATE INDEX idx_relationship_source ON entity_relationships(source_entity_id);
+CREATE INDEX idx_relationship_target ON entity_relationships(target_entity_id);
+CREATE INDEX idx_relationship_strength ON entity_relationships(relationship_strength DESC);
 
 -- Performance optimization
 ANALYZE;

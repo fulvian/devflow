@@ -180,8 +180,8 @@ export class ContextPreservation {
    * Extract all memory blocks for a task
    */
   private async extractAllMemoryBlocks(taskId: string): Promise<MemoryBlock[]> {
-    // Get all memory blocks for the task
-    const blocks = await this.memory.retrieveMemoryBlocks({ taskId, limit: 1000 });
+    // Get all memory blocks for the task (max 500 due to Zod validation)
+    const blocks = await this.memory.retrieveMemoryBlocks({ taskId, limit: 500 });
     
     // Sort by importance and recency
     return blocks.sort((a, b) => {

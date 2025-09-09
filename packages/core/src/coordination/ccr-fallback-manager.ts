@@ -118,7 +118,7 @@ export class CCRFallbackManager {
       };
       
       // Store emergency context
-      await this.memory.storeEmergencyContext(taskId, preservedContext);
+      await this.memory.storeEmergencyContext(taskId, `session-${taskId}`, preservedContext);
       
       console.log(`[CCR] Context preserved: ${memoryBlocks.length} blocks, session state extracted`);
       return preservedContext;
