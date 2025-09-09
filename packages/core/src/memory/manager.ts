@@ -92,4 +92,74 @@ export class SQLiteMemoryManager implements MemoryManager {
   async semanticSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
     return this.searchSvc.semantic(query, options);
   }
+
+  // CCR Integration Methods
+  async getAllMemoryBlocks(): Promise<MemoryBlock[]> {
+    return this.blockSvc.getAllBlocks();
+  }
+
+  async storeEmergencyContext(context: any): Promise<void> {
+    // Store emergency context for CCR fallback
+    await this.blockSvc.createBlock({
+      id: `emergency_${Date.now()}`,
+      content: JSON.stringify(context),
+      type: 'emergency_context',
+      importance: 1.0,
+      recency: 1.0,
+      taskId: context.taskId || 'unknown',
+      sessionId: context.sessionId || 'unknown',
+      platform: context.platform || 'unknown',
+      metadata: {
+        emergency: true,
+        timestamp: new Date().toISOString(),
+        contextSize: JSON.stringify(context).length
+      }
+    });
+  }
+
+  async retrieveEmergencyContext(taskId: string): Promise<any> {
+    const blocks = await this.blockSvc.queryBlocks({
+      taskId,
+      type: 'emergency_context',
+      limit: 1
+    });
+    
+    if (blocks.length > 0) {
+      return JSON.parse(blocks[0].content);
+    }
+    return null;
+  }
+
+  async storeContextSnapshot(snapshot: any): Promise<void> {
+    await this.blockSvc.createBlock({
+      id: `snapshot_${Date.now()}`,
+      content: JSON.stringify(snapshot),
+      type: 'context_snapshot',
+      importance: 0.9,
+      recency: 1.0,
+      taskId: snapshot.taskId || 'unknown',
+      sessionId: snapshot.sessionId || 'unknown',
+      platform: snapshot.platform || 'unknown',
+      metadata: {
+        snapshot: true,
+        timestamp: new Date().toISOString(),
+        contextSize: JSON.stringify(snapshot).length
+      }
+    });
+  }
+
+  async deleteContextSnapshot(snapshotId: string): Promise<void> {
+    await this.blockSvc.deleteBlock(snapshotId);
+  }
+
+  async getActiveSessions(): Promise<any[]> {
+    return this.sessSvc.getActiveSessions();
+  }
+
+  async updateSessionHandoff(sessionId: string, handoffData: any): Promise<void> {
+    await this.sessSvc.updateSession(sessionId, {
+      handoffData,
+      lastActivity: new Date().toISOString()
+    });
+  }
 }

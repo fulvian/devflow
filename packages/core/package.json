@@ -6,7 +6,9 @@
   "main": "dist/index.js",
   "module": "dist/index.js",
   "types": "dist/index.d.ts",
-  "files": ["dist"],
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "build": "tsc -b",
     "dev": "tsc -b -w",
@@ -16,11 +18,14 @@
     "test": "vitest run src"
   },
   "dependencies": {
+    "@devflow/openrouter": "workspace:*",
     "@devflow/shared": "workspace:*",
     "@devflow/synthetic": "workspace:*",
-    "@devflow/openrouter": "workspace:*",
-    "better-sqlite3": "^12.2.0",
     "@modelcontextprotocol/sdk": "*",
+    "@types/uuid": "^10.0.0",
+    "better-sqlite3": "^12.2.0",
+    "sqlite3": "^5.1.7",
+    "uuid": "^13.0.0",
     "zod": "^3.23.8"
   },
   "devDependencies": {

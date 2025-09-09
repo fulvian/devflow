@@ -4,7 +4,7 @@
  * Qwen 2.5 Coder 32B - 1,867 tokens processed
  */
 
-import sqlite3 from 'sqlite3';
+import Database from 'sqlite3';
 import { v4 as uuidv4 } from 'uuid';
 
 // Core Interfaces
@@ -142,12 +142,12 @@ export class PlatformSpecializationMatrix implements PlatformSpecializationMatri
 
 // PerformanceLearning Implementation
 export class PerformanceLearning implements PerformanceLearning {
-    private db: sqlite3.Database;
+    private db: Database.Database;
     private dbPath: string;
 
     constructor(dbPath: string = ':memory:') {
         this.dbPath = dbPath;
-        this.db = new sqlite3.Database(dbPath);
+        this.db = new Database.Database(dbPath);
         this.initializeDatabase();
     }
 

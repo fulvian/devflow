@@ -15,3 +15,6 @@ export { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from './c
 export { EnhancedTaskRouter, type RoutingDecision } from './routing/enhanced-task-router.js';
 export { UnifiedSmartGateway, type UnifiedGatewayConfig, type ExecutionOptions, type ExecutionResult } from './gateway/unified-smart-gateway.js';
 export { UnifiedCostTracker, type CostEvent, type CostSummary, type BudgetLimits } from './analytics/unified-cost-tracker.js';
+
+// CCR Session Independence exports
+export * from './coordination/index.js';

@@ -1,0 +1,54 @@
+{
+  "log": true,
+  "NON_INTERACTIVE_MODE": true,
+  "Providers": [
+    {
+      "name": "synthetic_provider",
+      "api_base_url": "https://api.synthetic.new/v1/chat/completions",
+      "api_key": "syn_4f04a1a3108cfbb64ac973367542d361",
+      "models": [
+        "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "hf:deepseek-ai/DeepSeek-V3",
+        "hf:Qwen/Qwen-72B-Chat"
+      ]
+    }
+  ],
+  "Router": {
+    "default": "synthetic_provider,hf:deepseek-ai/DeepSeek-V3",
+    "codex": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "synthetic": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "longContext": "synthetic_provider,hf:deepseek-ai/DeepSeek-V3"
+  },
+  "transformers": [
+    {
+      "path": "./packages/core/src/coordination/ccr-transformers/devflow-context-transformer.js",
+      "options": {
+        "preserveMemoryBlocks": true,
+        "compressContext": true,
+        "maxContextSize": 1024
+      }
+    }
+  ],
+  "fallback": {
+    "enabled": true,
+    "chain": [
+      "default",
+      "codex"
+    ],
+    "timeout": 30000,
+    "retryAttempts": 3
+  },
+  "devflow": {
+    "memoryManager": {
+      "databasePath": "./packages/core/devflow.sqlite",
+      "enableCompression": true,
+      "maxMemoryBlocks": 1000
+    },
+    "sessionManagement": {
+      "enableProactiveMonitoring": true,
+      "warningThreshold": 0.7,
+      "criticalThreshold": 0.85,
+      "emergencyThreshold": 0.95
+    }
+  }
+}
