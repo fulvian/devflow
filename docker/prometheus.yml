@@ -1,0 +1,40 @@
+# DevFlow Prometheus Configuration
+# Generated from DEVFLOW-PROD-DEPLOY-001 analysis by DeepSeek V3
+
+global:
+  scrape_interval: 15s
+  evaluation_interval: 15s
+
+rule_files:
+  - "devflow_rules.yml"
+
+scrape_configs:
+  - job_name: 'devflow-coordinator'
+    static_configs:
+      - targets: ['coordinator:3000']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'devflow-cost-monitor'
+    static_configs:
+      - targets: ['cost-monitor:3002']
+    metrics_path: '/metrics'
+    scrape_interval: 30s
+
+  - job_name: 'devflow-claude-adapter'
+    static_configs:
+      - targets: ['claude-adapter:3001']
+    metrics_path: '/metrics'
+    scrape_interval: 15s
+
+  - job_name: 'synthetic-mcp'
+    static_configs:
+      - targets: ['synthetic-mcp:8001']
+    metrics_path: '/health'
+    scrape_interval: 30s
+
+  - job_name: 'openrouter-mcp'
+    static_configs:
+      - targets: ['openrouter-mcp:8002']
+    metrics_path: '/health'
+    scrape_interval: 30s

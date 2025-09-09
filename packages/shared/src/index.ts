@@ -96,7 +96,6 @@ export type {
   GenerateResult,
   ChatMessage,
   TaskRequest,
-  TaskResult,
   PlatformStatus,
   MultiPlatformConfig
 } from './interfaces/platform.js';

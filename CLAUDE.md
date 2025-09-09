@@ -143,9 +143,31 @@ These protocols guide specific workflows:
 - User: "Yes"
 - You: [NOW read task-completion.md] → "I'll complete the task now..."
 
-## MCP Codex Integration Protocol
+## Synthetic.new Multi-Agent Integration Protocol
 
-### **MCP Tool Integration**
+### **Primary AI Coordination System**
+DevFlow utilizza Synthetic.new come primary platform con specialization per agent type:
+- **Code Agent** (Qwen 2.5 Coder): Implementation, APIs, refactoring, rapid prototyping
+- **Reasoning Agent** (DeepSeek V3): Architecture analysis, complex decisions, strategic planning
+- **Context Agent** (Qwen 72B): Large codebase analysis, documentation, context understanding
+- **Auto Agent**: Intelligent model selection based on task classification
+
+### **MANDATORY Synthetic Delegation Rules**
+1. **SEMPRE delegare coding tasks** a Synthetic specialized agents - MAI implementazione diretta
+2. **Automatic Fallback**: Quando Codex raggiunge limiti → Delegazione automatica a Synthetic
+3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-CC-INTEGRATION-001)
+4. **Structured Prompting**: Fornire sempre context completo, requirements e deliverables
+5. **Immediate Implementation**: Codice generato da Synthetic → Implementazione automatica nel progetto
+6. **Quality Control**: Architect review del codice generato prima dell'integrazione
+7. **Memory Persistence**: Aggiornare work logs con risultati e decisioni tecniche
+
+### **Agent Selection Guidelines**
+- **Code Tasks**: Implementations, functions, APIs, integrations → **Code Agent**
+- **Architecture Tasks**: System design, analysis, complex decisions → **Reasoning Agent**  
+- **Documentation Tasks**: Large context analysis, documentation → **Context Agent**
+- **Mixed Tasks**: Unclear classification → **Auto Agent** (intelligent selection)
+
+### **MCP Codex Integration Protocol**
 DevFlow utilizza il server MCP OpenAI Codex per task delegation tramite tools:
 - `mcp__openai_codex__codex_completion`: General prompt-based generation
 - `mcp__openai_codex__write_code`: Generate code in specific languages  
@@ -159,7 +181,7 @@ DevFlow utilizza il server MCP OpenAI Codex per task delegation tramite tools:
 4. **Structured Context**: Fornire sempre context completo via MCP parameters
 5. **Validation Required**: Verificare output Codex prima di integration
 6. **Memory Persistence**: Salvare risultati in DevFlow memory system
-7. **Fallback**: Se MCP non disponibile o limiti usage, implementare manualmente con standard qualità
+7. **Automatic Synthetic Fallback**: Se MCP Codex non disponibile o raggiunge limiti → Delegazione automatica a Synthetic agent appropriato secondo le regole sopra
 
 ### **MCP Task Template**
 ```typescript
