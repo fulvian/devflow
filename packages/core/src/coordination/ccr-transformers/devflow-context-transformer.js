@@ -71,6 +71,14 @@ export class DevFlowContextTransformer {
       originalSize: devflowContext.size
     };
 
+    // Truncate taskContext if it exists and is a string
+    if (compressed.taskContext && typeof compressed.taskContext === 'string') {
+      const maxTaskContextLength = 500; // Or some other reasonable value
+      if (compressed.taskContext.length > maxTaskContextLength) {
+        compressed.taskContext = compressed.taskContext.substring(0, maxTaskContextLength) + '\n... (truncated)';
+      }
+    }
+
     compressed.size = JSON.stringify(compressed).length;
     return compressed;
   }

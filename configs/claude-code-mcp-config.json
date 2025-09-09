@@ -5,9 +5,9 @@
       "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/index.js"],
       "env": {
         "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
-        "DEFAULT_CODE_MODEL": "hf:Qwen/QwQ-32B-Preview",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
         "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
-        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-72B-Instruct",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
         "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
         "COST_TRACKING_ENABLED": "true",
         "AUTONOMOUS_MODE": "false"

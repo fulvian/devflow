@@ -15,6 +15,11 @@ dotenv.config();
 const SYNTHETIC_API_URL = 'https://api.synthetic.new/v1';
 const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
 
+// Model configuration from environment variables
+const DEFAULT_CODE_MODEL = process.env.DEFAULT_CODE_MODEL || 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct';
+const DEFAULT_REASONING_MODEL = process.env.DEFAULT_REASONING_MODEL || 'hf:deepseek-ai/DeepSeek-V3';
+const DEFAULT_CONTEXT_MODEL = process.env.DEFAULT_CONTEXT_MODEL || 'hf:Qwen/Qwen2.5-Coder-32B-Instruct';
+
 interface SyntheticRequest {
   model: string;
   messages: Array<{
@@ -283,7 +288,7 @@ ${args.context || 'None provided'}
 Generate the code with proper documentation and structure.`;
 
     const response = await this.callSyntheticAPI(
-      'hf:Qwen/QwQ-32B-Preview',
+      DEFAULT_CODE_MODEL,
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -301,7 +306,7 @@ Generate the code with proper documentation and structure.`;
 ${response.choices[0].message.content}
 
 ## Usage Stats
-- Model: Qwen QwQ-32B-Preview (Code Specialist)
+- Model: ${DEFAULT_CODE_MODEL} (Code Specialist)
 - Tokens: ${response.usage?.total_tokens || 'N/A'}
 - Language: ${args.language}`,
         },
@@ -335,7 +340,7 @@ Context: ${args.context || 'None provided'}
 Provide comprehensive reasoning and analysis.`;
 
     const response = await this.callSyntheticAPI(
-      'hf:deepseek-ai/DeepSeek-V3',
+      DEFAULT_REASONING_MODEL,
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -353,7 +358,7 @@ Provide comprehensive reasoning and analysis.`;
 ${response.choices[0].message.content}
 
 ## Usage Stats
-- Model: DeepSeek V3 (Reasoning Specialist)  
+- Model: ${DEFAULT_REASONING_MODEL} (Reasoning Specialist)  
 - Tokens: ${response.usage?.total_tokens || 'N/A'}
 - Approach: ${args.approach || 'analytical'}`,
         },
@@ -386,7 +391,7 @@ ${args.content}
 Please provide ${args.analysis_type || 'explanation'} focusing on: ${args.focus || 'general analysis'}`;
 
     const response = await this.callSyntheticAPI(
-      'hf:Qwen/Qwen2.5-72B-Instruct',
+      DEFAULT_CONTEXT_MODEL,
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -404,7 +409,7 @@ Please provide ${args.analysis_type || 'explanation'} focusing on: ${args.focus 
 ${response.choices[0].message.content}
 
 ## Usage Stats
-- Model: Qwen 2.5-72B-Instruct (Context Specialist)
+- Model: ${DEFAULT_CONTEXT_MODEL} (Context Specialist)
 - Tokens: ${response.usage?.total_tokens || 'N/A'}
 - Analysis: ${args.analysis_type || 'explain'}`,
         },
@@ -428,7 +433,7 @@ Classify as: CODE, REASONING, or CONTEXT
 Provide a brief explanation of your classification.`;
 
     const classificationResponse = await this.callSyntheticAPI(
-      'hf:Qwen/Qwen2.5-72B-Instruct',
+      DEFAULT_CONTEXT_MODEL,
       [{ role: 'user', content: classificationPrompt }]
     );
 
@@ -439,13 +444,13 @@ Provide a brief explanation of your classification.`;
     let modelType: string;
 
     if (classification.toLowerCase().includes('code')) {
-      selectedModel = 'hf:Qwen/QwQ-32B-Preview';
+      selectedModel = DEFAULT_CODE_MODEL;
       modelType = 'Code Specialist';
     } else if (classification.toLowerCase().includes('reasoning')) {
-      selectedModel = 'hf:deepseek-ai/DeepSeek-V3';
+      selectedModel = DEFAULT_REASONING_MODEL;
       modelType = 'Reasoning Specialist';
     } else {
-      selectedModel = 'hf:Qwen/Qwen2.5-72B-Instruct';
+      selectedModel = DEFAULT_CONTEXT_MODEL;
       modelType = 'Context Specialist';
     }
 

@@ -7,18 +7,23 @@
       "api_base_url": "https://api.synthetic.new/v1/chat/completions",
       "api_key": "syn_4f04a1a3108cfbb64ac973367542d361",
       "models": [
-        "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
         "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
-        "hf:deepseek-ai/DeepSeek-V3"
+        "hf:deepseek-ai/DeepSeek-V3",
+        "hf:Qwen/Qwen-72B-Chat",
+        "hf:mistralai/Mistral-7B-Instruct-v0.3"
+      ],
+      "fallback_models": [
+        "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "hf:mistralai/Mistral-7B-Instruct-v0.3"
       ]
     }
   ],
   "Router": {
-    "default": "synthetic_provider,hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
-    "codex": "synthetic_provider,hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
-    "synthetic": "synthetic_provider,hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "default": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "codex": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "synthetic": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
     "longContext": "synthetic_provider,hf:deepseek-ai/DeepSeek-V3",
-    "fallback": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct"
+    "fallback": "synthetic_provider,hf:mistralai/Mistral-7B-Instruct-v0.3"
   },
   "transformers": [
     {
@@ -38,7 +43,8 @@
       "fallback"
     ],
     "timeout": 30000,
-    "retryAttempts": 3
+    "retryAttempts": 3,
+    "billing_error_fallback": true
   },
   "devflow": {
     "memoryManager": {
@@ -51,6 +57,20 @@
       "warningThreshold": 0.7,
       "criticalThreshold": 0.85,
       "emergencyThreshold": 0.95
+    }
+  },
+  "error_handling": {
+    "billing_errors": {
+      "enabled": true,
+      "fallback_to_free_models": true,
+      "retry_with_different_model": true
+    },
+    "model_unavailable": {
+      "enabled": true,
+      "fallback_chain": [
+        "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "hf:mistralai/Mistral-7B-Instruct-v0.3"
+      ]
     }
   }
 }
