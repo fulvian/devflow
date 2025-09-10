@@ -104,26 +104,48 @@ pnpm test
 
 ### Environment Setup
 ```bash
-# Required API Keys
+# Required API Keys (for vector search)
+export OPENAI_API_KEY=your_openai_key
+
+# Optional Platform Keys
 export SYNTHETIC_API_KEY=your_synthetic_key
 export OPEN_ROUTER_API_KEY=your_openrouter_key
 
 # Optional Configuration
-export DEVFLOW_DB_PATH=./devflow.db
 export DEVFLOW_LOG_LEVEL=info
 ```
 
-### Using DevFlow in Claude Code
-```bash
-# Test Synthetic.new integration
-node test-synthetic.ts
+### Using DevFlow in Claude Code (MCP)
 
-# In Claude Code chat, use slash commands:
-/synthetic "Create a TypeScript utility function"
-/synthetic-code "Implement JWT authentication"
-/synthetic-reasoning "Analyze microservices vs monolith trade-offs"
-/synthetic-status  # Check system status
+1) Prepare DevFlow (once)
+```bash
+cd /Users/your-username/devflow
+pnpm install && pnpm build
+python3 .claude/hooks/setup-devflow.py
+echo "OPENAI_API_KEY=your_openai_key" >> .env
 ```
+
+2) Start the MCP server (recommended)
+```bash
+node /Users/your-username/devflow/packages/adapters/claude-code/dist/mcp-server.js
+```
+If `pnpm devflow:start` fails with module resolution, use the absolute path above.
+
+3) Link DevFlow to your target project (per-project DB recommended)
+```bash
+CLAUDE_PROJECT_DIR=/path/to/your/project \
+python3 /Users/your-username/devflow/.claude/hooks/setup-devflow.py
+echo "DEVFLOW_DB_PATH=./devflow.sqlite" >> /path/to/your/project/.env
+```
+
+4) Launch Claude Code from the project
+```bash
+cd /path/to/your/project
+claude
+```
+
+See the full step-by-step guide:
+docs/guide/guida_istallazione_lancio_1.md
 
 ## 📦 Package Structure
 
