@@ -4,9 +4,9 @@
  */
 
 import { describe, it, expect, beforeAll, afterAll, beforeEach } from 'vitest';
-import { DevFlowCore } from '../../../packages/core/src/index.js';
-import { ClaudeAdapter } from '../../../packages/claude-adapter/src/index.js';
-import { OpenRouterGateway } from '../../../packages/openrouter-gateway/src/index.js';
+import { MultiPlatformCoordinator } from '@devflow/core';
+import { ClaudeAdapter } from '@devflow/claude-adapter';
+import { OpenRouterGateway } from '@devflow/openrouter';
 import type { 
   TaskContext, 
   MemoryBlock, 
@@ -15,7 +15,7 @@ import type {
 } from '../../../packages/shared/src/types.js';
 
 describe('Claude Code → OpenRouter End-to-End Integration', () => {
-  let devFlow: DevFlowCore;
+  let devFlow: MultiPlatformCoordinator;
   let claudeAdapter: ClaudeAdapter;
   let openRouterGateway: OpenRouterGateway;
   let testStartTime: number;

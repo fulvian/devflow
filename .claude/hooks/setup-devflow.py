@@ -22,7 +22,7 @@ def setup_devflow_integration():
     setup_claude_settings(claude_dir)
     
     # Setup environment variables
-    setup_environment_variables(project_dir)
+    setup_environment_variables(Path(project_dir))
     
     # Create DevFlow context directory
     context_dir = claude_dir / 'context'

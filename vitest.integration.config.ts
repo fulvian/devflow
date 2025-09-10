@@ -29,7 +29,8 @@ export default defineConfig({
       '@devflow/openrouter': resolve(
         __dirname,
         './packages/adapters/openrouter/src'
-      )
+      ),
+      '@devflow/synthetic': resolve(__dirname, './mcp-servers/synthetic/src')
     }
   }
 });

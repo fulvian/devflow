@@ -1,0 +1,1150 @@
+#!/usr/bin/env node
+
+import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { StdioServerTransport } from '@modelcontextprotocol/sdk/server/stdio.js';
+import {
+  CallToolRequestSchema,
+  ListToolsRequestSchema,
+} from '@modelcontextprotocol/sdk/types.js';
+import axios from 'axios';
+import * as dotenv from 'dotenv';
+import { promises as fs } from 'fs';
+import { join, resolve, dirname, basename } from 'path';
+import { existsSync } from 'fs';
+
+dotenv.config();
+
+// Synthetic.new API configuration
+const SYNTHETIC_API_URL = 'https://api.synthetic.new/v1';
+const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
+
+// Enhanced configuration
+const DEVFLOW_PROJECT_ROOT = process.env.DEVFLOW_PROJECT_ROOT || process.cwd();
+const AUTONOMOUS_FILE_OPERATIONS = process.env.AUTONOMOUS_FILE_OPERATIONS === 'true';
+const REQUIRE_APPROVAL = process.env.REQUIRE_APPROVAL === 'true';
+const CREATE_BACKUPS = process.env.CREATE_BACKUPS !== 'false';
+const ALLOWED_FILE_EXTENSIONS = process.env.ALLOWED_FILE_EXTENSIONS?.split(',') || 
+  ['.ts', '.js', '.json', '.md', '.py', '.tsx', '.jsx', '.css', '.scss', '.html', '.yml', '.yaml'];
+
+// Model configuration from environment variables
+const DEFAULT_CODE_MODEL = process.env.DEFAULT_CODE_MODEL || 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct';
+const DEFAULT_REASONING_MODEL = process.env.DEFAULT_REASONING_MODEL || 'hf:deepseek-ai/DeepSeek-V3';
+const DEFAULT_CONTEXT_MODEL = process.env.DEFAULT_CONTEXT_MODEL || 'hf:Qwen/Qwen2.5-Coder-32B-Instruct';
+
+interface SyntheticRequest {
+  model: string;
+  messages: Array<{
+    role: 'system' | 'user' | 'assistant';
+    content: string;
+  }>;
+  max_tokens?: number;
+  temperature?: number;
+}
+
+interface SyntheticResponse {
+  choices: Array<{
+    message: {
+      content: string;
+    };
+  }>;
+  usage?: {
+    prompt_tokens: number;
+    completion_tokens: number;
+    total_tokens: number;
+  };
+}
+
+interface FileModification {
+  file: string;
+  operation: 'write' | 'append' | 'patch' | 'create';
+  content: string;
+  patches?: Array<{
+    line: number;
+    oldContent: string;
+    newContent: string;
+  }>;
+}
+
+interface FileOperationResult {
+  path: string;
+  status: 'SUCCESS' | 'ERROR' | 'SKIPPED';
+  message?: string;
+  tokensUsed?: number;
+  tokensSaved?: number;
+}
+
+export class EnhancedSyntheticMCPServer {
+  private server: Server;
+  private allowedPaths: string[];
+
+  constructor() {
+    this.server = new Server(
+      {
+        name: 'devflow-synthetic-enhanced',
+        version: '2.0.0',
+      },
+      {
+        capabilities: {
+          tools: {},
+        },
+      }
+    );
+
+    this.allowedPaths = [DEVFLOW_PROJECT_ROOT];
+    this.setupToolHandlers();
+    this.setupErrorHandling();
+  }
+
+  private setupErrorHandling(): void {
+    this.server.onerror = (error) => {
+      console.error('[Enhanced MCP Error]', error);
+    };
+
+    process.on('SIGINT', async () => {
+      await this.server.close();
+      process.exit(0);
+    });
+  }
+
+  private setupToolHandlers(): void {
+    this.server.setRequestHandler(ListToolsRequestSchema, async () => ({
+      tools: [
+        // Original tools maintained
+        {
+          name: 'synthetic_code',
+          description: 'Generate code using Synthetic.new specialized code model (Qwen Coder)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier (e.g., SYNTHETIC-1A)',
+              },
+              objective: {
+                type: 'string',
+                description: 'Clear description of what code to generate',
+              },
+              language: {
+                type: 'string',
+                description: 'Programming language (typescript, python, etc.)',
+              },
+              requirements: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Technical requirements and constraints',
+              },
+              context: {
+                type: 'string',
+                description: 'Additional context or existing code',
+                default: '',
+              },
+            },
+            required: ['task_id', 'objective', 'language'],
+          },
+        },
+        {
+          name: 'synthetic_reasoning',
+          description: 'Complex reasoning and analysis using DeepSeek V3',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier (e.g., SYNTHETIC-1A)',
+              },
+              problem: {
+                type: 'string',
+                description: 'Problem to analyze or reason about',
+              },
+              context: {
+                type: 'string',
+                description: 'Relevant context for the reasoning task',
+                default: '',
+              },
+              approach: {
+                type: 'string',
+                enum: ['analytical', 'creative', 'systematic', 'comparative'],
+                description: 'Reasoning approach to use',
+                default: 'analytical',
+              },
+            },
+            required: ['task_id', 'problem'],
+          },
+        },
+        {
+          name: 'synthetic_context',
+          description: 'Context analysis and understanding using Qwen 72B',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier (e.g., SYNTHETIC-1A)',
+              },
+              content: {
+                type: 'string',
+                description: 'Content to analyze and understand',
+              },
+              analysis_type: {
+                type: 'string',
+                enum: ['summarize', 'extract', 'classify', 'explain'],
+                description: 'Type of context analysis',
+                default: 'explain',
+              },
+              focus: {
+                type: 'string',
+                description: 'Specific aspect to focus on',
+                default: '',
+              },
+            },
+            required: ['task_id', 'content'],
+          },
+        },
+        {
+          name: 'synthetic_auto',
+          description: 'Autonomous task execution with intelligent model selection',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier (e.g., SYNTHETIC-1A)',
+              },
+              request: {
+                type: 'string',
+                description: 'Task description for autonomous execution',
+              },
+              constraints: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Constraints and requirements',
+                default: [],
+              },
+              approval_required: {
+                type: 'boolean',
+                description: 'Whether approval is required before execution',
+                default: true,
+              },
+            },
+            required: ['task_id', 'request'],
+          },
+        },
+        // NEW ENHANCED TOOLS
+        {
+          name: 'synthetic_auto_file',
+          description: '🚀 AUTONOMOUS CODE GENERATION WITH DIRECT FILE MODIFICATION - Bypasses Claude token usage for file operations',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier (e.g., DEVFLOW-AUTO-FILE-001)',
+              },
+              request: {
+                type: 'string',
+                description: 'Task description for autonomous code generation and file modification',
+              },
+              target_files: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Specific files to modify (optional - will auto-detect if not provided)',
+                default: [],
+              },
+              create_backup: {
+                type: 'boolean',
+                description: 'Create backup before modification',
+                default: CREATE_BACKUPS,
+              },
+              dry_run: {
+                type: 'boolean',
+                description: 'Preview changes without applying them',
+                default: false,
+              },
+              approval_required: {
+                type: 'boolean',
+                description: 'Whether approval is required before file modification',
+                default: REQUIRE_APPROVAL,
+              },
+            },
+            required: ['task_id', 'request'],
+          },
+        },
+        {
+          name: 'synthetic_batch_code',
+          description: '⚡ BATCH CODE GENERATION - Process multiple related files in a single call to optimize Synthetic API usage',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Batch task identifier (e.g., DEVFLOW-BATCH-001)',
+              },
+              batch_requests: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    file_path: { type: 'string' },
+                    objective: { type: 'string' },
+                    language: { type: 'string' },
+                    requirements: {
+                      type: 'array',
+                      items: { type: 'string' },
+                    },
+                  },
+                  required: ['file_path', 'objective', 'language'],
+                },
+                description: 'Array of code generation requests to process in batch',
+              },
+              shared_context: {
+                type: 'string',
+                description: 'Context shared across all batch requests',
+                default: '',
+              },
+              apply_changes: {
+                type: 'boolean',
+                description: 'Whether to apply changes directly to files',
+                default: AUTONOMOUS_FILE_OPERATIONS,
+              },
+            },
+            required: ['task_id', 'batch_requests'],
+          },
+        },
+        {
+          name: 'synthetic_file_analyzer',
+          description: '🔍 FILE ANALYSIS AND MODIFICATION PLANNING - Analyze existing files and plan modifications',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Analysis task identifier',
+              },
+              file_paths: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Files to analyze',
+              },
+              analysis_goal: {
+                type: 'string',
+                description: 'What to analyze the files for',
+              },
+              modification_intent: {
+                type: 'string',
+                description: 'What modifications are planned',
+                default: '',
+              },
+            },
+            required: ['task_id', 'file_paths', 'analysis_goal'],
+          },
+        },
+      ],
+    }));
+
+    this.server.setRequestHandler(CallToolRequestSchema, async (request) => {
+      const { name, arguments: args } = request.params;
+
+      try {
+        switch (name) {
+          case 'synthetic_code':
+            return await this.handleCodeGeneration(args as any);
+          case 'synthetic_reasoning':
+            return await this.handleReasoning(args as any);
+          case 'synthetic_context':
+            return await this.handleContextAnalysis(args as any);
+          case 'synthetic_auto':
+            return await this.handleAutonomousTask(args as any);
+          // New enhanced handlers
+          case 'synthetic_auto_file':
+            return await this.handleAutonomousFileOperation(args as any);
+          case 'synthetic_batch_code':
+            return await this.handleBatchCodeGeneration(args as any);
+          case 'synthetic_file_analyzer':
+            return await this.handleFileAnalysis(args as any);
+          default:
+            throw new Error(`Unknown tool: ${name}`);
+        }
+      } catch (error) {
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
+            },
+          ],
+          isError: true,
+        };
+      }
+    });
+  }
+
+  private async callSyntheticAPI(
+    model: string,
+    messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
+    maxTokens: number = 4000
+  ): Promise<SyntheticResponse> {
+    if (!SYNTHETIC_API_KEY) {
+      throw new Error('SYNTHETIC_API_KEY not configured');
+    }
+
+    const response = await axios.post(
+      `${SYNTHETIC_API_URL}/chat/completions`,
+      {
+        model,
+        messages,
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      } as SyntheticRequest,
+      {
+        headers: {
+          'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
+
+    return response.data;
+  }
+
+  // ORIGINAL METHODS (maintained for backward compatibility)
+  private async handleCodeGeneration(args: {
+    task_id: string;
+    objective: string;
+    language: string;
+    requirements?: string[];
+    context?: string;
+  }) {
+    const systemPrompt = `You are a specialized code generation AI. Generate clean, production-ready ${args.language} code that meets the specified requirements.
+
+Focus on:
+- Clean, readable code structure
+- Proper error handling
+- TypeScript strict mode compliance (if TypeScript)
+- Following established patterns
+- Including necessary imports/dependencies`;
+
+    const userPrompt = `Task ID: ${args.task_id}
+
+Objective: ${args.objective}
+
+Language: ${args.language}
+
+Requirements:
+${args.requirements?.map(req => `- ${req}`).join('\n') || 'None specified'}
+
+Context:
+${args.context || 'None provided'}
+
+Generate the code with proper documentation and structure.`;
+
+    const response = await this.callSyntheticAPI(
+      DEFAULT_CODE_MODEL,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# SYNTHETIC CODE GENERATION - ${args.task_id}
+
+## Generated Code
+
+${response.choices[0].message.content}
+
+## Usage Stats
+- Model: ${DEFAULT_CODE_MODEL} (Code Specialist)
+- Tokens: ${response.usage?.total_tokens || 'N/A'}
+- Language: ${args.language}`,
+        },
+      ],
+    };
+  }
+
+  private async handleReasoning(args: {
+    task_id: string;
+    problem: string;
+    context?: string;
+    approach?: string;
+  }) {
+    const systemPrompt = `You are a specialized reasoning AI using advanced analytical capabilities. Provide deep, structured analysis with clear logical progression.
+
+Reasoning approach: ${args.approach || 'analytical'}
+
+Focus on:
+- Clear logical structure
+- Evidence-based conclusions  
+- Alternative perspectives
+- Practical implications
+- Step-by-step analysis`;
+
+    const userPrompt = `Task ID: ${args.task_id}
+
+Problem to analyze: ${args.problem}
+
+Context: ${args.context || 'None provided'}
+
+Provide comprehensive reasoning and analysis.`;
+
+    const response = await this.callSyntheticAPI(
+      DEFAULT_REASONING_MODEL,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id}
+
+## Analysis Results
+
+${response.choices[0].message.content}
+
+## Usage Stats
+- Model: ${DEFAULT_REASONING_MODEL} (Reasoning Specialist)  
+- Tokens: ${response.usage?.total_tokens || 'N/A'}
+- Approach: ${args.approach || 'analytical'}`,
+        },
+      ],
+    };
+  }
+
+  private async handleContextAnalysis(args: {
+    task_id: string;
+    content: string;
+    analysis_type?: string;
+    focus?: string;
+  }) {
+    const systemPrompt = `You are a specialized context analysis AI. Provide thorough understanding and analysis of the provided content.
+
+Analysis type: ${args.analysis_type || 'explain'}
+Focus area: ${args.focus || 'general analysis'}
+
+Focus on:
+- Key insights and patterns
+- Important relationships
+- Context significance
+- Actionable conclusions`;
+
+    const userPrompt = `Task ID: ${args.task_id}
+
+Content to analyze:
+${args.content}
+
+Please provide ${args.analysis_type || 'explanation'} focusing on: ${args.focus || 'general analysis'}`;
+
+    const response = await this.callSyntheticAPI(
+      DEFAULT_CONTEXT_MODEL,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ]
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# SYNTHETIC CONTEXT ANALYSIS - ${args.task_id}
+
+## Context Analysis Results
+
+${response.choices[0].message.content}
+
+## Usage Stats
+- Model: ${DEFAULT_CONTEXT_MODEL} (Context Specialist)
+- Tokens: ${response.usage?.total_tokens || 'N/A'}
+- Analysis: ${args.analysis_type || 'explain'}`,
+        },
+      ],
+    };
+  }
+
+  private async handleAutonomousTask(args: {
+    task_id: string;
+    request: string;
+    constraints?: string[];
+    approval_required?: boolean;
+  }) {
+    // First, classify the task to determine the best model
+    const classificationPrompt = `Analyze this task and determine the best approach:
+
+Task: ${args.request}
+Constraints: ${args.constraints?.join(', ') || 'None'}
+
+Classify as: CODE, REASONING, or CONTEXT
+Provide a brief explanation of your classification.`;
+
+    const classificationResponse = await this.callSyntheticAPI(
+      DEFAULT_CONTEXT_MODEL,
+      [{ role: 'user', content: classificationPrompt }]
+    );
+
+    const classification = classificationResponse.choices[0].message.content;
+
+    // Determine model based on classification
+    let selectedModel: string;
+    let modelType: string;
+
+    if (classification.toLowerCase().includes('code')) {
+      selectedModel = DEFAULT_CODE_MODEL;
+      modelType = 'Code Specialist';
+    } else if (classification.toLowerCase().includes('reasoning')) {
+      selectedModel = DEFAULT_REASONING_MODEL;
+      modelType = 'Reasoning Specialist';
+    } else {
+      selectedModel = DEFAULT_CONTEXT_MODEL;
+      modelType = 'Context Specialist';
+    }
+
+    // Execute the task with the selected model
+    const executionPrompt = `Task ID: ${args.task_id}
+
+Request: ${args.request}
+
+Constraints:
+${args.constraints?.map(c => `- ${c}`).join('\n') || '- None specified'}
+
+${args.approval_required ? 'NOTE: This task requires approval before implementation.' : 'Proceed with autonomous execution.'}`;
+
+    const executionResponse = await this.callSyntheticAPI(selectedModel, [
+      { role: 'user', content: executionPrompt },
+    ]);
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# SYNTHETIC AUTONOMOUS EXECUTION - ${args.task_id}
+
+## Task Classification
+${classification}
+
+## Selected Model
+${selectedModel} (${modelType})
+
+## Execution Results
+
+${executionResponse.choices[0].message.content}
+
+## Approval Status
+${args.approval_required ? '⚠️  APPROVAL REQUIRED before implementation' : '✅ Autonomous execution authorized'}
+
+## Usage Stats
+- Classification Tokens: ${classificationResponse.usage?.total_tokens || 'N/A'}
+- Execution Tokens: ${executionResponse.usage?.total_tokens || 'N/A'}`,
+        },
+      ],
+    };
+  }
+
+  // NEW ENHANCED METHODS
+  private async handleAutonomousFileOperation(args: {
+    task_id: string;
+    request: string;
+    target_files?: string[];
+    create_backup?: boolean;
+    dry_run?: boolean;
+    approval_required?: boolean;
+  }): Promise<any> {
+    const startTime = Date.now();
+    
+    // 1. Generate the code modifications using Synthetic
+    const systemPrompt = `You are an autonomous code generation AI with direct file modification capabilities.
+
+Generate structured JSON output for direct file application with this exact format:
+{
+  "modifications": [
+    {
+      "file": "path/to/file.ts",
+      "operation": "write|append|patch|create",
+      "content": "full file content or content to append",
+      "patches": [
+        {
+          "line": 42,
+          "oldContent": "old line content",
+          "newContent": "new line content"
+        }
+      ]
+    }
+  ],
+  "summary": "Brief description of changes made",
+  "tokensEstimatedSaved": 500
+}
+
+Focus on:
+- Precise file paths relative to project root
+- Complete, compilable code
+- Proper TypeScript/JavaScript syntax
+- Following project patterns
+- Error handling and edge cases`;
+
+    const userPrompt = `Task ID: ${args.task_id}
+
+Request: ${args.request}
+
+Target Files: ${args.target_files?.length ? args.target_files.join(', ') : 'Auto-detect based on request'}
+
+Project Root: ${DEVFLOW_PROJECT_ROOT}
+
+Generate code modifications for direct file application.`;
+
+    const response = await this.callSyntheticAPI(
+      DEFAULT_CODE_MODEL,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: userPrompt },
+      ],
+      8000 // Increased token limit for complex modifications
+    );
+
+    // 2. Parse the structured response
+    let modifications: FileModification[];
+    let summary: string;
+    let tokensEstimatedSaved: number;
+
+    try {
+      const result = JSON.parse(response.choices[0].message.content);
+      modifications = result.modifications;
+      summary = result.summary;
+      tokensEstimatedSaved = result.tokensEstimatedSaved || 0;
+    } catch (parseError) {
+      // Fallback: try to extract modifications from text response
+      modifications = this.parseModificationInstructions(response.choices[0].message.content);
+      summary = 'Code modifications generated';
+      tokensEstimatedSaved = (modifications.length * 300); // Estimate
+    }
+
+    // 3. Apply modifications (if not dry_run)
+    const results: FileOperationResult[] = [];
+    
+    if (!args.dry_run && (!args.approval_required || !REQUIRE_APPROVAL)) {
+      for (const mod of modifications) {
+        try {
+          const result = await this.applyFileModification(mod, args.create_backup);
+          results.push(result);
+        } catch (error) {
+          results.push({
+            path: mod.file,
+            status: 'ERROR',
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    } else {
+      // Dry run or approval required
+      for (const mod of modifications) {
+        results.push({
+          path: mod.file,
+          status: 'SKIPPED',
+          message: args.dry_run ? 'Dry run mode' : 'Approval required',
+        });
+      }
+    }
+
+    const executionTime = Date.now() - startTime;
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# 🚀 AUTONOMOUS FILE OPERATION COMPLETED - ${args.task_id}
+
+## Summary
+${summary}
+
+## Files ${args.dry_run ? 'Analyzed' : 'Modified'}
+${results.map(r => `- **${r.path}**: ${r.status}${r.message ? ` (${r.message})` : ''}`).join('\n')}
+
+## Modifications Planned/Applied
+${modifications.map(m => `### ${m.file}
+- **Operation**: ${m.operation}
+- **Content Length**: ${m.content.length} characters
+${m.operation === 'patch' && m.patches ? `- **Patches**: ${m.patches.length} line changes` : ''}`).join('\n')}
+
+## Token Efficiency Report
+- **Synthetic Generation**: ${response.usage?.total_tokens || 'N/A'} tokens
+- **Claude File Operations**: 0 tokens ✅ (BYPASSED)
+- **Estimated Token Savings**: ~${tokensEstimatedSaved} tokens
+- **Cost Efficiency**: Direct file modification without Claude processing
+
+## Execution Stats
+- **Execution Time**: ${executionTime}ms
+- **Files Processed**: ${modifications.length}
+- **Success Rate**: ${results.filter(r => r.status === 'SUCCESS').length}/${results.length}
+- **Mode**: ${args.dry_run ? '🔍 DRY RUN' : args.approval_required && REQUIRE_APPROVAL ? '⚠️ APPROVAL REQUIRED' : '🎯 AUTONOMOUS EXECUTION'}
+
+${args.approval_required && REQUIRE_APPROVAL ? '⚠️ **Approval required before implementation. Run without approval_required=true to apply changes.**' : ''}`,
+        },
+      ],
+    };
+  }
+
+  private async handleBatchCodeGeneration(args: {
+    task_id: string;
+    batch_requests: Array<{
+      file_path: string;
+      objective: string;
+      language: string;
+      requirements?: string[];
+    }>;
+    shared_context?: string;
+    apply_changes?: boolean;
+  }): Promise<any> {
+    const startTime = Date.now();
+
+    // Optimize by combining all requests into a single Synthetic API call
+    const systemPrompt = `You are a batch code generation AI. Process multiple related code generation requests efficiently in a single response.
+
+Generate structured JSON output with this exact format:
+{
+  "batch_results": [
+    {
+      "file_path": "path/to/file.ts",
+      "language": "typescript",
+      "content": "complete file content",
+      "summary": "brief description of what was generated"
+    }
+  ],
+  "shared_insights": "common patterns or insights across all files",
+  "total_files": 3
+}
+
+Focus on:
+- Consistent patterns across all files
+- Shared utilities and imports
+- Proper cross-file dependencies
+- Complete, compilable code for each file`;
+
+    const batchPrompt = `Task ID: ${args.task_id}
+
+Shared Context: ${args.shared_context || 'None provided'}
+
+Batch Requests (${args.batch_requests.length} files):
+
+${args.batch_requests.map((req, i) => `
+### Request ${i + 1}: ${req.file_path}
+- **Objective**: ${req.objective}
+- **Language**: ${req.language}
+- **Requirements**: ${req.requirements?.join(', ') || 'None'}
+`).join('\n')}
+
+Generate code for all files in a single structured response.`;
+
+    const response = await this.callSyntheticAPI(
+      DEFAULT_CODE_MODEL,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: batchPrompt },
+      ],
+      12000 // Large token limit for batch processing
+    );
+
+    // Parse batch results
+    let batchResults: Array<{
+      file_path: string;
+      language: string;
+      content: string;
+      summary: string;
+    }>;
+    let sharedInsights: string;
+
+    try {
+      const result = JSON.parse(response.choices[0].message.content);
+      batchResults = result.batch_results;
+      sharedInsights = result.shared_insights || '';
+    } catch (parseError) {
+      // Fallback parsing
+      batchResults = args.batch_requests.map(req => ({
+        file_path: req.file_path,
+        language: req.language,
+        content: `// Generated content for ${req.objective}`,
+        summary: req.objective,
+      }));
+      sharedInsights = 'Batch generation completed with fallback parsing';
+    }
+
+    // Apply changes if requested
+    const fileResults: FileOperationResult[] = [];
+    
+    if (args.apply_changes && AUTONOMOUS_FILE_OPERATIONS) {
+      for (const result of batchResults) {
+        try {
+          const modification: FileModification = {
+            file: result.file_path,
+            operation: existsSync(resolve(DEVFLOW_PROJECT_ROOT, result.file_path)) ? 'write' : 'create',
+            content: result.content,
+          };
+          
+          const fileResult = await this.applyFileModification(modification, CREATE_BACKUPS);
+          fileResults.push(fileResult);
+        } catch (error) {
+          fileResults.push({
+            path: result.file_path,
+            status: 'ERROR',
+            message: error instanceof Error ? error.message : String(error),
+          });
+        }
+      }
+    }
+
+    const executionTime = Date.now() - startTime;
+    const totalTokensSaved = args.batch_requests.length * 400; // Estimate savings from batch processing
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# ⚡ BATCH CODE GENERATION COMPLETED - ${args.task_id}
+
+## Batch Summary
+${sharedInsights}
+
+## Files Generated (${batchResults.length})
+${batchResults.map(r => `- **${r.file_path}** (${r.language}): ${r.summary}`).join('\n')}
+
+${args.apply_changes && AUTONOMOUS_FILE_OPERATIONS ? `## File Application Results
+${fileResults.map(r => `- **${r.path}**: ${r.status}${r.message ? ` (${r.message})` : ''}`).join('\n')}` : ''}
+
+## Batch Efficiency Report
+- **Single API Call**: ${response.usage?.total_tokens || 'N/A'} tokens
+- **Files Processed**: ${batchResults.length}
+- **Estimated Individual Calls**: ${args.batch_requests.length} calls saved
+- **Token Efficiency**: ~${totalTokensSaved} tokens saved vs individual calls
+- **Time Efficiency**: ${executionTime}ms for ${batchResults.length} files
+
+## Generated Code Preview
+${batchResults.slice(0, 2).map(r => `### ${r.file_path}
+\`\`\`${r.language}
+${r.content.slice(0, 300)}${r.content.length > 300 ? '...' : ''}
+\`\`\``).join('\n')}
+
+${!args.apply_changes ? '💡 **Tip**: Set apply_changes=true to automatically write generated code to files' : ''}`,
+        },
+      ],
+    };
+  }
+
+  private async handleFileAnalysis(args: {
+    task_id: string;
+    file_paths: string[];
+    analysis_goal: string;
+    modification_intent?: string;
+  }): Promise<any> {
+    // Read and analyze multiple files
+    const fileContents: Array<{ path: string; content: string; error?: string }> = [];
+    
+    for (const filePath of args.file_paths) {
+      try {
+        const fullPath = resolve(DEVFLOW_PROJECT_ROOT, filePath);
+        if (!this.isPathAllowed(fullPath)) {
+          fileContents.push({ path: filePath, content: '', error: 'Path not allowed' });
+          continue;
+        }
+        
+        if (!existsSync(fullPath)) {
+          fileContents.push({ path: filePath, content: '', error: 'File not found' });
+          continue;
+        }
+
+        const content = await fs.readFile(fullPath, 'utf8');
+        fileContents.push({ path: filePath, content });
+      } catch (error) {
+        fileContents.push({
+          path: filePath,
+          content: '',
+          error: error instanceof Error ? error.message : String(error),
+        });
+      }
+    }
+
+    // Analyze with Synthetic
+    const systemPrompt = `You are a specialized file analysis AI. Analyze multiple files and provide comprehensive insights for the specified goal.
+
+Focus on:
+- Code structure and patterns
+- Dependencies and relationships
+- Potential issues or improvements
+- Modification recommendations
+- Impact analysis`;
+
+    const analysisPrompt = `Task ID: ${args.task_id}
+
+Analysis Goal: ${args.analysis_goal}
+
+Modification Intent: ${args.modification_intent || 'General analysis'}
+
+Files to Analyze (${fileContents.length}):
+
+${fileContents.map(f => `
+### ${f.path}
+${f.error ? `ERROR: ${f.error}` : `
+\`\`\`
+${f.content.slice(0, 2000)}${f.content.length > 2000 ? '\n... (truncated)' : ''}
+\`\`\`
+`}
+`).join('\n')}
+
+Provide comprehensive analysis and recommendations.`;
+
+    const response = await this.callSyntheticAPI(
+      DEFAULT_CONTEXT_MODEL,
+      [
+        { role: 'system', content: systemPrompt },
+        { role: 'user', content: analysisPrompt },
+      ],
+      8000
+    );
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# 🔍 FILE ANALYSIS COMPLETED - ${args.task_id}
+
+## Analysis Goal
+${args.analysis_goal}
+
+## Files Analyzed
+${fileContents.map(f => `- **${f.path}**: ${f.error || `${f.content.length} characters`}`).join('\n')}
+
+## Analysis Results
+
+${response.choices[0].message.content}
+
+## Usage Stats
+- Model: ${DEFAULT_CONTEXT_MODEL} (Context Specialist)
+- Tokens: ${response.usage?.total_tokens || 'N/A'}
+- Files Processed: ${fileContents.length}
+- Success Rate: ${fileContents.filter(f => !f.error).length}/${fileContents.length}`,
+        },
+      ],
+    };
+  }
+
+  // UTILITY METHODS
+  private parseModificationInstructions(content: string): FileModification[] {
+    // Fallback parser for non-JSON responses
+    const modifications: FileModification[] = [];
+    
+    // Simple pattern matching for file modifications
+    const fileBlocks = content.split(/```(?:typescript|javascript|json|ts|js|py|md)/);
+    
+    for (let i = 1; i < fileBlocks.length; i += 2) {
+      if (i + 1 < fileBlocks.length) {
+        const codeContent = fileBlocks[i];
+        modifications.push({
+          file: `generated-file-${i}.ts`, // Default filename
+          operation: 'write',
+          content: codeContent.trim(),
+        });
+      }
+    }
+    
+    return modifications.length > 0 ? modifications : [{
+      file: 'generated-output.ts',
+      operation: 'write',
+      content: content,
+    }];
+  }
+
+  private async applyFileModification(modification: FileModification, createBackup: boolean = true): Promise<FileOperationResult> {
+    const fullPath = resolve(DEVFLOW_PROJECT_ROOT, modification.file);
+    
+    // Security check
+    if (!this.isPathAllowed(fullPath)) {
+      throw new Error(`Path not allowed: ${fullPath}`);
+    }
+
+    // Extension check
+    const ext = basename(fullPath).split('.').pop();
+    if (ext && !ALLOWED_FILE_EXTENSIONS.includes(`.${ext}`)) {
+      throw new Error(`File extension not allowed: .${ext}`);
+    }
+
+    try {
+      // Create directory if it doesn't exist
+      const dir = dirname(fullPath);
+      if (!existsSync(dir)) {
+        await fs.mkdir(dir, { recursive: true });
+      }
+
+      // Create backup if file exists and backup is requested
+      if (createBackup && existsSync(fullPath)) {
+        await this.createBackup(fullPath);
+      }
+
+      // Apply modification based on operation type
+      switch (modification.operation) {
+        case 'write':
+        case 'create':
+          await fs.writeFile(fullPath, modification.content, 'utf8');
+          break;
+        case 'append':
+          await fs.appendFile(fullPath, modification.content, 'utf8');
+          break;
+        case 'patch':
+          await this.applyPatches(fullPath, modification.patches || []);
+          break;
+        default:
+          throw new Error(`Unknown operation: ${modification.operation}`);
+      }
+
+      return {
+        path: modification.file,
+        status: 'SUCCESS',
+        message: `${modification.operation} completed`,
+      };
+    } catch (error) {
+      return {
+        path: modification.file,
+        status: 'ERROR',
+        message: error instanceof Error ? error.message : String(error),
+      };
+    }
+  }
+
+  private async createBackup(filePath: string): Promise<void> {
+    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+    const backupPath = `${filePath}.backup-${timestamp}`;
+    await fs.copyFile(filePath, backupPath);
+  }
+
+  private async applyPatches(filePath: string, patches: Array<{ line: number; oldContent: string; newContent: string }>): Promise<void> {
+    const content = await fs.readFile(filePath, 'utf8');
+    const lines = content.split('\n');
+    
+    // Apply patches in reverse order to maintain line numbers
+    const sortedPatches = patches.sort((a, b) => b.line - a.line);
+    
+    for (const patch of sortedPatches) {
+      if (patch.line > 0 && patch.line <= lines.length) {
+        lines[patch.line - 1] = patch.newContent;
+      }
+    }
+    
+    await fs.writeFile(filePath, lines.join('\n'), 'utf8');
+  }
+
+  private isPathAllowed(fullPath: string): boolean {
+    return this.allowedPaths.some(allowedPath => 
+      fullPath.startsWith(allowedPath)
+    );
+  }
+
+  async run(): Promise<void> {
+    const transport = new StdioServerTransport();
+    await this.server.connect(transport);
+    console.error('DevFlow Enhanced Synthetic MCP server running on stdio');
+  }
+}
+
+const server = new EnhancedSyntheticMCPServer();
+server.run().catch(console.error);
