@@ -41,7 +41,6 @@ const ALLOWED_FILE_EXTENSIONS = process.env.ALLOWED_FILE_EXTENSIONS?.split(',') 
 const DEFAULT_CODE_MODEL = process.env.DEFAULT_CODE_MODEL || 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct';
 const DEFAULT_REASONING_MODEL = process.env.DEFAULT_REASONING_MODEL || 'hf:deepseek-ai/DeepSeek-V3';
 const DEFAULT_CONTEXT_MODEL = process.env.DEFAULT_CONTEXT_MODEL || 'hf:Qwen/Qwen2.5-Coder-32B-Instruct';
-const DEFAULT_QA_DEPLOYMENT_MODEL = process.env.DEFAULT_QA_DEPLOYMENT_MODEL || 'hf:Qwen/Qwen2.5-Coder-32B-Instruct';
 
 interface StorageMode {
   mode: 'cc-sessions' | 'multi-layer';
@@ -159,12 +158,6 @@ export class DualEnhancedSyntheticMCPServer {
                 items: { type: 'string' },
                 description: 'Specific files to modify (optional - will auto-detect)',
                 default: [],
-              },
-              agent_type: {
-                type: 'string',
-                enum: ['code', 'reasoning', 'context', 'qa-deployment'],
-                description: 'Agent specialization: code (Qwen3-Coder-480B), reasoning (DeepSeek-V3), context (Qwen2.5-Coder-32B), qa-deployment (Qwen2.5-Coder-32B for testing/docs/deployment)',
-                default: 'code',
               },
               storage_integration: {
                 type: 'boolean',
@@ -294,20 +287,15 @@ export class DualEnhancedSyntheticMCPServer {
     task_id: string;
     request: string;
     target_files?: string[];
-    agent_type?: 'code' | 'reasoning' | 'context' | 'qa-deployment';
     storage_integration?: boolean;
     create_backup?: boolean;
     dry_run?: boolean;
   }): Promise<any> {
     const startTime = Date.now();
     
-    // Select model based on agent_type
-    const selectedModel = this.selectModelByAgentType(args.agent_type || 'code');
-    
-    // Enhanced system prompt with agent specialization
-    const systemPrompt = `You are a dual-mode autonomous ${this.getAgentSpecialization(args.agent_type || 'code')} AI that works with both cc-sessions (.md files) and multi-layer (SQLite + Vector) storage systems.
+    // Enhanced system prompt with storage awareness
+    const systemPrompt = `You are a dual-mode autonomous code generation AI that works with both cc-sessions (.md files) and multi-layer (SQLite + Vector) storage systems.
 
-Agent Type: ${args.agent_type || 'code'}
 Current Storage Mode: ${this.storageMode.mode}
 Storage Integration: ${args.storage_integration ? 'ENABLED' : 'DISABLED'}
 
@@ -348,7 +336,7 @@ Integration: ${args.storage_integration ? 'Full storage integration' : 'File ope
 Generate code modifications optimized for current storage system.`;
 
     const response = await this.callSyntheticAPI(
-      selectedModel,
+      DEFAULT_CODE_MODEL,
       [
         { role: 'system', content: systemPrompt },
         { role: 'user', content: userPrompt },
@@ -621,36 +609,6 @@ ${this.storageMode.description}
     return this.allowedPaths.some(allowedPath => 
       fullPath.startsWith(allowedPath)
     );
-  }
-
-  private selectModelByAgentType(agentType: 'code' | 'reasoning' | 'context' | 'qa-deployment'): string {
-    switch (agentType) {
-      case 'code':
-        return DEFAULT_CODE_MODEL;
-      case 'reasoning':
-        return DEFAULT_REASONING_MODEL;
-      case 'context':
-        return DEFAULT_CONTEXT_MODEL;
-      case 'qa-deployment':
-        return DEFAULT_QA_DEPLOYMENT_MODEL;
-      default:
-        return DEFAULT_CODE_MODEL;
-    }
-  }
-
-  private getAgentSpecialization(agentType: 'code' | 'reasoning' | 'context' | 'qa-deployment'): string {
-    switch (agentType) {
-      case 'code':
-        return 'code generation and implementation';
-      case 'reasoning':
-        return 'architectural analysis and complex reasoning';
-      case 'context':
-        return 'context analysis and documentation';
-      case 'qa-deployment':
-        return 'testing, debugging, deployment, and documentation';
-      default:
-        return 'code generation';
-    }
   }
 
   async run(): Promise<void> {
