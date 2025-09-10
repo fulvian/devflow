@@ -182,6 +182,18 @@ CREATE TABLE cost_analytics (
 -- ============================================================================
 
 -- Knowledge entities - Long-term learning from development patterns
+CREATE TABLE context_groups (
+  id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
+  task_id TEXT NOT NULL REFERENCES task_contexts(id),
+  session_id TEXT NOT NULL,
+  platform TEXT NOT NULL CHECK(platform IN ('claude_code', 'openai_codex', 'gemini_cli', 'cursor', 'openrouter')),
+  context_type TEXT NOT NULL CHECK(context_type IN ('code', 'reasoning', 'architectural', 'mixed')),
+  created_at TEXT DEFAULT (datetime('now', 'utc')),
+  compressed BOOLEAN DEFAULT FALSE,
+  original_size INTEGER,
+  compressed_size INTEGER
+);
+
 CREATE TABLE knowledge_entities (
     id TEXT PRIMARY KEY DEFAULT (lower(hex(randomblob(16)))),
     entity_type TEXT NOT NULL CHECK(entity_type IN ('person', 'technology', 'pattern', 'antipattern', 'rule', 'preference')),
@@ -222,6 +234,10 @@ CREATE TABLE entity_relationships (
     
     UNIQUE(source_entity_id, target_entity_id, relationship_type)
 );
+
+CREATE INDEX idx_context_group_task ON context_groups(task_id);
+CREATE INDEX idx_context_group_session ON context_groups(session_id);
+CREATE INDEX idx_context_group_type ON context_groups(context_type);
 
 -- ============================================================================
 -- FULL-TEXT SEARCH AND SEMANTIC CAPABILITIES
