@@ -15,7 +15,7 @@ import {
 import axios from 'axios';
 import * as dotenv from 'dotenv';
 import { promises as fs } from 'fs';
-import { join, resolve, dirname, basename } from 'path';
+import { join, resolve, dirname, basename, extname } from 'path';
 import { existsSync } from 'fs';
 
 dotenv.config();
@@ -612,9 +612,70 @@ ${this.storageMode.description}
   }
 
   private async createBackup(filePath: string): Promise<void> {
-    const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
-    const backupPath = `${filePath}.backup-${timestamp}`;
-    await fs.copyFile(filePath, backupPath);
+    try {
+      // Create centralized backup directory structure: /backups/YYYY-MM-DD/
+      const now = new Date();
+      const dateStr = now.toISOString().split('T')[0]; // YYYY-MM-DD
+      const timeStr = now.toISOString().replace(/[:.]/g, '-').split('.')[0]; // YYYY-MM-DDTHH-mm-ss
+      
+      const backupDir = join(DEVFLOW_PROJECT_ROOT, 'backups', dateStr);
+      await fs.mkdir(backupDir, { recursive: true });
+      
+      // Create backup with format: original-name_YYYY-MM-DD-HH-mm-ss.backup
+      const originalName = basename(filePath, extname(filePath));
+      const extension = extname(filePath);
+      const backupFileName = `${originalName}_${timeStr}${extension}.backup`;
+      const backupPath = join(backupDir, backupFileName);
+      
+      await fs.copyFile(filePath, backupPath);
+      console.log(`[BACKUP] Created: ${backupPath}`);
+      
+      // Cleanup old backups (older than 24 hours)
+      await this.cleanupOldBackups();
+      
+    } catch (error) {
+      console.error(`[BACKUP ERROR] Failed to create backup for ${filePath}:`, error);
+      // Fallback to old system in case of error
+      const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+      const fallbackPath = `${filePath}.backup-${timestamp}`;
+      await fs.copyFile(filePath, fallbackPath);
+    }
+  }
+  
+  private async cleanupOldBackups(): Promise<void> {
+    try {
+      const backupsRoot = join(DEVFLOW_PROJECT_ROOT, 'backups');
+      if (!existsSync(backupsRoot)) return;
+      
+      const cutoffTime = Date.now() - (24 * 60 * 60 * 1000); // 24 hours ago
+      const entries = await fs.readdir(backupsRoot, { withFileTypes: true });
+      
+      for (const entry of entries) {
+        if (entry.isDirectory()) {
+          const dirPath = join(backupsRoot, entry.name);
+          const files = await fs.readdir(dirPath);
+          
+          for (const file of files) {
+            const filePath = join(dirPath, file);
+            const stats = await fs.stat(filePath);
+            
+            if (stats.mtime.getTime() < cutoffTime) {
+              await fs.unlink(filePath);
+              console.log(`[CLEANUP] Removed old backup: ${filePath}`);
+            }
+          }
+          
+          // Remove empty directories
+          const remainingFiles = await fs.readdir(dirPath);
+          if (remainingFiles.length === 0) {
+            await fs.rmdir(dirPath);
+            console.log(`[CLEANUP] Removed empty backup directory: ${dirPath}`);
+          }
+        }
+      }
+    } catch (error) {
+      console.error('[CLEANUP ERROR] Failed to cleanup old backups:', error);
+    }
   }
 
   private isPathAllowed(fullPath: string): boolean {
