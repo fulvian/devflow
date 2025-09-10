@@ -7,7 +7,7 @@
 // CORE MEMORY INTERFACES
 // ============================================================================
 
-export type Platform = 'claude_code' | 'openai_codex' | 'gemini_cli' | 'cursor' | 'openrouter';
+export type Platform = 'claude_code' | 'openai_codex' | 'codex' | 'synthetic' | 'gemini_cli' | 'gemini' | 'cursor' | 'openrouter';
 export type TaskPriority = 'h-' | 'm-' | 'l-' | '?-';
 export type TaskStatus = 'planning' | 'active' | 'blocked' | 'completed' | 'archived';
 export type BlockType = 'architectural' | 'implementation' | 'debugging' | 'maintenance' | 'context' | 'decision' | 'emergency_context' | 'context_snapshot';
@@ -136,6 +136,11 @@ export interface CoordinationSession {
 }
 
 export interface HandoffContext {
+  platform: Platform;
+  task: string;
+  context?: string;
+  preserveArchitecture: boolean;
+  timestamp: Date;
   preservedDecisions: string[];
   contextSummary: string;
   nextSteps: string[];
@@ -471,3 +476,28 @@ export type DatabaseEntity<T> = T & {
   readonly createdAt: Date;
   updatedAt: Date;
 };
+
+// ============================================================================
+// DEVFLOW INTEGRATION TYPES
+// ============================================================================
+
+/**
+ * Search query for DevFlow semantic search
+ */
+export interface SearchQuery {
+  query: string;
+  maxResults?: number;
+  blockTypes?: BlockType[];
+  threshold?: number;
+  taskId?: string;
+  sessionId?: string;
+}
+
+/**
+ * Search result from DevFlow semantic search
+ */
+export interface SearchResult {
+  block: MemoryBlock;
+  similarity: number;
+  searchType: 'vector' | 'text' | 'task' | 'session' | 'importance';
+}

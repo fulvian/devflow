@@ -15,7 +15,7 @@ import { getDB } from '../database/connection.js';
 import { ensureMigrations } from '../database/migrations.js';
 import { BlockService } from './blocks.js';
 import { ContextService } from './contexts.js';
-import { SessionService } from './sessions.js';
+// import { SessionService } from './sessions.js';
 import { SearchService } from './search.js';
 import { SemanticSearchService } from './semantic.js';
 import { VectorEmbeddingService } from '../ml/VectorEmbeddingService.js';
@@ -30,10 +30,11 @@ export class SQLiteMemoryManager implements MemoryManager {
   constructor(dbPath?: string) {
     const db = dbPath ? getDB({ path: dbPath }) : getDB();
     ensureMigrations(db);
-    this.blockSvc = new BlockService(db);
+    const vectorService = new VectorEmbeddingService();
+    this.blockSvc = new BlockService(db, vectorService);
     this.ctxSvc = new ContextService(db);
     this.searchSvc = new SearchService(db);
-    this.semanticSvc = new SemanticSearchService(db, this.searchSvc, new VectorEmbeddingService());
+    this.semanticSvc = new SemanticSearchService(db, this.searchSvc, vectorService);
   }
 
   async initialize(): Promise<void> {
@@ -65,15 +66,15 @@ export class SQLiteMemoryManager implements MemoryManager {
     await this.storeMemoryBlock(block);
   }
 
-  async retrieveEmergencyContext(taskId: string, sessionId: string): Promise<any> {
+  async retrieveEmergencyContext(taskId: string, _sessionId: string): Promise<any> {
     const blocks = this.blockSvc.find({
-      taskIds: [taskId],
+      taskId: taskId,
       blockTypes: ['emergency_context'],
       platforms: ['claude_code']
     });
     
     const emergencyBlock = blocks.find(block => 
-      block.metadata?.emergency === true && 
+      block.metadata?.['emergency'] === true && 
       block.label?.includes('Emergency Context')
     );
     
@@ -94,40 +95,10 @@ export class SQLiteMemoryManager implements MemoryManager {
   }
 
   async storeMemoryBlock(block: Omit<MemoryBlock, 'id' | 'createdAt' | 'lastAccessed' | 'accessCount'>): Promise<string> {
-    const blockId = this.blockSvc.create(block);
-    
-    // Generate embedding for the new block in background
-    this.generateBlockEmbedding(blockId).catch(error => {
-      console.warn(`Failed to generate embedding for block ${blockId}:`, error);
-    });
-    
-    return blockId;
+    // Use the async create method which now handles embedding generation automatically
+    return await this.blockSvc.create(block);
   }
 
-  /**
-   * Generate and store embedding for a memory block
-   */
-  private async generateBlockEmbedding(blockId: string): Promise<void> {
-    try {
-      const block = (await this.retrieveMemoryBlocks({ limit: 1 })).find(b => b.id === blockId);
-      if (!block) return;
-
-      const vectorService = new VectorEmbeddingService();
-      const embedding = await vectorService.embedText(block.content);
-      
-      // Store embedding in the vector service's database tables
-      await vectorService.storeMemoryBlockEmbedding(blockId, embedding);
-      
-      // Also store embedding directly in memory_blocks table for performance
-      this.blockSvc.update(blockId, {
-        embedding,
-        embeddingModel: vectorService.defaultModel
-      });
-    } catch (error) {
-      console.error(`Error generating embedding for block ${blockId}:`, error);
-      // Don't throw - embedding generation failure shouldn't break block storage
-    }
-  }
   async retrieveMemoryBlocks(query: MemoryQuery): Promise<MemoryBlock[]> {
     return this.blockSvc.find(query);
   }
@@ -187,11 +158,11 @@ export class SQLiteMemoryManager implements MemoryManager {
     `);
     stmt.run(
       new Date().toISOString(),
-      metrics.durationSeconds,
-      metrics.tokensUsed,
-      metrics.apiCalls,
-      metrics.costUsd,
-      metrics.errorsEncountered,
+      (metrics as any).durationSeconds || 0,
+      (metrics as any).tokensUsed || 0,
+      (metrics as any).apiCalls || 0,
+      (metrics as any).costUsd || 0,
+      (metrics as any).errorsEncountered || 0,
       sessionId
     );
   }
@@ -233,19 +204,6 @@ export class SQLiteMemoryManager implements MemoryManager {
   // CCR Integration Methods
   async getAllMemoryBlocks(): Promise<MemoryBlock[]> {
     return this.blockSvc.getAllBlocks();
-  }
-
-  async retrieveEmergencyContext(taskId: string): Promise<any> {
-    const blocks = await this.blockSvc.find({
-      taskIds: [taskId],
-      blockTypes: ['emergency_context'],
-      limit: 1
-    });
-    
-    if (blocks.length > 0) {
-      return JSON.parse(blocks[0].content);
-    }
-    return null;
   }
 
   async storeContextSnapshot(snapshot: any): Promise<void> {

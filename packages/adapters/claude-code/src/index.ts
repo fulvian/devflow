@@ -6,3 +6,6 @@ export * from './context/injector.js';
 export * from './filesystem/watcher.js';
 export * from './filesystem/debouncer.js';
 export * from './filesystem/safe-ops.js';
+export { DevFlowMCPServer, type DevFlowMCPServerConfig } from './mcp-server.js';
+export { SemanticSearchService, type SemanticSearchConfig } from './semantic-search.js';
+export { PlatformHandoffEngine, type HandoffCommand } from './handoff-engine.js';

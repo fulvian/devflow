@@ -15,7 +15,7 @@ import type Database from 'better-sqlite3';
  */
 export class SemanticSearchService {
   constructor(
-    private readonly db: Database.Database,
+    private readonly _db: Database.Database,
     private readonly searchService: SearchService,
     private readonly vectorService: VectorEmbeddingService
   ) {}
@@ -243,8 +243,8 @@ export class SemanticSearchService {
         // Merge: prefer the vector result's embedding and metadata
         merged.set(result.block.id, {
           ...existing,
-          embedding: result.block.embedding ?? existing.embedding,
-          embeddingModel: result.block.embeddingModel ?? existing.embeddingModel
+          embedding: result.block.embedding || existing.embedding || new Float32Array(),
+          embeddingModel: result.block.embeddingModel ?? existing.embeddingModel ?? 'openai-ada-002'
         });
       } else {
         merged.set(result.block.id, result.block);

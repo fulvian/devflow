@@ -6,7 +6,9 @@
     "declarationMap": true,
     "outDir": "./dist",
     "rootDir": "./src",
-    "tsBuildInfoFile": "./dist/.tsbuildinfo-claude-adapter"
+    "tsBuildInfoFile": "./dist/.tsbuildinfo-claude-adapter",
+    "noUnusedLocals": false,
+    "noUnusedParameters": false
   },
   "include": ["src/**/*"],
   "references": [

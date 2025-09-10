@@ -16,6 +16,16 @@ export interface UniversalContextFormat {
     cost?: number;
     quality?: number;
     source?: string;
+    conflictResolved?: boolean;
+    compressed?: boolean;
+    originalSize?: number;
+    compressionRatio?: number;
+    optimized?: boolean;
+    strategy?: string;
+    compressedSize?: number;
+    decompressed?: boolean;
+    originalVersions?: number[];
+    mergedFrom?: string[];
   };
 }
 
@@ -32,4 +42,12 @@ export interface SyncStatus {
   pendingUpdates: number;
   conflicts: number;
   isOnline: boolean;
+}
+
+export interface TaskContext {
+  taskId: string;
+  sessionId: string;
+  context: any;
+  timestamp: Date;
+  platform: string;
 }

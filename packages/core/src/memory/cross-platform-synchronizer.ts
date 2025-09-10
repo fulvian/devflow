@@ -4,7 +4,7 @@
  * Implements <200ms synchronization target
  */
 
-import { UniversalContextFormat, ContextSyncEvent, SyncStatus } from './universal-context-format.js';
+import type { UniversalContextFormat, ContextSyncEvent, SyncStatus } from './universal-context-format.js';
 import { ConflictResolver } from './conflict-resolver.js';
 import { ContextOptimizer } from './context-optimizer.js';
 import { SQLiteStorage } from './sqlite-storage.js';

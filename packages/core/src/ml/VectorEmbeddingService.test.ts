@@ -198,8 +198,8 @@ describe('VectorEmbeddingService', () => {
       const embedding1 = await service.getMemoryBlockEmbedding('block-1');
       const embedding2 = await service.getMemoryBlockEmbedding('block-2');
 
-      expect(embedding1).toEqual(blocks[0].embedding);
-      expect(embedding2).toEqual(blocks[1].embedding);
+      expect(embedding1).toEqual(blocks[0]?.embedding);
+      expect(embedding2).toEqual(blocks[1]?.embedding);
     });
   });
 
@@ -241,7 +241,7 @@ describe('VectorEmbeddingService', () => {
       await service.storeEntityEmbeddings(entities);
       const retrieved = await service.getEntityEmbedding('entity-1');
 
-      expect(retrieved).toEqual(entities[0].embedding);
+      expect(retrieved).toEqual(entities[0]?.embedding);
     });
   });
 
@@ -347,8 +347,8 @@ describe('VectorEmbeddingService', () => {
       const results = await service.findSimilarMemoryBlocks(queryEmbedding, options);
 
       expect(results).toHaveLength(1); // Only first block should be similar enough
-      expect(results[0].block.id).toBe('search-block-1');
-      expect(results[0].similarity).toBeGreaterThan(0.5);
+      expect(results[0]?.block.id).toBe('search-block-1');
+      expect(results[0]?.similarity).toBeGreaterThan(0.5);
     });
 
     it('should perform semantic search with text query', async () => {

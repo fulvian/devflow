@@ -223,7 +223,7 @@ export class ContextPreservation {
   /**
    * Extract task context
    */
-  private async extractTaskContext(taskId: string): Promise<TaskContext | null> {
+  private async extractTaskContext(taskId: string): Promise<any | null> {
     return await this.memory.getTaskContext(taskId);
   }
 
@@ -274,7 +274,7 @@ export class ContextPreservation {
   private calculateContextSize(
     memoryBlocks: MemoryBlock[],
     sessionState: Record<string, unknown>,
-    taskContext: TaskContext | null,
+    taskContext: any | null,
     platformState: Record<string, unknown>
   ): number {
     let totalSize = 0;
@@ -395,7 +395,7 @@ export class ContextPreservation {
   /**
    * Inject context into Claude Code
    */
-  private async injectIntoClaudeCode(context: PreservedContext): Promise<void> {
+  private async injectIntoClaudeCode(_context: PreservedContext): Promise<void> {
     // Implementation would integrate with cc-sessions hooks
     console.log('[ContextPreservation] Injecting into Claude Code via cc-sessions');
   }
@@ -403,7 +403,7 @@ export class ContextPreservation {
   /**
    * Inject context into OpenAI Codex
    */
-  private async injectIntoOpenAICodex(context: PreservedContext): Promise<void> {
+  private async injectIntoOpenAICodex(_context: PreservedContext): Promise<void> {
     // Implementation would integrate with OpenAI API
     console.log('[ContextPreservation] Injecting into OpenAI Codex via API');
   }
@@ -411,7 +411,7 @@ export class ContextPreservation {
   /**
    * Inject context into Synthetic
    */
-  private async injectIntoSynthetic(context: PreservedContext): Promise<void> {
+  private async injectIntoSynthetic(_context: PreservedContext): Promise<void> {
     // Implementation would integrate with Synthetic.new API
     console.log('[ContextPreservation] Injecting into Synthetic via API');
   }

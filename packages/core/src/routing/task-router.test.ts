@@ -4,7 +4,7 @@
  * Testing implementation with mock coordinator
  */
 
-import { AdvancedTaskRouter, SimpleTaskClassifier, PlatformSpecializationMatrix, MultiPlatformCoordinator } from './advanced-task-router';
+import { AdvancedTaskRouter, SimpleTaskClassifier, PlatformSpecializationMatrix, type MultiPlatformCoordinator } from './advanced-task-router.js';
 
 // Mock MultiPlatformCoordinator for testing
 class MockMultiPlatformCoordinator implements MultiPlatformCoordinator {
@@ -64,17 +64,17 @@ async function runTaskRouterTests() {
 
     for (let i = 0; i < testCases.length; i++) {
         const testCase = testCases[i];
-        console.log(`\n📝 Test Case ${i + 1}: "${testCase.description.substring(0, 50)}..."`);
+        console.log(`\n📝 Test Case ${i + 1}: "${testCase?.description.substring(0, 50)}..."`);
 
         try {
-            const result = await router.route(testCase.description, {}, {});
+            const result = await router.route(testCase?.description || '', {}, {});
             
             console.log(`   Classification: ${result.classification.type} (${(result.classification.confidence * 100).toFixed(0)}% confidence)`);
             console.log(`   Routing: ${result.platform}/${result.agent} (${(result.confidence * 100).toFixed(0)}% confidence)`);
             
             // Validate results
-            const classificationCorrect = result.classification.type === testCase.expectedType;
-            const platformCorrect = result.platform === testCase.expectedPlatform;
+            const classificationCorrect = result.classification.type === testCase?.expectedType;
+            const platformCorrect = result.platform === testCase?.expectedPlatform;
             
             if (classificationCorrect && platformCorrect) {
                 console.log(`   ✅ PASSED`);
@@ -82,10 +82,10 @@ async function runTaskRouterTests() {
             } else {
                 console.log(`   ❌ FAILED`);
                 if (!classificationCorrect) {
-                    console.log(`      Expected classification: ${testCase.expectedType}, got: ${result.classification.type}`);
+                    console.log(`      Expected classification: ${testCase?.expectedType}, got: ${result.classification.type}`);
                 }
                 if (!platformCorrect) {
-                    console.log(`      Expected platform: ${testCase.expectedPlatform}, got: ${result.platform}`);
+                    console.log(`      Expected platform: ${testCase?.expectedPlatform}, got: ${result.platform}`);
                 }
             }
             

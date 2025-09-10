@@ -30,6 +30,7 @@ export class SearchService {
 
   // Semantic search placeholder: uses FTS rank as similarity
   semantic(query: string, options: SemanticSearchOptions = {}): SemanticSearchResult[] {
+    // Fallback to keyword-only search
     const limit = options.maxResults ?? 20;
     const rows = this.db.prepare(`
       SELECT mb.* FROM memory_fts f
@@ -37,6 +38,7 @@ export class SearchService {
       WHERE memory_fts MATCH ?
       ORDER BY mb.rowid DESC LIMIT ?
     `).all(query, limit) as any[];
+    
     return rows.map(r => ({
       block: {
         id: r.id,
@@ -48,13 +50,14 @@ export class SearchService {
         metadata: JSON.parse(r.metadata ?? '{}'),
         importanceScore: r.importance_score,
         relationships: JSON.parse(r.relationships ?? '[]'),
+        embeddingModel: r.embedding_model ?? undefined,
         createdAt: new Date(r.created_at),
         lastAccessed: new Date(r.last_accessed),
         accessCount: r.access_count,
       } as MemoryBlock,
       similarity: 0.5,
-      relevance: 0.5,
+      relevanceScore: 0.5,
       context: r.content.substring(0, 200)
-    } as any));
+    }));
   }
 }

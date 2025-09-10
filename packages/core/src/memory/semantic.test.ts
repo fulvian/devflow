@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { SemanticSearchService } from './semantic.js';
 import { SearchService } from './search.js';
 import { VectorEmbeddingService } from '../ml/VectorEmbeddingService.js';
-import type { MemoryBlock } from '@devflow/shared';
+// import type { MemoryBlock } from '@devflow/shared';
 import { getDB, closeDB } from '../database/connection.js';
 import { runInitialSchema } from '../database/migrations.js';
 import { unlinkSync } from 'fs';

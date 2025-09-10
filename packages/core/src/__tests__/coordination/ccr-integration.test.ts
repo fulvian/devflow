@@ -142,7 +142,7 @@ describe('CCR Session Independence', () => {
       const handoff = await ccrManager.handleClaudeCodeLimit(taskId);
       
       expect(handoff.context.memoryBlocks).toHaveLength(1);
-      expect(handoff.context.memoryBlocks[0].content).toBe('This is a test architectural decision');
+      expect(handoff.context.memoryBlocks?.[0]?.content).toBe('This is a test architectural decision');
     });
   });
 
@@ -376,7 +376,7 @@ describe('CCR Session Independence', () => {
       // Verify handoff was successful
       expect(handoff.success).toBe(true);
       expect(handoff.context.memoryBlocks).toHaveLength(1);
-      expect(handoff.context.memoryBlocks[0].content).toBe('This is an integration test decision');
+      expect(handoff.context.memoryBlocks?.[0]?.content).toBe('This is an integration test decision');
 
       // Clean up
       await detector.stopMonitoring();

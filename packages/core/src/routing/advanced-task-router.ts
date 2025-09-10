@@ -108,7 +108,7 @@ export class PlatformSpecializationMatrix implements PlatformSpecializationMatri
                 return {
                     platform: 'Synthetic.new',
                     agent: this.getSyntheticAgentForTask(taskType),
-                    confidence: baseDecision.confidence * 0.9
+                    confidence: (baseDecision?.confidence || 0.5) * 0.9
                 };
             }
         }
@@ -118,14 +118,14 @@ export class PlatformSpecializationMatrix implements PlatformSpecializationMatri
             return {
                 platform: 'Synthetic.new',
                 agent: this.getSyntheticAgentForTask(taskType),
-                confidence: baseDecision.confidence * 0.95
+                confidence: (baseDecision?.confidence || 0.5) * 0.95
             };
         }
 
         return {
-            platform: baseDecision.platform,
-            agent: baseDecision.agent,
-            confidence: baseDecision.confidence
+            platform: baseDecision?.platform || 'synthetic',
+            agent: baseDecision?.agent || 'default',
+            confidence: baseDecision?.confidence || 0.5
         };
     }
 
@@ -143,10 +143,10 @@ export class PlatformSpecializationMatrix implements PlatformSpecializationMatri
 // PerformanceLearning Implementation
 export class PerformanceLearning implements PerformanceLearning {
     private db: Database.Database;
-    private dbPath: string;
+    // private _dbPath: string;
 
     constructor(dbPath: string = ':memory:') {
-        this.dbPath = dbPath;
+        // this._dbPath = dbPath;
         this.db = new Database.Database(dbPath);
         this.initializeDatabase();
     }
@@ -259,7 +259,7 @@ export class AdvancedTaskRouter {
         this.taskClassifier = new SimpleTaskClassifier();
         this.platformMatrix = new PlatformSpecializationMatrix();
         this.performanceLearning = new PerformanceLearning(dbPath);
-        this.coordinator = coordinator;
+        this.coordinator = coordinator!;
     }
 
     async route(taskDescription: string, constraints: any = {}, userPreferences: any = {}): Promise<TaskRoutingDecision> {

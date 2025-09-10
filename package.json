@@ -21,7 +21,12 @@
     "clean": "rimraf dist node_modules/.cache",
     "changeset": "changeset",
     "version-packages": "changeset version",
-    "release": "pnpm build && changeset publish"
+    "release": "pnpm build && changeset publish",
+    "devflow:start": "node start-devflow.mjs",
+    "devflow:test": "node test-devflow-integration.mjs",
+    "devflow:setup": "python3 .claude/hooks/setup-devflow.py",
+    "devflow:build": "pnpm build && pnpm devflow:test",
+    "devflow:status": "node devflow-status-report.mjs"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
@@ -51,6 +56,7 @@
     "vibe-coding"
   ],
   "dependencies": {
+    "@modelcontextprotocol/sdk": "*",
     "@musistudio/claude-code-router": "^1.0.49"
   }
 }
