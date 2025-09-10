@@ -27,3 +27,8 @@ test-results/
 .env
 .env
 .env
+*.bak
+*.backup
+backups/
+/tmp/devflow-backups/
+.DS_Store

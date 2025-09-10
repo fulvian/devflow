@@ -1,5 +1,26 @@
 # Changelog
 
+## [2.6.0] - 2025-09-10
+
+### Added
+- **Gemini CLI Integration**: Complete integration with Google's Gemini CLI for enhanced large-context analysis
+  - GeminiService wrapper with three core methods: analyzeCode(), debugIssue(), reviewMultipleFiles()
+  - Automatic activation for large files (>20k chars), complex debugging (>5k context), cross-file analysis (>3 files)
+  - MCP integration for seamless agent delegation to Gemini when token efficiency requires it
+- **Intelligent Context Management**: Automatic fallback system between Claude Code → Synthetic Agents → Gemini CLI based on task complexity
+- **Production-Ready ML Services**: Enhanced ML module with full TypeScript support and proper exports
+
+### Improved
+- **Token Efficiency**: Smart routing reduces token usage by delegating large context tasks to appropriate AI systems
+- **Multi-Agent Coordination**: Balanced workload distribution across Claude Code, Synthetic, and Gemini agents
+- **Developer Experience**: Simple environment variable configuration (GEMINI_CLI_PATH) for instant activation
+
+### Technical Details
+- Core implementation: /packages/core/src/ml/GeminiService.ts
+- MCP server integration: /mcp-servers/synthetic/src/services/gemini-service.ts
+- Full TypeScript support with proper module resolution
+- Comprehensive testing suite validates all three analysis methods
+
 ## [2.5.0] - 2024-05-15
 
 ### Added

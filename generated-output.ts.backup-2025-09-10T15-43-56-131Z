@@ -1,0 +1,68 @@
+Here's the structured JSON output for implementing the hybrid ranking algorithm:
+
+```json
+{
+  "modifications": [
+    {
+      "file": "src/search/hybridScoringAlgorithm.ts",
+      "operation": "create",
+      "content": "// Hybrid Search Ranking Algorithm Implementation\n// Combines BM25 (keyword) and cosine similarity (semantic) scores\n\nexport interface HybridSearchConfig {\n  // Weighting between keyword (BM25) and semantic (vector) scores (0.0-1.0)\n  alpha: number;\n  \n  // Reciprocal Rank Fusion parameter\n  rrfK?: number;\n  \n  // Minimum score threshold for results\n  minScoreThreshold: number;\n  \n  // Strategy for score normalization\n  normalizationStrategy: 'z-score' | 'min-max' | 'none';\n  \n  // Fusion method to use\n  fusionMethod: 'linear' | 'rrf' | 'learned';\n}\n\nexport interface SearchResult {\n  id: string;\n  bm25Score: number;\n  vectorScore: number;\n  [key: string]: any;\n}\n\n/**\n * Normalizes scores based on selected strategy\n */\nfunction normalizeScores(\n  results: SearchResult[], \n  strategy: HybridSearchConfig['normalizationStrategy'],\n  scoreField: 'bm25Score' | 'vectorScore'\n): SearchResult[] {\n  if (strategy === 'none' || results.length === 0) return results;\n  \n  const scores = results.map(r => r[scoreField]);\n  const min = Math.min(...scores);\n  const max = Math.max(...scores);\n  \n  return results.map(result => {\n    let normalizedScore = result[scoreField];\n    \n    if (strategy === 'min-max' && max > min) {\n      normalizedScore = (result[scoreField] - min) / (max - min);\n    } else if (strategy === 'z-score') {\n      const mean = scores.reduce((a, b) => a + b, 0) / scores.length;\n      const stdDev = Math.sqrt(\n        scores.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / scores.length\n      );\n      normalizedScore = stdDev > 0 ? (result[scoreField] - mean) / stdDev : 0;\n    }\n    \n    return { ...result, [scoreField]: normalizedScore };\n  });\n}\n\n/**\n * Linear score combination (weighted average)\n */\nfunction linearFusion(\n  keywordResults: SearchResult[], \n  vectorResults: SearchResult[], \n  config: HybridSearchConfig\n): SearchResult[] {\n  // Normalize scores if required\n  const normalizedKeyword = normalizeScores(keywordResults, config.normalizationStrategy, 'bm25Score');\n  const normalizedVector = normalizeScores(vectorResults, config.normalizationStrategy, 'vectorScore');\n  \n  // Merge results by ID\n  const allResults = new Map<string, SearchResult>();\n  \n  normalizedKeyword.forEach(result => {\n    allResults.set(result.id, { ...result, vectorScore: 0 });\n  });\n  \n  normalizedVector.forEach(result => {\n    const existing = allResults.get(result.id) || { bm25Score: 0, ...result };\n    allResults.set(result.id, { ...existing, vectorScore: result.vectorScore });\n  });\n  \n  // Calculate hybrid score\n  return Array.from(allResults.values()).map(result => ({\n    ...result,\n    hybridScore: (config.alpha * result.bm25Score) + ((1 - config.alpha) * result.vectorScore)\n  }));\n}\n\n/**\n * Reciprocal Rank Fusion implementation\n */\nfunction reciprocalRankFusion(\n  keywordResults: SearchResult[], \n  vectorResults: SearchResult[], \n  config: Required<HybridSearchConfig>\n): SearchResult[] {\n  const k = config.rrfK || 60;\n  const rankMaps = {\n    keyword: new Map<string, number>(),\n    vector: new Map<string, number>()\n  };\n  \n  // Create rank maps for each result set\n  keywordResults.forEach((result, index) => {\n    rankMaps.keyword.set(result.id, index + 1);\n  });\n  \n  vectorResults.forEach((result, index) => {\n    rankMaps.vector.set(result.id, index + 1);\n  });\n  \n  // Combine all unique IDs\n  const allIds = new Set([\n    ...keywordResults.map(r => r.id),\n    ...vectorResults.map(r => r.id)\n  ]);\n  \n  // Calculate RRF scores\n  return Array.from(allIds).map(id => {\n    const keywordRank = rankMaps.keyword.get(id) || keywordResults.length + 1;\n    const vectorRank = rankMaps.vector.get(id) || vectorResults.length + 1;\n    \n    const keywordRRF = 1 / (k + keywordRank);\n    const vectorRRF = 1 / (k + vectorRank);\n    \n    return {\n      id,\n      hybridScore: (config.alpha * keywordRRF) + ((1 - config.alpha) * vectorRRF),\n      bm25Score: keywordResults.find(r => r.id === id)?.bm25Score || 0,\n      vectorScore: vectorResults.find(r => r.id === id)?.vectorScore || 0\n    };\n  });\n}\n\n/**\n * Main hybrid search function\n */\nexport async function hybridSearch(\n  keywordResults: SearchResult[],\n  vectorResults: SearchResult[],\n  config: HybridSearchConfig\n): Promise<SearchResult[]> {\n  if (!keywordResults.length && !vectorResults.length) return [];\n  \n  // Handle cases where one result set is empty\n  if (!keywordResults.length) {\n    return vectorResults\n      .map(r => ({ ...r, hybridScore: r.vectorScore }))\n      .filter(r => r.hybridScore >= (config.minScoreThreshold || 0));\n  }\n  \n  if (!vectorResults.length) {\n    return keywordResults\n      .map(r => ({ ...r, hybridScore: r.bm25Score }))\n      .filter(r => r.hybridScore >= (config.minScoreThreshold || 0));\n  }\n  \n  // Apply selected fusion method\n  let combinedResults: SearchResult[] = [];\n  \n  switch (config.fusionMethod) {\n    case 'rrf':\n      combinedResults = reciprocalRankFusion(\n        keywordResults,\n        vectorResults,\n        { rrfK: 60, ...config } as Required<HybridSearchConfig>\n      );\n      break;\n    case 'learned':\n      // Placeholder for learned weights implementation\n      // Could load weights from a trained model\n      combinedResults = linearFusion(keywordResults, vectorResults, config);\n      break;\n    case 'linear':\n    default:\n      combinedResults = linearFusion(keywordResults, vectorResults, config);\n  }\n  \n  // Filter by threshold and sort\n  return combinedResults\n    .filter(r => r.hybridScore >= (config.minScoreThreshold || 0))\n    .sort((a, b) => b.hybridScore - a.hybridScore);\n}\n\n// Performance optimization recommendations:\n// 1. Pre-normalize vector embeddings during indexing\n// 2. Cache frequently used query embeddings\n// 3. Implement early termination for large result sets\n// 4. Use bloom filters for ID lookups in fusion steps\n// 5. Parallelize keyword and vector searches when possible",
+      "storage_integration": {
+        "create_task_entry": true,
+        "update_memory_blocks": true,
+        "cc_sessions_compatible": true
+      }
+    },
+    {
+      "file": "src/search/searchService.ts",
+      "operation": "patch",
+      "content": "import { hybridSearch, HybridSearchConfig } from './hybridScoringAlgorithm';\nimport { VectorEmbeddingService } from '../embeddings/vectorService';\nimport { FTS5SearchService } from '../database/fts5Service';\n\nclass HybridSearchService {\n  constructor(\n    private vectorService: VectorEmbeddingService,\n    private ftsService: FTS5SearchService\n  ) {}\n\n  async search(query: string, config: HybridSearchConfig) {\n    // Execute searches in parallel\n    const [keywordResults, vectorResults] = await Promise.all([\n      this.ftsService.search(query),\n      this.vectorService.semanticSearch(query)\n    ]);\n\n    return hybridSearch(keywordResults, vectorResults, config);\n  }\n\n  // Optimized version for known search types\n  async optimizedSearch(\n    query: string,\n    config: HybridSearchConfig,\n    searchType: 'keyword-dominant' | 'semantic-dominant' | 'balanced'\n  ) {\n    // Set weights based on search type heuristic\n    const optimizedConfig = {\n      ...config,\n      alpha: searchType === 'keyword-dominant' ? 0.7 :\n             searchType === 'semantic-dominant' ? 0.3 : 0.5\n    };\n\n    // Execute appropriate search first based on type\n    if (searchType === 'keyword-dominant') {\n      const keywordResults = await this.ftsService.search(query);\n      if (keywordResults.length > 10) { // Good enough results\n        return hybridSearch(keywordResults, [], optimizedConfig);\n      }\n      const vectorResults = await this.vectorService.semanticSearch(query);\n      return hybridSearch(keywordResults, vectorResults, optimizedConfig);\n    } else {\n      // Semantic-dominant or balanced path\n      const vectorResults = await this.vectorService.semanticSearch(query);\n      if (searchType === 'semantic-dominant' && vectorResults.length > 0) {\n        return hybridSearch([], vectorResults, optimizedConfig);\n      }\n      const keywordResults = await this.ftsService.search(query);\n      return hybridSearch(keywordResults, vectorResults, optimizedConfig);\n    }\n  }\n}\n\n// Default configuration for common use cases\nexport const DEFAULT_CONFIGS = {\n  KEYWORD_DOMINANT: {\n    alpha: 0.7,\n    fusionMethod: 'linear',\n    normalizationStrategy: 'min-max',\n    minScoreThreshold: 0.3\n  },\n  SEMANTIC_DOMINANT: {\n    alpha: 0.3,\n    fusionMethod: 'linear',\n    normalizationStrategy: 'min-max',\n    minScoreThreshold: 0.4\n  },\n  BALANCED: {\n    alpha: 0.5,\n    fusionMethod: 'rrf',\n    rrfK: 60,\n    normalizationStrategy: 'none',\n    minScoreThreshold: 0.35\n  }\n};",
+      "storage_integration": {
+        "create_task_entry": true,
+        "update_memory_blocks": true,
+        "cc_sessions_compatible": true
+      }
+    }
+  ],
+  "storage_actions": {
+    "mode": "cc-sessions",
+    "actions": [
+      "create_memory_entry",
+      "update_task_file",
+      "store_algorithm_configurations"
+    ]
+  },
+  "summary": "Implemented hybrid search ranking algorithm with multiple fusion strategies (linear, RRF), score normalization, and performance optimizations. Added configuration presets and optimized query execution paths.",
+  "tokensEstimatedSaved": 1200
+}
+```
+
+Key features implemented:
+
+1. **Hybrid Scoring Algorithms**:
+   - Linear weighted combination (configurable alpha parameter)
+   - Reciprocal Rank Fusion (RRF) implementation
+   - Placeholder for learned weights approach
+
+2. **Score Normalization**:
+   - Min-max normalization
+   - Z-score normalization
+   - Option to skip normalization
+
+3. **Performance Optimizations**:
+   - Parallel query execution
+   - Optimized search paths based on search type
+   - Early termination strategies
+   - Threshold filtering
+
+4. **Edge Case Handling**:
+   - Empty result set handling
+   - Score range normalization
+   - Configurable minimum thresholds
+
+5. **Configuration Management**:
+   - Preset configurations for different search types
+   - Flexible parameter tuning
+   - Extensible fusion method selection
+
+The implementation is designed to work with both BM25 scores from SQLite FTS5 and vector similarity scores while maintaining compatibility with the cc-sessions storage system.

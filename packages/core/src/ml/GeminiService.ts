@@ -1,0 +1,87 @@
+import { exec } from 'child_process';
+import { promisify } from 'util';
+import { readFile } from 'fs/promises';
+import { join } from 'path';
+
+const execPromise = promisify(exec);
+
+export class GeminiService {
+  private isEnabled: boolean;
+
+  constructor() {
+    this.isEnabled = process.env['GEMINI_CLI_PATH'] !== undefined;
+  }
+
+  /**
+   * Analyze a code file with a specific question
+   * @param filePath Path to the file to analyze
+   * @param question Specific question about the code
+   * @returns Gemini's response
+   */
+  async analyzeCode(filePath: string, question: string): Promise<string> {
+    if (!this.isEnabled) {
+      throw new Error('Gemini CLI not configured');
+    }
+
+    try {
+      const code = await readFile(filePath, 'utf-8');
+      const prompt = `File: ${filePath}\n\nCode:\n${code}\n\nQuestion: ${question}\n\nProvide a concise answer.`;
+      
+      const { stdout } = await execPromise(`gemini --prompt "${prompt}"`);
+      return stdout.trim();
+    } catch (error) {
+      throw new Error(`Gemini analysis failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Debug an issue using context and stack trace
+   * @param context Relevant code context
+   * @param stackTrace Error stack trace
+   * @returns Debugging suggestions
+   */
+  async debugIssue(context: string, stackTrace: string): Promise<string> {
+    if (!this.isEnabled) {
+      throw new Error('Gemini CLI not configured');
+    }
+
+    try {
+      const prompt = `Debug this issue:\n\nContext:\n${context}\n\nStack Trace:\n${stackTrace}\n\nProvide debugging steps.`;
+      
+      const { stdout } = await execPromise(`gemini --prompt "${prompt}"`);
+      return stdout.trim();
+    } catch (error) {
+      throw new Error(`Gemini debug failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  /**
+   * Review multiple files with a specific focus
+   * @param files Array of file paths
+   * @param focus Review focus area
+   * @returns Cross-file analysis
+   */
+  async reviewMultipleFiles(files: string[], focus: string): Promise<string> {
+    if (!this.isEnabled) {
+      throw new Error('Gemini CLI not configured');
+    }
+
+    try {
+      let combinedContent = '';
+      
+      for (const file of files) {
+        const content = await readFile(file, 'utf-8');
+        combinedContent += `\n\n--- ${file} ---\n${content}`;
+      }
+      
+      const prompt = `Review files with focus on: ${focus}\n\nFiles:${combinedContent}\n\nProvide a concise review.`;
+      
+      const { stdout } = await execPromise(`gemini --prompt "${prompt}"`);
+      return stdout.trim();
+    } catch (error) {
+      throw new Error(`Gemini review failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+}
+
+export const geminiService = new GeminiService();

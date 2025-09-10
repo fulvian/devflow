@@ -10,5 +10,3 @@ export {
   type SimilarityMatch,
   type BatchEmbeddingResult
 } from './VectorEmbeddingService.js';
-export { GeminiService, geminiService } from './GeminiService.js';
-export { GeminiAutoFixService } from './GeminiAutoFixService.js';
