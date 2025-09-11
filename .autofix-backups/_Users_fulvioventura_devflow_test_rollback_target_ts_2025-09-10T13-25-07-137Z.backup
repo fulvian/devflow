@@ -1,8 +1,0 @@
-
-// Test file with intentional errors
-function testFunction(param: string | undefined): string {
-  return param; // TypeScript error: might be undefined
-}
-
-const unusedVariable = 'test'; // Unused variable error
-console.log('test'); // Console statement error

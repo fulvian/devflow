@@ -11,6 +11,7 @@ import * as dotenv from 'dotenv';
 import { promises as fs } from 'fs';
 import { join, resolve, dirname, basename } from 'path';
 import { existsSync } from 'fs';
+import { SyntheticRateLimiter } from './rate-limiter/synthetic-rate-limiter.js';
 
 dotenv.config();
 
@@ -76,8 +77,31 @@ interface FileOperationResult {
 export class EnhancedSyntheticMCPServer {
   private server: Server;
   private allowedPaths: string[];
+  private rateLimiter: SyntheticRateLimiter;
 
   constructor() {
+    // Initialize rate limiter with 135 calls per 5-hour limit
+    this.rateLimiter = new SyntheticRateLimiter({
+      maxCalls: 135,
+      windowSeconds: 18000, // 5 hours
+      batchSize: 5, // Conservative batching for file operations
+      maxRetries: 3,
+      baseDelayMs: 2000,
+      maxDelayMs: 60000 // 1 minute max delay
+    });
+
+    console.log('[Synthetic MCP] Rate limiter initialized: 135 calls/5h limit');
+    
+    // Initialize rate limiter processor
+    this.initializeRateLimiterProcessor();
+    
+    // Log rate limit status periodically
+    setInterval(() => {
+      const status = this.rateLimiter.getRateLimitStatus();
+      if (status.queueSize > 0 || status.totalCalls > 0) {
+        console.log(`[Rate Limit Status] ${status.remainingCalls}/${status.totalCalls} calls remaining, queue: ${status.queueSize}`);
+      }
+    }, 30000); // Every 30 seconds
     this.server = new Server(
       {
         name: 'devflow-synthetic-enhanced',
@@ -387,23 +411,80 @@ export class EnhancedSyntheticMCPServer {
       throw new Error('SYNTHETIC_API_KEY not configured');
     }
 
-    const response = await axios.post(
-      `${SYNTHETIC_API_URL}/chat/completions`,
+    // Use rate limiter to queue and manage API calls
+    return await this.rateLimiter.execute(
+      'chat_completion',
       {
         model,
         messages,
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      } as SyntheticRequest,
-      {
-        headers: {
-          'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
+        maxTokens,
+        url: `${SYNTHETIC_API_URL}/chat/completions`
+      },
+      this.getPriorityForModel(model)
     );
+  }
 
-    return response.data;
+  /**
+   * Get priority level for different models
+   */
+  private getPriorityForModel(model: string): number {
+    // Higher priority for code generation (more time-sensitive)
+    if (model.includes('Coder') || model.includes('code')) {
+      return 10;
+    }
+    // Medium priority for reasoning tasks
+    if (model.includes('DeepSeek') || model.includes('reasoning')) {
+      return 5;
+    }
+    // Lower priority for context/analysis tasks
+    return 1;
+  }
+
+  /**
+   * Initialize rate limiter with actual API call processor
+   */
+  private initializeRateLimiterProcessor(): void {
+    // Set the batch processor for chat completions
+    (this.rateLimiter as any).processBatch = async (operation: string, requests: any[]) => {
+      if (operation !== 'chat_completion') {
+        throw new Error(`Unknown operation: ${operation}`);
+      }
+
+      const results = [];
+      
+      // Process requests individually (Synthetic API doesn't support true batching)
+      for (const request of requests) {
+        try {
+          const { model, messages, maxTokens, url } = request.payload;
+          
+          const response = await axios.post(
+            url,
+            {
+              model,
+              messages,
+              max_tokens: maxTokens,
+              temperature: 0.7,
+            } as SyntheticRequest,
+            {
+              headers: {
+                'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 30000 // 30 second timeout
+            }
+          );
+
+          results.push(response.data);
+          
+        } catch (error) {
+          // Log error but continue processing other requests
+          console.error(`[Synthetic API] Error processing request ${request.id}:`, error instanceof Error ? error.message : String(error));
+          throw error; // Re-throw to trigger retry logic
+        }
+      }
+      
+      return results;
+    };
   }
 
   // ORIGINAL METHODS (maintained for backward compatibility)

@@ -1,22 +1,15 @@
-import { VectorEmbeddingService } from '@devflow/core';
-import { SQLiteMemory } from '@devflow/core';
+// Embedding e SQLite disabilitati in produzione: usare cc-sessions per lo storage
 
 export class SemanticSearchService {
-  private embeddingService: VectorEmbeddingService;
-  private memoryManager: SQLiteMemory;
+  constructor() {}
 
-  constructor() {
-    this.embeddingService = new VectorEmbeddingService();
-    this.memoryManager = new SQLiteMemory();
+  async search(_query: string, _threshold: number = 0.7) {
+    // Delegare a cc-sessions o restituire lista vuota
+    return [] as any[];
   }
 
-  async search(query: string, threshold: number = 0.7) {
-    const queryEmbedding = await (this.embeddingService as any).generateEmbeddings?.(query);
-    return [];
-  }
-
-  async storeDocument(content: string, metadata?: any) {
-    const embedding = await (this.embeddingService as any).generateEmbeddings?.(content);
-    return await (this.memoryManager as any).set?.(`doc_${Date.now()}`, { content, embedding, metadata });
+  async storeDocument(_content: string, _metadata?: any) {
+    // Delegare a cc-sessions, no-op qui
+    return null;
   }
 }
