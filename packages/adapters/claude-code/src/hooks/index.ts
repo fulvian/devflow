@@ -1,4 +1,4 @@
-import type { ClaudeAdapter } from '../adapter.js';
+import type { ClaudeCodeAdapter } from '../adapter.js';
 import { createSessionHooks } from './session-hooks.js';
 import { createToolHooks } from './tool-hooks.js';
 
@@ -12,7 +12,7 @@ export interface HookRegistrar {
   onToolUsed: (e: { sessionId: string; taskId: string; tool: string; payload?: unknown }) => Promise<void>;
 }
 
-export function registerHooks(cc: SessionEvent, adapter: ClaudeAdapter) {
+export function registerHooks(cc: SessionEvent, adapter: ClaudeCodeAdapter) {
   const session = createSessionHooks(adapter);
   const tools = createToolHooks(adapter);
 

@@ -5,7 +5,7 @@
  */
 
 import { SyntheticCommand } from './synthetic-command.js';
-import type { CommandRegistry, CommandHandler } from '../command-registry.js';
+import type { CommandHandler } from '../command-registry.js';
 import { commandRegistry } from '../command-registry.js';
 
 // Helper function to parse command arguments and options

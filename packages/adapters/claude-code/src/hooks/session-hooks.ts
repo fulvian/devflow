@@ -1,12 +1,12 @@
-import type { ClaudeAdapter } from '../adapter.js';
+import type { ClaudeCodeAdapter } from '../adapter.js';
 
-export function createSessionHooks(adapter: ClaudeAdapter) {
+export function createSessionHooks(adapter: ClaudeCodeAdapter) {
   return {
     onStart: async (payload: { sessionId: string; taskId?: string }) => {
-      await adapter.onSessionStart({ sessionId: payload.sessionId, taskId: payload.taskId || 'unknown' });
+      await adapter.onSessionStart({ sessionId: payload.sessionId, taskId: payload.taskId || 'unknown' } as any);
     },
     onEnd: async (payload: { sessionId: string; taskId: string }) => {
-      await adapter.onSessionEnd(payload);
+      await adapter.onSessionEnd(payload as any);
     },
   };
 }
