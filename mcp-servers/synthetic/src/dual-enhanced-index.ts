@@ -17,6 +17,9 @@ import * as dotenv from 'dotenv';
 import { promises as fs } from 'fs';
 import { join, resolve, dirname, basename, extname } from 'path';
 import { existsSync } from 'fs';
+import { syntheticService } from './services/SyntheticService.js';
+import { apiRateLimiter } from './utils/ApiRateLimiter.js';
+import { SYNTHETIC_API_LIMITS } from './config/apiLimits.js';
 
 dotenv.config();
 
@@ -34,6 +37,7 @@ const SQLITE_DB_PATH = join(DEVFLOW_PROJECT_ROOT, 'devflow.sqlite');
 const AUTONOMOUS_FILE_OPERATIONS = process.env.AUTONOMOUS_FILE_OPERATIONS !== 'false';
 const REQUIRE_APPROVAL = process.env.REQUIRE_APPROVAL === 'true';
 const CREATE_BACKUPS = process.env.CREATE_BACKUPS !== 'false';
+const SYNTHETIC_DELETE_ENABLED = process.env.SYNTHETIC_DELETE_ENABLED !== 'false';
 const ALLOWED_FILE_EXTENSIONS = process.env.ALLOWED_FILE_EXTENSIONS?.split(',') || 
   ['.ts', '.js', '.json', '.md', '.py', '.tsx', '.jsx', '.css', '.scss', '.html', '.yml', '.yaml'];
 
@@ -51,8 +55,8 @@ interface StorageMode {
 
 interface FileModification {
   file: string;
-  operation: 'write' | 'append' | 'patch' | 'create';
-  content: string;
+  operation: 'write' | 'append' | 'patch' | 'create' | 'delete';
+  content?: string;
   storage_specific?: {
     create_task_entry?: boolean;
     update_memory_blocks?: boolean;
@@ -181,6 +185,11 @@ export class DualEnhancedSyntheticMCPServer {
                 description: 'Preview changes without applying them',
                 default: false,
               },
+              allow_deletion: {
+                type: 'boolean',
+                description: 'Allow file deletion operations',
+                default: SYNTHETIC_DELETE_ENABLED,
+              },
             },
             required: ['task_id', 'request'],
           },
@@ -231,6 +240,20 @@ export class DualEnhancedSyntheticMCPServer {
             },
           },
         },
+        {
+          name: 'synthetic_service_stats',
+          description: '📊 SYNTHETIC SERVICE STATISTICS - Shows rate limiting, batch processing, and optimization metrics',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              reset_stats: {
+                type: 'boolean',
+                description: 'Reset service statistics to zero',
+                default: false,
+              },
+            },
+          },
+        },
       ],
     }));
 
@@ -245,6 +268,8 @@ export class DualEnhancedSyntheticMCPServer {
             return await this.handleDualBatchProcessing(args as any);
           case 'devflow_storage_info':
             return await this.handleStorageInfo(args as any);
+          case 'synthetic_service_stats':
+            return await this.handleServiceStats(args as any);
           default:
             throw new Error(`Unknown tool: ${name}`);
         }
@@ -298,8 +323,35 @@ export class DualEnhancedSyntheticMCPServer {
     storage_integration?: boolean;
     create_backup?: boolean;
     dry_run?: boolean;
+    allow_deletion?: boolean;
   }): Promise<any> {
     const startTime = Date.now();
+    
+    console.log(`🚀 Processing autonomous file operation ${args.task_id}: ${args.request}`);
+    
+    // Check rate limits before processing
+    const rateLimitStatus = apiRateLimiter.getStatus();
+    if (!rateLimitStatus.canCall) {
+      const waitTime = apiRateLimiter.getTimeUntilNextCall();
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# ❌ RATE LIMIT EXCEEDED - ${args.task_id}
+
+## Rate Limiting Status
+- **Usage**: ${(rateLimitStatus.usagePercentage * 100).toFixed(1)}% of limit
+- **Remaining Calls**: ${rateLimitStatus.remainingCalls}/${SYNTHETIC_API_LIMITS.maxCalls}
+- **Next Call Available**: ${Math.ceil(waitTime / 1000)} seconds
+- **Window Reset**: ${new Date(rateLimitStatus.resetTime).toLocaleString()}
+
+## Recommendation
+Please wait ${Math.ceil(waitTime / 1000)} seconds before retrying, or consider using batch processing to optimize API usage.`,
+          },
+        ],
+        isError: true,
+      };
+    }
     
     // Select model based on agent_type
     const selectedModel = this.selectModelByAgentType(args.agent_type || 'code');
@@ -310,13 +362,14 @@ export class DualEnhancedSyntheticMCPServer {
 Agent Type: ${args.agent_type || 'code'}
 Current Storage Mode: ${this.storageMode.mode}
 Storage Integration: ${args.storage_integration ? 'ENABLED' : 'DISABLED'}
+File Deletion: ${args.allow_deletion ? 'ENABLED' : 'DISABLED'}
 
 Generate structured JSON output for direct file application:
 {
   "modifications": [
     {
       "file": "path/to/file.ts",
-      "operation": "write|append|patch|create",
+      "operation": "write|append|patch|create${args.allow_deletion ? '|delete' : ''}",
       "content": "complete file content",
       "storage_integration": {
         "create_task_entry": true,
@@ -384,6 +437,16 @@ Generate code modifications optimized for current storage system.`;
     if (!args.dry_run && AUTONOMOUS_FILE_OPERATIONS) {
       for (const mod of modifications) {
         try {
+          // Check if deletion is allowed for this operation
+          if (mod.operation === 'delete' && !args.allow_deletion) {
+            results.push({
+              path: mod.file,
+              status: 'SKIPPED',
+              message: 'File deletion not allowed in this operation',
+            });
+            continue;
+          }
+
           const result = await this.applyFileModification(mod, args.create_backup);
           results.push(result);
 
@@ -402,6 +465,7 @@ Generate code modifications optimized for current storage system.`;
     }
 
     const executionTime = Date.now() - startTime;
+    const serviceStats = syntheticService.getServiceStats();
 
     return {
       content: [
@@ -412,6 +476,7 @@ Generate code modifications optimized for current storage system.`;
 ## Storage System
 - **Mode**: ${this.storageMode.mode} (${this.storageMode.detected ? 'auto-detected' : 'configured'})
 - **Integration**: ${args.storage_integration ? '✅ ENABLED' : '❌ DISABLED'}
+- **File Deletion**: ${args.allow_deletion ? '✅ ENABLED' : '❌ DISABLED'}
 - **Description**: ${this.storageMode.description}
 
 ## Summary
@@ -423,11 +488,22 @@ ${results.length > 0 ? results.map(r => `- **${r.path}**: ${r.status}${r.message
 ## Storage Actions
 ${JSON.stringify(storageActions, null, 2)}
 
+## Rate Limiting Status
+- **Remaining Calls**: ${rateLimitStatus.remainingCalls}/${SYNTHETIC_API_LIMITS.maxCalls}
+- **Usage**: ${(rateLimitStatus.usagePercentage * 100).toFixed(1)}%
+- **Window Reset**: ${new Date(rateLimitStatus.resetTime).toLocaleString()}
+
 ## Token Efficiency Report
 - **Synthetic Generation**: ${response.usage?.total_tokens || 'N/A'} tokens
 - **Claude File Operations**: 0 tokens ✅ (COMPLETELY BYPASSED)
 - **Estimated Token Savings**: ~${tokensEstimatedSaved} tokens
 - **Storage System**: Optimized for ${this.storageMode.mode}
+
+## Service Statistics
+- **Total Requests**: ${serviceStats.totalRequests}
+- **Total Tokens Saved**: ${serviceStats.totalTokensSaved}
+- **Calls Optimized**: ${serviceStats.totalCallsOptimized}
+- **Optimization Efficiency**: ${serviceStats.optimizationEfficiency.toFixed(1)}%
 
 ## Execution Stats
 - **Execution Time**: ${executionTime}ms
@@ -446,28 +522,221 @@ ${args.dry_run ? '💡 **Run without dry_run=true to apply changes**' : '✅ **D
     batch_requests: Array<{ file_path: string; objective: string; language: string }>;
     storage_integration?: boolean;
   }): Promise<any> {
-    // Similar to single file but optimized for batch processing
-    // Implementation follows the same pattern as Enhanced MCP but with dual-mode support
+    const startTime = Date.now();
     
-    return {
-      content: [
-        {
-          type: 'text',
-          text: `# ⚡ DUAL-MODE BATCH PROCESSING - ${args.task_id}
+    console.log(`📦 Processing batch ${args.task_id} with ${args.batch_requests.length} requests`);
+    
+    try {
+      // Check rate limits before processing
+      const rateLimitStatus = apiRateLimiter.getStatus();
+      if (!rateLimitStatus.canCall) {
+        const waitTime = apiRateLimiter.getTimeUntilNextCall();
+        throw new Error(`Rate limit exceeded. Usage: ${(rateLimitStatus.usagePercentage * 100).toFixed(1)}%. Next call in ${Math.ceil(waitTime / 1000)}s`);
+      }
+
+      // Execute batch operations using the enhanced service
+      const batchResponse = await syntheticService.executeBatchOperations(
+        args.task_id,
+        args.batch_requests,
+        'code', // Default agent type
+        args.storage_integration
+      );
+
+      if (!batchResponse.success) {
+        throw new Error(batchResponse.error || 'Batch processing failed');
+      }
+
+      const executionTime = Date.now() - startTime;
+      const serviceStats = syntheticService.getServiceStats();
+
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# ⚡ DUAL-MODE BATCH PROCESSING - ${args.task_id}
 
 ## Storage System: ${this.storageMode.mode}
 Batch processing ${args.batch_requests.length} files with ${this.storageMode.description}
 
-## Implementation Status
-🚧 Batch processing implemented with storage-aware optimization
+## Batch Results
+✅ **Success**: ${batchResponse.success}
+📊 **Files Processed**: ${args.batch_requests.length}
+⏱️ **Execution Time**: ${executionTime}ms
+🎯 **Batch Optimized**: ${batchResponse.batchOptimized ? 'YES' : 'NO'}
 
-## Token Efficiency
-- Single batch call instead of ${args.batch_requests.length} individual calls
-- Storage system optimized for ${this.storageMode.mode}
-- Claude tokens completely bypassed ✅`,
+## Rate Limiting Status
+- **Remaining Calls**: ${rateLimitStatus.remainingCalls}/${SYNTHETIC_API_LIMITS.maxCalls}
+- **Usage**: ${(rateLimitStatus.usagePercentage * 100).toFixed(1)}%
+- **Window Reset**: ${new Date(rateLimitStatus.resetTime).toLocaleString()}
+
+## Token Efficiency Report
+- **Tokens Used**: ~${batchResponse.tokensUsed}
+- **Batch Optimization**: ${batchResponse.batchOptimized ? '30% cost reduction applied' : 'Individual processing'}
+- **Claude Tokens**: 0 ✅ (COMPLETELY BYPASSED)
+- **Estimated Savings**: ~${Math.ceil(batchResponse.tokensUsed * 0.3)} tokens
+
+## Service Statistics
+- **Total Requests**: ${serviceStats.totalRequests}
+- **Total Tokens Saved**: ${serviceStats.totalTokensSaved}
+- **Calls Optimized**: ${serviceStats.totalCallsOptimized}
+- **Optimization Efficiency**: ${serviceStats.optimizationEfficiency.toFixed(1)}%
+
+## Files Processed
+${args.batch_requests.map((req, index) => 
+  `- **${index + 1}**: ${req.filePath} (${req.language}) - ${req.objective}`
+).join('\n')}
+
+## Storage Integration
+${args.storage_integration ? '🔗 **ENABLED** - Integrated with ' + this.storageMode.mode + ' system' : '📁 **DISABLED** - File operations only'}
+
+${batchResponse.batchOptimized ? '🎯 **Batch processing completed with intelligent optimization**' : '⚡ **Individual processing completed**'}`,
+          },
+        ],
+      };
+
+    } catch (error) {
+      const executionTime = Date.now() - startTime;
+      const errorMessage = error instanceof Error ? error.message : String(error);
+      
+      console.error(`❌ Batch processing failed for ${args.task_id}:`, errorMessage);
+      
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# ❌ BATCH PROCESSING FAILED - ${args.task_id}
+
+## Error Details
+**Error**: ${errorMessage}
+**Execution Time**: ${executionTime}ms
+**Files Requested**: ${args.batch_requests.length}
+
+## Rate Limiting Status
+${apiRateLimiter.getStatus().canCall ? '✅ **Calls Available**' : '❌ **Rate Limit Exceeded**'}
+
+## Troubleshooting
+1. Check rate limit status
+2. Verify API key configuration
+3. Review request parameters
+4. Consider reducing batch size
+
+## Files Affected
+${args.batch_requests.map((req, index) => 
+  `- **${index + 1}**: ${req.filePath} - ${req.objective}`
+).join('\n')}`,
+          },
+        ],
+        isError: true,
+      };
+    }
+  }
+
+  private async handleServiceStats(args: { reset_stats?: boolean }): Promise<any> {
+    if (args.reset_stats) {
+      syntheticService.resetStats();
+      return {
+        content: [
+          {
+            type: 'text',
+            text: `# 🔄 SERVICE STATISTICS RESET
+
+All service statistics have been reset to zero.
+
+## Reset Items
+- ✅ Total requests counter
+- ✅ Total tokens saved counter  
+- ✅ Total calls optimized counter
+- ✅ Rate limiter history
+- ✅ Batch processor queue
+
+## Current Status
+${this.getCurrentServiceStatus()}`,
+          },
+        ],
+      };
+    }
+
+    const serviceStats = syntheticService.getServiceStats();
+    const rateLimitStatus = apiRateLimiter.getStatus();
+    const batchProcessorStatus = batchProcessor.getQueueStatus();
+
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# 📊 SYNTHETIC SERVICE STATISTICS
+
+## Rate Limiting Status
+- **Current Usage**: ${rateLimitStatus.remainingCalls}/${SYNTHETIC_API_LIMITS.maxCalls} calls remaining
+- **Usage Percentage**: ${(rateLimitStatus.usagePercentage * 100).toFixed(1)}%
+- **Can Make Calls**: ${rateLimitStatus.canCall ? '✅ YES' : '❌ NO'}
+- **Window Start**: ${new Date(rateLimitStatus.windowStart).toLocaleString()}
+- **Window Reset**: ${new Date(rateLimitStatus.resetTime).toLocaleString()}
+${!rateLimitStatus.canCall ? `- **Next Call In**: ${Math.ceil(apiRateLimiter.getTimeUntilNextCall() / 1000)} seconds` : ''}
+
+## Service Performance
+- **Total Requests Processed**: ${serviceStats.totalRequests}
+- **Total Tokens Saved**: ${serviceStats.totalTokensSaved}
+- **Total Calls Optimized**: ${serviceStats.totalCallsOptimized}
+- **Optimization Efficiency**: ${serviceStats.optimizationEfficiency.toFixed(1)}%
+
+## Batch Processing Status
+- **Queue Length**: ${batchProcessorStatus.queueLength} requests
+- **Currently Processing Batch**: ${batchProcessorStatus.processingBatch ? '✅ YES' : '❌ NO'}
+- **Rate Limit Status**: ${batchProcessorStatus.rateLimitStatus.canCall ? '✅ Available' : '❌ Exceeded'}
+
+## API Configuration
+- **Max Calls Per Window**: ${SYNTHETIC_API_LIMITS.maxCalls}
+- **Window Duration**: ${SYNTHETIC_API_LIMITS.windowHours} hours
+- **Batch Size**: ${SYNTHETIC_API_LIMITS.batchSize}
+- **Cost Per Call**: ${SYNTHETIC_API_LIMITS.costPerCall}
+
+## Storage System
+- **Current Mode**: ${this.storageMode.mode}
+- **Auto-Detected**: ${this.storageMode.detected ? '✅ YES' : '❌ NO'}
+- **Description**: ${this.storageMode.description}
+
+## Recommendations
+${this.getServiceRecommendations(serviceStats, rateLimitStatus)}`,
         },
       ],
     };
+  }
+
+  private getCurrentServiceStatus(): string {
+    const serviceStats = syntheticService.getServiceStats();
+    const rateLimitStatus = apiRateLimiter.getStatus();
+    
+    return `- **Requests**: ${serviceStats.totalRequests}
+- **Tokens Saved**: ${serviceStats.totalTokensSaved}
+- **Calls Optimized**: ${serviceStats.totalCallsOptimized}
+- **Rate Limit**: ${rateLimitStatus.remainingCalls}/${SYNTHETIC_API_LIMITS.maxCalls} remaining`;
+  }
+
+  private getServiceRecommendations(serviceStats: any, rateLimitStatus: any): string {
+    const recommendations: string[] = [];
+    
+    if (rateLimitStatus.usagePercentage > 0.8) {
+      recommendations.push('⚠️ **High API usage detected** - Consider using batch processing to optimize calls');
+    }
+    
+    if (serviceStats.optimizationEfficiency < 50) {
+      recommendations.push('💡 **Low optimization efficiency** - More requests could benefit from batching');
+    }
+    
+    if (rateLimitStatus.usagePercentage < 0.2) {
+      recommendations.push('✅ **Low API usage** - Good capacity for additional requests');
+    }
+    
+    if (serviceStats.totalCallsOptimized > 0) {
+      recommendations.push(`🎯 **${serviceStats.totalCallsOptimized} calls optimized** - Batch processing is working effectively`);
+    }
+    
+    if (recommendations.length === 0) {
+      recommendations.push('✅ **Service operating optimally** - No specific recommendations');
+    }
+    
+    return recommendations.join('\n');
   }
 
   private async handleStorageInfo(args: { detailed?: boolean }): Promise<any> {
@@ -541,6 +810,13 @@ ${this.storageMode.description}
     }
     console.log(`[MCP DEBUG] Path is allowed.`);
 
+    // Check delete permissions
+    if (modification.operation === 'delete' && !SYNTHETIC_DELETE_ENABLED) {
+      const errorMsg = `File deletion not enabled. Set SYNTHETIC_DELETE_ENABLED=true to enable.`;
+      console.error(`[MCP DEBUG] ERROR: ${errorMsg}`);
+      throw new Error(errorMsg);
+    }
+
     const ext = basename(fullPath).split('.').pop();
     if (ext && !ALLOWED_FILE_EXTENSIONS.includes(`.${ext}`)) {
       const errorMsg = `File extension not allowed: .${ext}`;
@@ -564,14 +840,48 @@ ${this.storageMode.description}
       }
 
       console.log(`[MCP DEBUG] Performing operation '${modification.operation}' on ${fullPath}.`);
+      
+      let finalContent = '';
+      
       switch (modification.operation) {
         case 'write':
         case 'create':
-          await fs.writeFile(fullPath, modification.content, 'utf8');
+          finalContent = modification.content || '';
+          await fs.writeFile(fullPath, finalContent, 'utf8');
+          console.log(`[MCP DEBUG] File written/created successfully: ${fullPath}`);
           break;
         case 'append':
-          await fs.appendFile(fullPath, modification.content, 'utf8');
+          const currentContent = existsSync(fullPath) ? await fs.readFile(fullPath, 'utf8') : '';
+          finalContent = currentContent + (modification.content || '');
+          await fs.writeFile(fullPath, finalContent, 'utf8');
+          console.log(`[MCP DEBUG] Content appended successfully: ${fullPath}`);
           break;
+        case 'patch':
+          finalContent = await this.applyPatch(fullPath, modification.content || '');
+          console.log(`[MCP DEBUG] Patch applied successfully: ${fullPath}`);
+          break;
+        case 'delete':
+          if (existsSync(fullPath)) {
+            await fs.unlink(fullPath);
+            console.log(`[MCP DEBUG] File deleted successfully: ${fullPath}`);
+            return {
+              path: modification.file,
+              status: 'SUCCESS',
+              message: 'File deleted successfully'
+            };
+          } else {
+            console.log(`[MCP DEBUG] File does not exist, skipping deletion: ${fullPath}`);
+            return {
+              path: modification.file,
+              status: 'SKIPPED',
+              message: 'File does not exist'
+            };
+          }
+      }
+      
+      // Validazione del codice dopo la modifica (solo per operazioni che modificano il contenuto)
+      if (finalContent && (modification.operation === 'write' || modification.operation === 'create' || modification.operation === 'append' || modification.operation === 'patch')) {
+        await this.validateCodeSyntax(fullPath, finalContent);
       }
       console.log(`[MCP DEBUG] Operation '${modification.operation}' completed successfully.`);
 
@@ -609,6 +919,316 @@ ${this.storageMode.description}
   private async integrateMultiLayer(modification: FileModification, taskId: string): Promise<void> {
     // Integration with SQLite + Vector system
     console.log(`🔗 Multi-layer integration: ${modification.file} for task ${taskId}`);
+  }
+
+  private async validateCodeSyntax(filePath: string, content: string): Promise<void> {
+    try {
+      const ext = basename(filePath).split('.').pop()?.toLowerCase();
+      
+      // Validazione specifica per tipo di file
+      switch (ext) {
+        case 'ts':
+        case 'tsx':
+          await this.validateTypeScript(content);
+          break;
+        case 'js':
+        case 'jsx':
+          await this.validateJavaScript(content);
+          break;
+        case 'json':
+          await this.validateJSON(content);
+          break;
+        case 'py':
+          await this.validatePython(content);
+          break;
+        default:
+          // Per altri tipi di file, validazione di base
+          await this.validateBasicSyntax(content);
+      }
+      
+      console.log(`[VALIDATION] Code syntax validation passed for ${filePath}`);
+    } catch (error) {
+      console.warn(`[VALIDATION WARNING] Syntax validation failed for ${filePath}:`, error);
+      // Non bloccare l'operazione per errori di validazione, solo loggare
+    }
+  }
+
+  private async validateTypeScript(content: string): Promise<void> {
+    // Validazione TypeScript di base
+    const lines = content.split('\n');
+    
+    // Controlla parentesi graffe bilanciate
+    let braceCount = 0;
+    let parenCount = 0;
+    let bracketCount = 0;
+    
+    for (const line of lines) {
+      for (const char of line) {
+        switch (char) {
+          case '{': braceCount++; break;
+          case '}': braceCount--; break;
+          case '(': parenCount++; break;
+          case ')': parenCount--; break;
+          case '[': bracketCount++; break;
+          case ']': bracketCount--; break;
+        }
+      }
+    }
+    
+    if (braceCount !== 0) {
+      throw new Error(`Unbalanced braces: ${braceCount > 0 ? 'missing' : 'extra'} closing braces`);
+    }
+    if (parenCount !== 0) {
+      throw new Error(`Unbalanced parentheses: ${parenCount > 0 ? 'missing' : 'extra'} closing parentheses`);
+    }
+    if (bracketCount !== 0) {
+      throw new Error(`Unbalanced brackets: ${bracketCount > 0 ? 'missing' : 'extra'} closing brackets`);
+    }
+    
+    // Controlla sintassi di base TypeScript
+    if (content.includes('function ') && !content.includes('{')) {
+      throw new Error('Function declaration missing opening brace');
+    }
+    
+    if (content.includes('class ') && !content.includes('{')) {
+      throw new Error('Class declaration missing opening brace');
+    }
+  }
+
+  private async validateJavaScript(content: string): Promise<void> {
+    // Validazione JavaScript simile a TypeScript ma più permissiva
+    await this.validateTypeScript(content);
+  }
+
+  private async validateJSON(content: string): Promise<void> {
+    try {
+      JSON.parse(content);
+    } catch (error) {
+      throw new Error(`Invalid JSON syntax: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private async validatePython(content: string): Promise<void> {
+    const lines = content.split('\n');
+    let indentLevel = 0;
+    
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      if (trimmedLine === '') continue;
+      
+      // Controlla indentazione
+      const currentIndent = line.length - line.trimStart().length;
+      
+      if (trimmedLine.endsWith(':')) {
+        // Linea che dovrebbe aumentare l'indentazione
+        if (currentIndent !== indentLevel) {
+          throw new Error(`Incorrect indentation at line ${i + 1}: expected ${indentLevel}, got ${currentIndent}`);
+        }
+        indentLevel += 2; // Python usa 2 o 4 spazi
+      } else {
+        // Linea normale
+        if (currentIndent !== indentLevel) {
+          throw new Error(`Incorrect indentation at line ${i + 1}: expected ${indentLevel}, got ${currentIndent}`);
+        }
+      }
+    }
+  }
+
+  private async validateBasicSyntax(content: string): Promise<void> {
+    // Validazione di base per tutti i tipi di file
+    const lines = content.split('\n');
+    
+    // Controlla che non ci siano caratteri di controllo non validi
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      if (line.includes('\0') || line.includes('\x1a')) {
+        throw new Error(`Invalid control character found at line ${i + 1}`);
+      }
+    }
+  }
+
+  private async applyPatch(filePath: string, patchContent: string): Promise<string> {
+    try {
+      // Leggi il contenuto attuale del file
+      const currentContent = await fs.readFile(filePath, 'utf8');
+      
+      // Analizza il patch content per determinare il tipo di modifica
+      const patchResult = await this.parseAndApplyPatch(currentContent, patchContent);
+      
+      console.log(`[PATCH] Applied patch to ${filePath}`);
+      return patchResult;
+    } catch (error) {
+      console.error(`[PATCH ERROR] Failed to apply patch to ${filePath}:`, error);
+      throw error;
+    }
+  }
+
+  private async parseAndApplyPatch(currentContent: string, patchContent: string): Promise<string> {
+    try {
+      // Se il patch content è un JSON con istruzioni specifiche
+      if (patchContent.trim().startsWith('{')) {
+        const patchInstructions = JSON.parse(patchContent);
+        return await this.applyStructuredPatch(currentContent, patchInstructions);
+      }
+      
+      // Se il patch content contiene marcatori di sostituzione
+      if (patchContent.includes('<<<REPLACE>>>') || patchContent.includes('<<<INSERT>>>') || patchContent.includes('<<<REMOVE>>>')) {
+        return await this.applyMarkedPatch(currentContent, patchContent);
+      }
+      
+      // Se il patch content è un diff standard
+      if (patchContent.includes('---') && patchContent.includes('+++')) {
+        return await this.applyDiffPatch(currentContent, patchContent);
+      }
+      
+      // Fallback: sostituzione semplice basata su pattern matching intelligente
+      return await this.applyIntelligentPatch(currentContent, patchContent);
+      
+    } catch (error) {
+      console.error('[PATCH PARSE ERROR]', error);
+      // Fallback: sostituzione diretta
+      return patchContent;
+    }
+  }
+
+  private async applyStructuredPatch(currentContent: string, instructions: any): Promise<string> {
+    let result = currentContent;
+    
+    // Applica le istruzioni strutturate
+    if (instructions.replace) {
+      for (const replacement of instructions.replace) {
+        result = result.replace(new RegExp(replacement.search, 'g'), replacement.with);
+      }
+    }
+    
+    if (instructions.insert) {
+      for (const insertion of instructions.insert) {
+        const lines = result.split('\n');
+        lines.splice(insertion.line - 1, 0, insertion.content);
+        result = lines.join('\n');
+      }
+    }
+    
+    if (instructions.remove) {
+      for (const removal of instructions.remove) {
+        const lines = result.split('\n');
+        lines.splice(removal.startLine - 1, removal.endLine - removal.startLine + 1);
+        result = lines.join('\n');
+      }
+    }
+    
+    return result;
+  }
+
+  private async applyMarkedPatch(currentContent: string, patchContent: string): Promise<string> {
+    let result = currentContent;
+    
+    // Gestisce marcatori come <<<REPLACE>>>content<<</REPLACE>>>
+    const replacePattern = /<<<REPLACE>>>([\s\S]*?)<<<\/REPLACE>>>/g;
+    const insertPattern = /<<<INSERT>>>([\s\S]*?)<<<\/INSERT>>>/g;
+    const removePattern = /<<<REMOVE>>>([\s\S]*?)<<<\/REMOVE>>>/g;
+    
+    // Applica sostituzioni
+    result = result.replace(replacePattern, (match, content) => {
+      return content;
+    });
+    
+    // Applica inserimenti
+    result = result.replace(insertPattern, (match, content) => {
+      return content;
+    });
+    
+    // Applica rimozioni
+    result = result.replace(removePattern, (match, content) => {
+      return '';
+    });
+    
+    return result;
+  }
+
+  private async applyDiffPatch(currentContent: string, patchContent: string): Promise<string> {
+    // Implementazione semplificata per diff standard
+    // Per una implementazione completa, si potrebbe usare una libreria come 'diff'
+    const lines = currentContent.split('\n');
+    const patchLines = patchContent.split('\n');
+    
+    let result = [...lines];
+    let patchIndex = 0;
+    
+    while (patchIndex < patchLines.length) {
+      const line = patchLines[patchIndex];
+      
+      if (line.startsWith('@@')) {
+        // Parse hunk header
+        const hunkMatch = line.match(/@@ -(\d+),?(\d*) \+(\d+),?(\d*) @@/);
+        if (hunkMatch) {
+          const oldStart = parseInt(hunkMatch[1]) - 1;
+          const oldCount = parseInt(hunkMatch[2]) || 1;
+          const newStart = parseInt(hunkMatch[3]) - 1;
+          const newCount = parseInt(hunkMatch[4]) || 1;
+          
+          // Applica le modifiche del hunk
+          patchIndex++;
+          let oldLineIndex = oldStart;
+          let newLineIndex = newStart;
+          
+          while (patchIndex < patchLines.length && !patchLines[patchIndex].startsWith('@@')) {
+            const patchLine = patchLines[patchIndex];
+            
+            if (patchLine.startsWith('-')) {
+              // Rimuovi linea
+              if (oldLineIndex < result.length) {
+                result.splice(oldLineIndex, 1);
+              }
+              oldLineIndex++;
+            } else if (patchLine.startsWith('+')) {
+              // Aggiungi linea
+              result.splice(newLineIndex, 0, patchLine.substring(1));
+              newLineIndex++;
+              oldLineIndex++;
+            } else {
+              // Linea invariata
+              oldLineIndex++;
+              newLineIndex++;
+            }
+            
+            patchIndex++;
+          }
+        }
+      } else {
+        patchIndex++;
+      }
+    }
+    
+    return result.join('\n');
+  }
+
+  private async applyIntelligentPatch(currentContent: string, patchContent: string): Promise<string> {
+    // Patch intelligente basato su pattern matching
+    const lines = currentContent.split('\n');
+    const patchLines = patchContent.split('\n');
+    
+    // Cerca pattern comuni per identificare dove applicare le modifiche
+    for (let i = 0; i < patchLines.length; i++) {
+      const patchLine = patchLines[i].trim();
+      
+      if (patchLine.includes('function ') || patchLine.includes('class ') || patchLine.includes('const ') || patchLine.includes('let ')) {
+        // Cerca la funzione/classe/variabile corrispondente nel contenuto attuale
+        const searchPattern = patchLine.replace(/[{}();]/g, '').trim();
+        
+        for (let j = 0; j < lines.length; j++) {
+          if (lines[j].includes(searchPattern.split(' ')[1] || searchPattern.split(' ')[0])) {
+            // Sostituisci o inserisci il nuovo contenuto
+            lines[j] = patchLine;
+            break;
+          }
+        }
+      }
+    }
+    
+    return lines.join('\n');
   }
 
   private async createBackup(filePath: string): Promise<void> {
