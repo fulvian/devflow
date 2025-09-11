@@ -115,19 +115,9 @@ SYNTHETIC_PID=$!
 cd ../..
 sleep 2
 
-# Start DevFlow Core Server
-echo "   ⚙️  Starting DevFlow Core Server..."
-if [ -f start-devflow.mjs ]; then
-    node start-devflow.mjs > logs/devflow-core.log 2>&1 &
-    CORE_PID=$!
-elif [ -f start-devflow.js ]; then
-    node start-devflow.js > logs/devflow-core.log 2>&1 &
-    CORE_PID=$!
-else
-    echo "⚠️  DevFlow Core Server script not found, skipping..."
-    CORE_PID="N/A"
-fi
-sleep 2
+# DevFlow Core Server not needed for Synthetic delegation phase
+echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
+CORE_PID="N/A"
 
 # Start Claude Code Router (CCR) if available
 echo "   🔀 Starting Claude Code Router (CCR)..."
@@ -171,20 +161,8 @@ else
     echo "✅ Synthetic MCP Server: OPERATIONAL"
 fi
 
-# Health Check for Core Server
-if [ "$CORE_PID" != "N/A" ]; then
-    echo "   🔍 Checking DevFlow Core Server..."
-    counter=0
-    until grep -q "DevFlow.*ready\|server.*running" logs/devflow-core.log 2>/dev/null || [ $counter -eq $timeout ]; do
-        sleep 1
-        ((counter++))
-    done
-    if [ $counter -eq $timeout ]; then
-        echo "⚠️  DevFlow Core Server: TIMEOUT (check logs/devflow-core.log)"
-    else
-        echo "✅ DevFlow Core Server: OPERATIONAL"
-    fi
-fi
+# DevFlow Core Server skipped in this phase
+echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 
 # Health Check for CCR
 if [ "$CCR_PID" != "N/A" ]; then
