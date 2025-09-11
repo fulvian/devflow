@@ -139,19 +139,11 @@ test_services() {
     
     local services_ok=true
     
-    # Verifica CTIR
-    if curl -s "http://127.0.0.1:3456/health" > /dev/null 2>&1; then
-        success "CTIR: Attivo"
+    # Verifica MCP Synthetic
+    if curl -s "http://127.0.0.1:3000/health" > /dev/null 2>&1; then
+        success "MCP Synthetic: Attivo"
     else
-        error "CTIR: Non risponde"
-        services_ok=false
-    fi
-    
-    # Verifica CTIR Analyzer
-    if curl -s "http://127.0.0.1:3001/health" > /dev/null 2>&1; then
-        success "CTIR Analyzer: Attivo"
-    else
-        error "CTIR Analyzer: Non risponde"
+        error "MCP Synthetic: Non risponde"
         services_ok=false
     fi
     
@@ -163,11 +155,11 @@ test_services() {
         services_ok=false
     fi
     
-    # Verifica MCP Synthetic
-    if pgrep -f "mcp.*synthetic" > /dev/null 2>&1; then
-        success "MCP Synthetic: Attivo"
+    # Verifica DevFlow Startup
+    if pgrep -f "start-devflow" > /dev/null 2>&1; then
+        success "DevFlow Startup: Attivo"
     else
-        error "MCP Synthetic: Non attivo"
+        error "DevFlow Startup: Non attivo"
         services_ok=false
     fi
     

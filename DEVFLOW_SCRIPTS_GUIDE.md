@@ -9,8 +9,8 @@ Gli script `start-devflow-complete.sh` e `stop-devflow-complete.sh` gestiscono l
 ### Script di Avvio (`start-devflow-complete.sh`)
 
 #### ✅ **Cleanup Automatico**
-- Termina processi esistenti su porte 3456 (CTIR) e 3001 (CTIR Analyzer)
-- Termina processi Claude Code Router, MCP Synthetic e CTIR Router MCP
+- Termina processi esistenti su porta 3000 (MCP Synthetic)
+- Termina processi Claude Code Router e DevFlow Startup
 - Pulisce file PID e log precedenti
 
 #### ✅ **Verifica Dipendenze**
@@ -19,10 +19,9 @@ Gli script `start-devflow-complete.sh` e `stop-devflow-complete.sh` gestiscono l
 - Valida struttura del progetto
 
 #### ✅ **Avvio Servizi in Background**
-- **CTIR Server**: Avvia su porta 3456 con health check
-- **CTIR Analyzer**: Avvia su porta 3001 con health check  
+- **MCP Synthetic Server**: Avvia su porta 3000 con health check
 - **Claude Code Router**: Rileva se già attivo o avvia nuovo processo
-- **MCP Synthetic**: Configurato tramite Claude Code
+- **DevFlow Startup**: Processo principale di coordinamento
 
 #### ✅ **Verifica Autoswitch CCR**
 - Controlla configurazione soglie (Warning: 0.7, Critical: 0.85, Emergency: 0.95)
@@ -87,13 +86,12 @@ Gli script `start-devflow-complete.sh` e `stop-devflow-complete.sh` gestiscono l
 - **Environment**: `.env` (SYNTHETIC_API_KEY)
 
 ### Porte Utilizzate
-- **CTIR Server**: 3456
-- **CTIR Analyzer**: 3001
+- **MCP Synthetic Server**: 3000
 - **Claude Code Router**: Processo in background
 
 ### Directory
-- **Logs**: `logs/` (ctir-server.log, ctir-analyzer.log, claude-code-router.log)
-- **PID**: `pids/` (ctir-server.pid, ctir-analyzer.pid, claude-code-router.pid)
+- **Logs**: `logs/` (devflow-startup.log, claude-code-router.log)
+- **PID**: `pids/` (devflow-startup.pid, claude-code-router.pid)
 
 ## 🧪 Verifica Autoswitch CCR
 

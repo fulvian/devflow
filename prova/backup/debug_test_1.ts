@@ -3,7 +3,7 @@
 // SYNTAX ERRORS
 interface User {
   name: string
-  age: number  // Missing colon - syntax error
+  age number  // Missing colon - syntax error
 }
 
 class TestClass {
@@ -11,14 +11,13 @@ class TestClass {
 
   // Missing closing brace and template literal error
   sayHello() {
-    console.log(`Hello ${this.name}`)  // Syntax error: unclosed template literal
+    console.log(`Hello ${this.name`  // Syntax error: unclosed template literal
   // Missing closing brace for function
-  }
 }
 
 // Missing semicolon causing syntax issue
 const result = add(5, 10)
-console.log('Result:', result)  // Syntax error: missing closing parenthesis
+console.log('Result:', result  // Syntax error: missing closing parenthesis
 
 function add(a: number, b: number): number {
   return a + b

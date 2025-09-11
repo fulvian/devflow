@@ -14,8 +14,7 @@ NC='\033[0m' # No Color
 
 # Configurazione
 PROJECT_ROOT="/Users/fulvioventura/devflow"
-CTIR_PORT="3456"
-CTIR_ANALYZER_PORT="3001"
+MCP_SYNTHETIC_PORT="3000"
 PID_DIR="$PROJECT_ROOT/pids"
 
 # Funzioni di utilità
@@ -134,15 +133,13 @@ stop_all() {
     echo ""
     
     # Termina processi su porte specifiche
-    kill_port_processes "$CTIR_PORT" "CTIR"
-    kill_port_processes "$CTIR_ANALYZER_PORT" "CTIR Analyzer"
+    kill_port_processes "$MCP_SYNTHETIC_PORT" "MCP Synthetic"
     echo ""
     
     # Termina processi specifici
     kill_named_processes "claude-code-router" "Claude Code Router"
-    kill_named_processes "ctir.*dist/index.js" "CTIR Server"
     kill_named_processes "mcp.*synthetic" "MCP Synthetic"
-    kill_named_processes "ctir-router-mcp" "CTIR Router MCP"
+    kill_named_processes "start-devflow" "DevFlow Startup"
     echo ""
     
     # Pulisci file PID
@@ -156,22 +153,14 @@ check_status() {
     log "📊 Verificando stato servizi..."
     
     local services_running=0
-    local total_services=4
+    local total_services=3
     
-    # Verifica CTIR
-    if curl -s "http://127.0.0.1:$CTIR_PORT/health" > /dev/null 2>&1; then
-        info "CTIR: Attivo"
+    # Verifica MCP Synthetic
+    if curl -s "http://127.0.0.1:$MCP_SYNTHETIC_PORT/health" > /dev/null 2>&1; then
+        info "MCP Synthetic: Attivo"
         services_running=$((services_running + 1))
     else
-        info "CTIR: Non attivo"
-    fi
-    
-    # Verifica CTIR Analyzer
-    if curl -s "http://127.0.0.1:$CTIR_ANALYZER_PORT/health" > /dev/null 2>&1; then
-        info "CTIR Analyzer: Attivo"
-        services_running=$((services_running + 1))
-    else
-        info "CTIR Analyzer: Non attivo"
+        info "MCP Synthetic: Non attivo"
     fi
     
     # Verifica Claude Code Router
@@ -182,12 +171,12 @@ check_status() {
         info "Claude Code Router: Non attivo"
     fi
     
-    # Verifica MCP Synthetic
-    if pgrep -f "mcp.*synthetic" > /dev/null 2>&1; then
-        info "MCP Synthetic: Attivo"
+    # Verifica DevFlow Startup
+    if pgrep -f "start-devflow" > /dev/null 2>&1; then
+        info "DevFlow Startup: Attivo"
         services_running=$((services_running + 1))
     else
-        info "MCP Synthetic: Non attivo"
+        info "DevFlow Startup: Non attivo"
     fi
     
     echo ""
