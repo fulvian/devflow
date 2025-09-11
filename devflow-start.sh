@@ -120,13 +120,21 @@ sleep 2
 echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 CORE_PID="N/A"
 
-# Start Claude Code Router (CCR) if available
-echo "   🔀 Starting Claude Code Router (CCR)..."
-if command -v npm run claude:ccr:start &> /dev/null; then
-    npm run claude:ccr:start > logs/ccr-server.log 2>&1 &
-    CCR_PID=$!
+# Start Claude Code Router (CCR) - Emergency Integration
+echo "   🔀 Starting Claude Code Router (CCR) with Emergency System..."
+if command -v npx &> /dev/null && npm list @musistudio/claude-code-router &> /dev/null; then
+    # Check if Emergency CCR is already running
+    if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
+        echo "   ✅ Emergency CCR already running, using existing instance"
+        CCR_PID="EMERGENCY"
+    else
+        # Start Emergency CCR system
+        npm run emergency:start > logs/ccr-server.log 2>&1 &
+        CCR_PID=$!
+        echo "   🚨 Emergency CCR system started (PID: $CCR_PID)"
+    fi
 else
-    echo "⚠️  CCR not configured, skipping..."
+    echo "⚠️  CCR package not found, skipping..."
     CCR_PID="N/A"
 fi
 sleep 2
@@ -165,18 +173,28 @@ fi
 # DevFlow Core Server skipped in this phase
 echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 
-# Health Check for CCR
+# Health Check for Emergency CCR
 if [ "$CCR_PID" != "N/A" ]; then
-    echo "   🔍 Checking Claude Code Router..."
-    counter=0
-    until grep -q "CCR.*ATTIVO\|router.*running" logs/ccr-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
-        sleep 1
-        ((counter++))
-    done
-    if [ $counter -eq $timeout ]; then
-        echo "⚠️  CCR Server: TIMEOUT (check logs/ccr-server.log)"
+    echo "   🔍 Checking Emergency CCR System..."
+    if [ "$CCR_PID" = "EMERGENCY" ]; then
+        # Check existing Emergency CCR status
+        if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
+            echo "✅ Emergency CCR System: OPERATIONAL (existing instance)"
+        else
+            echo "⚠️  Emergency CCR System: Status unclear"
+        fi
     else
-        echo "✅ Claude Code Router: OPERATIONAL"
+        # Check new Emergency CCR instance
+        counter=0
+        until grep -q "CCR Emergency Proxy ACTIVATED\|Emergency CCR ACTIVATED" logs/ccr-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
+            sleep 1
+            ((counter++))
+        done
+        if [ $counter -eq $timeout ]; then
+            echo "⚠️  Emergency CCR System: TIMEOUT (check logs/ccr-server.log)"
+        else
+            echo "✅ Emergency CCR System: OPERATIONAL (PID: $CCR_PID)"
+        fi
     fi
 fi
 
@@ -197,7 +215,11 @@ echo ""
 echo "📊 Active Services:"
 echo "   🤖 MCP Synthetic Server:     PID $SYNTHETIC_PID (Enhanced Delegation)"
 [ "$CORE_PID" != "N/A" ] && echo "   ⚙️  DevFlow Core Server:      PID $CORE_PID"
-[ "$CCR_PID" != "N/A" ] && echo "   🔀 Claude Code Router:        PID $CCR_PID"
+if [ "$CCR_PID" = "EMERGENCY" ]; then
+    echo "   🚨 Emergency CCR System:     ACTIVE (existing instance)"
+elif [ "$CCR_PID" != "N/A" ]; then
+    echo "   🚨 Emergency CCR System:     PID $CCR_PID (session independence)"
+fi
 echo ""
 echo "🧠 Available Synthetic Models:"
 echo "   📝 synthetic_code         → Qwen3-Coder-480B-A35B-Instruct"
@@ -235,7 +257,10 @@ echo ""
 echo "📋 Monitor Logs:"
 echo "   - Synthetic Server:  tail -f logs/synthetic-server.log"
 [ "$CORE_PID" != "N/A" ] && echo "   - DevFlow Core:      tail -f logs/devflow-core.log"
-[ "$CCR_PID" != "N/A" ] && echo "   - CCR Server:        tail -f logs/ccr-server.log"
+if [ "$CCR_PID" != "N/A" ]; then
+    echo "   - Emergency CCR:     npm run emergency:status"
+    echo "   - CCR Logs:          tail -f logs/ccr-server.log"
+fi
 echo ""
 echo "🛑 Stop all services:"
 echo "   ./devflow-stop.sh"
@@ -272,6 +297,11 @@ fi
 pkill -f "synthetic" 2>/dev/null || true
 pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
+
+# Stop Emergency CCR if running
+if command -v npm &> /dev/null; then
+    npm run emergency:stop 2>/dev/null || true
+fi
 
 echo "✅ All DevFlow services stopped"
 EOF

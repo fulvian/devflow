@@ -31,7 +31,13 @@
     "claude:ccr:stop": "node ccr-production.js stop",
     "claude:ccr:status": "node ccr-production.js status",
     "claude:coder": "npx @musistudio/claude-code-router code",
-    "claude:production": "node ccr-production.js production"
+    "claude:production": "node ccr-production.js production",
+    "emergency:ccr": "node emergency-ccr-cli.mjs",
+    "emergency:start": "node emergency-ccr-cli.mjs start",
+    "emergency:stop": "node emergency-ccr-cli.mjs stop",
+    "emergency:status": "node emergency-ccr-cli.mjs status",
+    "emergency:monitor": "node emergency-ccr-cli.mjs monitor",
+    "emergency:test": "node emergency-ccr-cli.mjs test"
   },
   "devDependencies": {
     "@changesets/cli": "^2.27.0",
