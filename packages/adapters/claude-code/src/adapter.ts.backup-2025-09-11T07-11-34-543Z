@@ -1,0 +1,131 @@
+import { SessionEvent, HookRegistrar } from '@devflow/core';
+import { SQLiteMemoryManager } from '@devflow/memory';
+import { ContextManager } from '@devflow/context';
+import { DevFlowMCPServer } from './mcp-server';
+import { SemanticSearchService } from './semantic-search';
+import { PlatformHandoffEngine } from '@devflow/handoff';
+import { VectorEmbeddingService } from '@devflow/vector';
+
+interface ClaudeAdapterConfig {
+  contextDir: string;
+  memory: SQLiteMemoryManager;
+  context: ContextManager;
+  semanticService: SemanticSearchService;
+  handoffEngine: PlatformHandoffEngine;
+  vectorService: VectorEmbeddingService;
+}
+
+export class ClaudeAdapter implements HookRegistrar {
+  private contextDir: string;
+  private memory: SQLiteMemoryManager;
+  private context: ContextManager;
+  private mcpServer?: DevFlowMCPServer;
+  private semanticService: SemanticSearchService;
+  private handoffEngine: PlatformHandoffEngine;
+  private vectorService: VectorEmbeddingService;
+  private config: ClaudeAdapterConfig;
+
+  constructor(cfg: ClaudeAdapterConfig) {
+    this.contextDir = cfg.contextDir;
+    this.memory = cfg.memory;
+    this.context = cfg.context;
+    this.semanticService = cfg.semanticService;
+    this.handoffEngine = cfg.handoffEngine;
+    this.vectorService = cfg.vectorService;
+    this.config = cfg;
+  }
+
+  register(cc: SessionEvent): void {
+    cc.on('session-start', this.onSessionStart.bind(this));
+    cc.on('session-end', this.onSessionEnd.bind(this));
+    cc.on('tool-used', this.onToolUsed.bind(this));
+  }
+
+  async onSessionStart(sessionId: string, metadata: any): Promise<void> {
+    console.log(`Session started: ${sessionId}`);
+    await this.context.initializeSession(sessionId, metadata);
+  }
+
+  async onSessionEnd(sessionId: string, metadata: any): Promise<void> {
+    console.log(`Session ended: ${sessionId}`);
+    await this.context.finalizeSession(sessionId, metadata);
+  }
+
+  async onToolUsed(toolName: string, args: any, result: any): Promise<void> {
+    console.log(`Tool used: ${toolName}`);
+    await this.memory.logToolUsage(toolName, args, result);
+  }
+
+  async saveBlocks(taskId: string, sessionId: string, blocks: any[]): Promise<void> {
+    await this.memory.saveBlocks(taskId, sessionId, blocks);
+  }
+
+  async startMCPServer(): Promise<void> {
+    this.mcpServer = new DevFlowMCPServer({
+      adapter: this,
+      port: 3000
+    });
+    await this.mcpServer.start();
+  }
+
+  async stopMCPServer(): Promise<void> {
+    if (this.mcpServer) {
+      await this.mcpServer.stop();
+      this.mcpServer = undefined;
+    }
+  }
+
+  async searchMemory(query: string, options?: any): Promise<any[]> {
+    return this.semanticService.hybridSearch(query, options);
+  }
+
+  async generateHandoff(platform: string, task: any, context: any): Promise<any> {
+    return this.handoffEngine.generate(platform, task, context);
+  }
+
+  async healthCheck(): Promise<{status: string; services: Record<string, boolean>}> {
+    const services: Record<string, boolean> = {};
+    
+    try {
+      await this.memory.healthCheck();
+      services.memory = true;
+    } catch {
+      services.memory = false;
+    }
+    
+    try {
+      await this.context.healthCheck();
+      services.context = true;
+    } catch {
+      services.context = false;
+    }
+    
+    try {
+      await this.semanticService.healthCheck();
+      services.semantic = true;
+    } catch {
+      services.semantic = false;
+    }
+    
+    try {
+      await this.handoffEngine.healthCheck();
+      services.handoff = true;
+    } catch {
+      services.handoff = false;
+    }
+    
+    try {
+      await this.vectorService.healthCheck();
+      services.vector = true;
+    } catch {
+      services.vector = false;
+    }
+    
+    const allHealthy = Object.values(services).every(status => status);
+    
+    return {
+      status: allHealthy ? 'healthy' : 'degraded',
+      services
+    };
+  }
+}

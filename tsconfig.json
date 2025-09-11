@@ -46,8 +46,8 @@
       "@devflow/claude-adapter/*": ["packages/adapters/claude-code/src/*"],
       "@devflow/openrouter": ["packages/adapters/openrouter/src/index.ts"],
       "@devflow/openrouter/*": ["packages/adapters/openrouter/src/*"],
-      "@devflow/synthetic": ["mcp-servers/synthetic/src/index.ts"],
-      "@devflow/synthetic/*": ["mcp-servers/synthetic/src/*"]
+      "@devflow/synthetic": ["packages/adapters/synthetic/src/index.ts"],
+      "@devflow/synthetic/*": ["packages/adapters/synthetic/src/*"]
     }
   },
   "include": ["packages/**/src/**/*", "tests/**/*"],

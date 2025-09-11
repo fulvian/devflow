@@ -1,169 +1,68 @@
+import { ClaudeAdapterConfig, ClaudeMessage, ClaudeResponse } from '@devflow/shared';
 import { SQLiteMemoryManager } from '@devflow/core';
-import type { MemoryBlock, TaskContext } from '@devflow/shared';
-import { ContextManager } from './context/manager.js';
-import { registerHooks, type HookRegistrar, type SessionEvent } from './hooks/index.js';
-import { safeMkdir } from './filesystem/safe-ops.js';
-import { DevFlowMCPServer } from './mcp-server.js';
-import { SemanticSearchService } from './semantic-search.js';
+import { VectorEmbeddingService } from '@devflow/core';
 import { PlatformHandoffEngine } from './handoff-engine.js';
+import { ContextManager } from './context/manager.js';
+import { MCPService } from './mcp-server.js';
+import { SafeFileOperations } from './filesystem/safe-ops.js';
 
-export interface ClaudeAdapterConfig {
-  contextDir?: string; // defaults to .claude/context
-  task?: Pick<TaskContext, 'title' | 'priority'> & Partial<TaskContext>;
-  enableMCP?: boolean;
-  enableHandoff?: boolean;
-  verbose?: boolean;
-}
-
-export class ClaudeAdapter implements HookRegistrar {
-  private contextDir: string;
-  private memory: SQLiteMemoryManager;
-  private context: ContextManager;
-  private mcpServer?: DevFlowMCPServer;
-  private semanticService: SemanticSearchService;
-  private handoffEngine: PlatformHandoffEngine;
+export class ClaudeCodeAdapter {
   private config: ClaudeAdapterConfig;
+  private memoryManager: SQLiteMemoryManager;
+  private embeddingService: VectorEmbeddingService;
+  private handoffEngine: PlatformHandoffEngine | null = null;
+  private contextManager: ContextManager | null = null;
+  private mcpService: MCPService | null = null;
+  private fileOps: SafeFileOperations;
 
-  constructor(cfg: ClaudeAdapterConfig = {}) {
-    this.config = cfg;
-    this.contextDir = cfg.contextDir ?? `${process.cwd()}/.claude/context`;
-    this.memory = new SQLiteMemoryManager();
-    this.context = new ContextManager(this.memory, this.contextDir);
+  constructor(config: ClaudeAdapterConfig) {
+    this.config = config;
+    this.memoryManager = new SQLiteMemoryManager();
+    this.embeddingService = new VectorEmbeddingService();
+    this.fileOps = new SafeFileOperations();
     
-    // Initialize services
-    this.semanticService = new SemanticSearchService({
-      memoryManager: this.memory,
-    });
-    
-    this.handoffEngine = new PlatformHandoffEngine();
-    
-    // Initialize MCP server if enabled
-    if (cfg.enableMCP !== false) {
-      this.mcpServer = new DevFlowMCPServer({
-        memoryManager: this.memory,
-        semanticService: this.semanticService,
-        handoffEngine: this.handoffEngine,
-        verbose: cfg.verbose ?? false,
-      });
+    if (config.enableHandoff) {
+      this.handoffEngine = new PlatformHandoffEngine();
     }
     
-    safeMkdir(this.contextDir);
-  }
-
-  register(cc: SessionEvent): void {
-    registerHooks(cc, this);
-  }
-
-  async onSessionStart(event: { sessionId: string; taskId?: string }): Promise<void> {
-    // Inject context at session start
-    await this.context.inject(event.taskId, event.sessionId);
-  }
-
-  async onSessionEnd(event: { sessionId: string; taskId: string }): Promise<void> {
-    // Extract and persist context
-    await this.context.extractAndStore(event.taskId, event.sessionId);
-  }
-
-  async onToolUsed(event: { sessionId: string; taskId: string; tool: string; payload?: unknown }): Promise<void> {
-    // Save context after significant tool usage
-    await this.context.extractAndStore(event.taskId, event.sessionId, { reason: `tool:${event.tool}` });
-  }
-
-  async saveBlocks(taskId: string, sessionId: string, blocks: MemoryBlock[]): Promise<void> {
-    for (const b of blocks) {
-      await this.memory.storeMemoryBlock({
-        taskId,
-        sessionId,
-        blockType: b.blockType,
-        label: b.label,
-        content: b.content,
-        metadata: b.metadata ?? {},
-        importanceScore: b.importanceScore ?? 0.5,
-        relationships: b.relationships ?? [],
-        embeddingModel: b.embeddingModel ?? 'openai-ada-002',
-      });
+    if (config.contextDir) {
+      this.contextManager = new ContextManager(config.contextDir);
+    }
+    
+    if (config.enableMCP) {
+      this.mcpService = new MCPService();
     }
   }
 
-  // MCP Server Management
-  async startMCPServer(): Promise<void> {
-    if (this.mcpServer) {
-      await this.mcpServer.start();
-      if (this.config.verbose) {
-        console.log('DevFlow MCP Server started');
-      }
-    }
+  async processMessage(message: ClaudeMessage): Promise<ClaudeResponse> {
+    // Implementation would go here
+    return { content: 'Response content', role: 'assistant' };
   }
 
-  async stopMCPServer(): Promise<void> {
-    if (this.mcpServer) {
-      await this.mcpServer.stop();
-      if (this.config.verbose) {
-        console.log('DevFlow MCP Server stopped');
-      }
-    }
+  async searchContext(query: string) {
+    if (!this.contextManager) return null;
+    return await this.contextManager.search(query);
   }
 
-  // Semantic Search
-  async searchMemory(query: string, options?: {
-    maxResults?: number;
-    blockTypes?: string[];
-    threshold?: number;
-  }): Promise<any[]> {
-    return await this.semanticService.hybridSearch({
-      query,
-      maxResults: options?.maxResults ?? 10,
-      blockTypes: options?.blockTypes as any,
-      threshold: options?.threshold ?? 0.7,
-    });
+  async saveToMemory(key: string, data: any) {
+    return await this.memoryManager.set(key, data);
   }
 
-  // Platform Handoff
-  async generateHandoff(platform: string, task: string, context?: string): Promise<string> {
-    return await this.handoffEngine.generateHandoffCommand({
-      platform: platform as any,
-      task,
-      context: context || '',
-      preserveArchitecture: true,
-      timestamp: new Date(),
-      preservedDecisions: [],
-      contextSummary: '',
-      nextSteps: [],
-      constraints: [],
-      platformSpecificData: {} as any,
-    });
+  async retrieveFromMemory(key: string) {
+    return await this.memoryManager.get(key);
   }
 
-  // Health Check
-  async healthCheck(): Promise<{
-    status: 'healthy' | 'degraded' | 'unhealthy';
-    services: {
-      memory: boolean;
-      mcp: boolean;
-      semantic: boolean;
-      handoff: boolean;
-    };
-  }> {
-    const services = {
-      memory: true, // SQLiteMemoryManager is always available
-      mcp: this.mcpServer !== undefined,
-      semantic: true, // SemanticSearchService is always available
-      handoff: true, // PlatformHandoffEngine is always available
-    };
+  async generateEmbedding(text: string) {
+    return await this.embeddingService.generateEmbedding(text);
+  }
 
-    const healthyServices = Object.values(services).filter(Boolean).length;
-    const totalServices = Object.keys(services).length;
+  async executeHandoff(task: any) {
+    if (!this.handoffEngine) return null;
+    return await this.handoffEngine.execute(task);
+  }
 
-    let status: 'healthy' | 'degraded' | 'unhealthy';
-    if (healthyServices === totalServices) {
-      status = 'healthy';
-    } else if (healthyServices >= totalServices / 2) {
-      status = 'degraded';
-    } else {
-      status = 'unhealthy';
-    }
-
-    return { status, services };
+  async startMCP() {
+    if (!this.mcpService) return null;
+    return await this.mcpService.start();
   }
 }
-

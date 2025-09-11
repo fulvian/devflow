@@ -5,7 +5,8 @@
  */
 
 // Export command registry
-export { CommandRegistry, commandRegistry, CommandHandler } from './command-registry.js';
+export type { CommandRegistry, CommandHandler } from './command-registry.js';
+export { commandRegistry } from './command-registry.js';
 
 // Export synthetic commands
 export { SyntheticCommand, syntheticCommand } from './commands/synthetic-command.js';

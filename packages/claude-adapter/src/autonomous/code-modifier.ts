@@ -1,5 +1,5 @@
 import { SyntheticGateway } from '@devflow/synthetic';
-import { Edit, MultiEdit, Read, Write } from '../tools/file-operations.js';
+import { MultiEdit, Read, Write } from '../tools/file-operations.js';
 import * as path from 'path';
 import * as fs from 'fs';
 
@@ -24,7 +24,7 @@ export interface FileChange {
   readonly filepath: string;
   readonly action: 'create' | 'modify' | 'delete';
   readonly oldContent?: string;
-  readonly newContent?: string;
+  newContent?: string;
   readonly changes?: Array<{
     oldString: string;
     newString: string;
@@ -124,12 +124,10 @@ export class AutonomousCodeModifier {
 
 TASK: ${request.task}
 
+')}
 CONSTRAINTS:
-${(request.constraints || []).map(c => `- ${c}`).join('\n')}
-- Maintain existing code style and patterns
-- Preserve all existing functionality unless explicitly modifying it
-- Add appropriate error handling and validation
-- Include helpful comments for complex logic
+${((request.constraints || []).map(c => `- ${c}`) as string[]).join('\\n')}
+
 
 CURRENT CODEBASE CONTEXT:
 `;
@@ -181,7 +179,14 @@ Generate the modification plan now:`;
       try {
         const fullPath = path.resolve(this.workingDirectory, file);
         if (await this.fileExists(fullPath)) {
-          contents[file] = await fs.promises.readFile(fullPath, 'utf-8');
+          const content = await Read(fullPath);
+          if (content !== null) {
+            contents[file] = content;
+          } else {
+            // File exists but Read returned null (e.g., empty file or permission issue)
+            console.warn(`Warning: Could not read content from ${file}. Treating as empty.`);
+            contents[file] = '';
+          }
         } else {
           console.log(`⚠️ File not found: ${file} (will be created)`);
           contents[file] = ''; // Empty content for new files
@@ -203,7 +208,7 @@ Generate the modification plan now:`;
         throw new Error('No JSON modification plan found in response');
       }
 
-      const parsed = JSON.parse(jsonMatch[1]);
+      const parsed = JSON.parse(jsonMatch[1] as string);
       return parsed.modifications || [];
     } catch (error) {
       console.error('Failed to parse modification plan:', error);
@@ -215,7 +220,7 @@ Generate the modification plan now:`;
     try {
       const jsonMatch = planText.match(/```json\n([\s\S]*?)\n```/);
       if (jsonMatch) {
-        const parsed = JSON.parse(jsonMatch[1]);
+        const parsed = JSON.parse(jsonMatch[1] as string);
         return parsed.summary || 'Code modifications generated';
       }
     } catch (error) {
@@ -272,7 +277,7 @@ Generate the modification plan now:`;
     switch (operation.action) {
       case 'create':
         const newContent = this.generateNewFileContent(operation.changes);
-        await fs.promises.writeFile(filepath, newContent, 'utf-8');
+        await Write(filepath, newContent);
         return {
           filepath: operation.file,
           action: 'create',
@@ -280,19 +285,17 @@ Generate the modification plan now:`;
         };
 
       case 'modify':
-        const oldContent = await fs.promises.readFile(filepath, 'utf-8');
-        let modifiedContent = oldContent;
-        
-        for (const change of operation.changes) {
-          modifiedContent = modifiedContent.replace(change.old, change.new);
+        const oldContent = await Read(filepath);
+        if (oldContent === null) {
+          throw new Error(`File not found for modification: ${operation.file}`);
         }
-        
-        await fs.promises.writeFile(filepath, modifiedContent, 'utf-8');
+        await MultiEdit(filepath, operation.changes);
+        const modifiedContent = await Read(filepath);
         return {
           filepath: operation.file,
           action: 'modify',
           oldContent,
-          newContent: modifiedContent,
+          newContent: modifiedContent as string,
           changes: operation.changes,
         };
 
