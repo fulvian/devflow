@@ -11,7 +11,6 @@ import * as dotenv from 'dotenv';
 import { promises as fs } from 'fs';
 import { join, resolve, dirname, basename } from 'path';
 import { existsSync } from 'fs';
-import { SyntheticRateLimiter } from './rate-limiter/synthetic-rate-limiter.js';
 import { AutonomousFileManager, FileOperation } from './file-operations.js';
 import { MCPErrorFactory, MCPResponseBuilder, MCPError } from './enhanced-tools.js';
 
@@ -138,7 +137,6 @@ interface FileOperationResult {
 export class EnhancedSyntheticMCPServer {
   private server: Server;
   private allowedPaths: string[];
-  private rateLimiter: SyntheticRateLimiter;
   private fileManager: AutonomousFileManager;
   private requestIdCounter: number = 0;
 
@@ -155,29 +153,7 @@ export class EnhancedSyntheticMCPServer {
       SYNTHETIC_DELETE_ENABLED
     );
     
-    // Initialize rate limiter with 135 calls per 5-hour limit
-    this.rateLimiter = new SyntheticRateLimiter({
-      maxCalls: 135,
-      windowSeconds: 18000, // 5 hours
-      batchSize: 5, // Conservative batching for file operations
-      maxRetries: 3,
-      baseDelayMs: 2000,
-      maxDelayMs: 60000 // 1 minute max delay
-    });
-
-    console.log('[Synthetic MCP] Rate limiter initialized: 135 calls/5h limit');
     console.log(`[Synthetic MCP] Full project access enabled: ${this.allowedPaths.length} paths`);
-    
-    // Initialize rate limiter processor
-    this.initializeRateLimiterProcessor();
-    
-    // Log rate limit status periodically
-    setInterval(() => {
-      const status = this.rateLimiter.getRateLimitStatus();
-      if (status.queueSize > 0 || status.totalCalls > 0) {
-        console.log(`[Rate Limit Status] ${status.remainingCalls}/${status.totalCalls} calls remaining, queue: ${status.queueSize}`);
-      }
-    }, 30000); // Every 30 seconds
     this.server = new Server(
       {
         name: 'devflow-synthetic-enhanced',
@@ -483,85 +459,33 @@ export class EnhancedSyntheticMCPServer {
     messages: Array<{ role: 'system' | 'user' | 'assistant'; content: string }>,
     maxTokens: number = 4000
   ): Promise<SyntheticResponse> {
+    // Direct API call - no rate limiting
     if (!SYNTHETIC_API_KEY) {
       throw new Error('SYNTHETIC_API_KEY not configured');
     }
 
-    // Use rate limiter to queue and manage API calls
-    return await this.rateLimiter.execute(
-      'chat_completion',
+    console.log(`[Synthetic API] Direct call to ${model} (No rate limiting)`);
+
+    const response = await axios.post(
+      `${SYNTHETIC_API_URL}/chat/completions`,
       {
         model,
         messages,
-        maxTokens,
-        url: `${SYNTHETIC_API_URL}/chat/completions`
-      },
-      this.getPriorityForModel(model)
+        max_tokens: maxTokens,
+        temperature: 0.7,
+      } as SyntheticRequest,
+      {
+        headers: {
+          'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+        timeout: 120000 // 2 minute timeout
+      }
     );
+
+    return response.data;
   }
 
-  /**
-   * Get priority level for different models
-   */
-  private getPriorityForModel(model: string): number {
-    // Higher priority for code generation (more time-sensitive)
-    if (model.includes('Coder') || model.includes('code')) {
-      return 10;
-    }
-    // Medium priority for reasoning tasks
-    if (model.includes('DeepSeek') || model.includes('reasoning')) {
-      return 5;
-    }
-    // Lower priority for context/analysis tasks
-    return 1;
-  }
-
-  /**
-   * Initialize rate limiter with actual API call processor
-   */
-  private initializeRateLimiterProcessor(): void {
-    // Set the batch processor for chat completions
-    (this.rateLimiter as any).processBatch = async (operation: string, requests: any[]) => {
-      if (operation !== 'chat_completion') {
-        throw new Error(`Unknown operation: ${operation}`);
-      }
-
-      const results = [];
-      
-      // Process requests individually (Synthetic API doesn't support true batching)
-      for (const request of requests) {
-        try {
-          const { model, messages, maxTokens, url } = request.payload;
-          
-          const response = await axios.post(
-            url,
-            {
-              model,
-              messages,
-              max_tokens: maxTokens,
-              temperature: 0.7,
-            } as SyntheticRequest,
-            {
-              headers: {
-                'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
-                'Content-Type': 'application/json',
-              },
-              timeout: 30000 // 30 second timeout
-            }
-          );
-
-          results.push(response.data);
-          
-        } catch (error) {
-          // Log error but continue processing other requests
-          console.error(`[Synthetic API] Error processing request ${request.id}:`, error instanceof Error ? error.message : String(error));
-          throw error; // Re-throw to trigger retry logic
-        }
-      }
-      
-      return results;
-    };
-  }
 
   // MCP UTILITY METHODS
   private generateRequestId(): string {

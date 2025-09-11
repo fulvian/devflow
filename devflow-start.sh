@@ -41,6 +41,7 @@ echo "✅ Environment configured:"
 echo "   - Project Root: $DEVFLOW_PROJECT_ROOT"
 echo "   - Node Environment: $NODE_ENV"
 echo "   - Synthetic API: $(echo $SYNTHETIC_API_KEY | sed 's/./*/g' | sed 's/\(.*\)\*\*\*\*/\1****/')"
+echo "   - API Mode: Direct calls (No rate limiting)"
 
 # --- 2. Port and Process Cleanup ---
 echo ""
@@ -110,7 +111,7 @@ DEVFLOW_PROJECT_ROOT=$DEVFLOW_PROJECT_ROOT \
 AUTONOMOUS_FILE_OPERATIONS=$AUTONOMOUS_FILE_OPERATIONS \
 CREATE_BACKUPS=$CREATE_BACKUPS \
 SYNTHETIC_DELETE_ENABLED=$SYNTHETIC_DELETE_ENABLED \
-npm start > ../../logs/synthetic-server.log 2>&1 &
+node dist/dual-enhanced-index.js > ../../logs/synthetic-server.log 2>&1 &
 SYNTHETIC_PID=$!
 cd ../..
 sleep 2
@@ -150,7 +151,7 @@ echo "⏳ Performing health checks (30s timeout each)..."
 echo "   🔍 Checking Synthetic MCP Server..."
 timeout=30
 counter=0
-until grep -q "DevFlow.*Synthetic.*MCP.*server.*running" logs/synthetic-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
+until grep -q "DevFlow Enhanced Synthetic MCP server running\|Full project access enabled" logs/synthetic-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
     sleep 1
     ((counter++))
 done
@@ -158,7 +159,7 @@ if [ $counter -eq $timeout ]; then
     echo "❌ Synthetic MCP Server failed to start. Check logs/synthetic-server.log"
     cat logs/synthetic-server.log | tail -20
 else
-    echo "✅ Synthetic MCP Server: OPERATIONAL"
+    echo "✅ Synthetic MCP Server: OPERATIONAL (Enhanced with File Operations)"
 fi
 
 # DevFlow Core Server skipped in this phase
@@ -179,13 +180,13 @@ if [ "$CCR_PID" != "N/A" ]; then
     fi
 fi
 
-# --- 7. Rate Limiter Status ---
+# --- 7. API Status ---
 echo ""
-echo "📊 Checking Synthetic API Rate Limiter..."
-if grep -q "Rate limiter initialized.*135.*5h" logs/synthetic-server.log 2>/dev/null; then
-    echo "✅ Rate Limiter: 135 calls/5h limit configured"
+echo "📊 Checking Synthetic API Status..."
+if grep -q "Full project access enabled.*paths" logs/synthetic-server.log 2>/dev/null; then
+    echo "✅ Synthetic API: Direct calls enabled (No rate limiting)"
 else
-    echo "⚠️  Rate Limiter: Status unknown (check logs)"
+    echo "⚠️  Synthetic API: Status unknown (check logs)"
 fi
 
 # --- 8. Final System Status ---
@@ -210,22 +211,25 @@ echo "   ⚡ synthetic_batch_code   → Batch processing"
 echo "   🔍 synthetic_file_analyzer → File analysis"
 echo ""
 echo "📈 System Configuration:"
-echo "   🔒 API Rate Limit:         135 calls / 5 hours"
+echo "   🚀 API Mode:               Direct calls (No rate limiting)"
 echo "   💾 File Operations:        $([ "$AUTONOMOUS_FILE_OPERATIONS" = "true" ] && echo "AUTONOMOUS" || echo "MANUAL")"
 echo "   🗃️  Backup Creation:        $([ "$CREATE_BACKUPS" = "true" ] && echo "ENABLED" || echo "DISABLED")"
 echo "   🗑️  Delete Operations:      $([ "$SYNTHETIC_DELETE_ENABLED" = "true" ] && echo "ENABLED" || echo "DISABLED")"
+echo "   🔧 Enhanced Features:      MCPResponseBuilder, File Operations, Error Handling"
 echo ""
 echo "🖥️  HOW TO USE DEVFLOW WITH SYNTHETIC DELEGATION:"
 echo "=========================================================================="
 echo ""
 echo "🟢 Start Claude Code session with full Synthetic integration:"
 echo "   cd /Users/fulvioventura/devflow"
-echo "   claude-code --mcp-config ./.mcp.json"
+echo "   claude-code (MCP auto-configured from ~/.config/claude-desktop/claude_desktop_config.json)"
 echo ""
 echo "🧪 Test Synthetic delegation directly:"
-echo '   mcp__devflow-synthetic-cc-sessions__synthetic_auto({'
+echo '   mcp__devflow-synthetic-cc-sessions__synthetic_code({'
 echo '     task_id: "TEST-001",'
-echo '     request: "Create a TypeScript interface for user management"'
+echo '     objective: "Create a TypeScript interface for user management",'
+echo '     language: "typescript",'
+echo '     requirements: ["Export as ES module", "Include validation methods"]'
 echo '   })'
 echo ""
 echo "📋 Monitor Logs:"
