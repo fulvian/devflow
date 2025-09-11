@@ -4,10 +4,10 @@
  * Implements <200ms synchronization target
  */
 
-import { UniversalContextFormat, ContextSyncEvent, SyncStatus } from './universal-context-format';
-import { ConflictResolver } from './conflict-resolver';
-import { ContextOptimizer } from './context-optimizer';
-import { SQLiteStorage } from './sqlite-storage';
+import type { UniversalContextFormat, ContextSyncEvent, SyncStatus } from './universal-context-format.js';
+import { ConflictResolver } from './conflict-resolver.js';
+import { ContextOptimizer } from './context-optimizer.js';
+import { SQLiteStorage } from './sqlite-storage.js';
 
 export class CrossPlatformSynchronizer {
   private storage: SQLiteStorage;

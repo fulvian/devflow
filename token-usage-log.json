@@ -1,0 +1,35 @@
+[
+  {
+    "timestamp": "2025-09-10T07:47:30.737Z",
+    "operation_type": "synthetic_auto_file",
+    "task_id": "DEVFLOW-AUTO-001",
+    "type": "synthetic_auto_file",
+    "taskId": "DEVFLOW-AUTO-001",
+    "tokens_used": 1200,
+    "tokens_saved": 800,
+    "files_modified": 2,
+    "efficiency_percentage": 40
+  },
+  {
+    "timestamp": "2025-09-10T07:47:30.739Z",
+    "operation_type": "synthetic_batch_code",
+    "task_id": "DEVFLOW-BATCH-001",
+    "type": "synthetic_batch_code",
+    "taskId": "DEVFLOW-BATCH-001",
+    "tokens_used": 2500,
+    "tokens_saved": 1500,
+    "files_modified": 5,
+    "efficiency_percentage": 37.5
+  },
+  {
+    "timestamp": "2025-09-10T07:47:30.739Z",
+    "operation_type": "synthetic_code",
+    "task_id": "DEVFLOW-CODE-001",
+    "type": "synthetic_code",
+    "taskId": "DEVFLOW-CODE-001",
+    "tokens_used": 800,
+    "tokens_saved": 200,
+    "files_modified": 1,
+    "efficiency_percentage": 20
+  }
+]

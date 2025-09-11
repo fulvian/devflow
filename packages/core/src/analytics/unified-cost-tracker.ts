@@ -234,11 +234,11 @@ export class UnifiedCostTracker {
       const best = platformEfficiency[0];
       const worst = platformEfficiency[platformEfficiency.length - 1];
       
-      if (worst.costPerQualityPoint > best.costPerQualityPoint * 2) {
+      if (best && worst && worst.costPerQualityPoint > best.costPerQualityPoint * 2) {
         recommendations.push({
           type: 'platform_switch',
           description: `Consider using ${best.platform} more often instead of ${worst.platform}`,
-          estimatedSavings: summaries[worst.platform].totalCostUsd * 0.3,
+          estimatedSavings: summaries[worst.platform]?.totalCostUsd ? summaries[worst.platform]!.totalCostUsd * 0.3 : 0,
           confidence: 0.8,
           actionRequired: `Route similar tasks to ${best.platform} first`,
         });

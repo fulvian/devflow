@@ -18,3 +18,6 @@ export { UnifiedCostTracker, type CostEvent, type CostSummary, type BudgetLimits
 
 // CCR Session Independence exports
 export * from './coordination/index.js';
+
+// ML Vector Embeddings exports
+export * from './ml/index.js';

@@ -1,0 +1,15 @@
+import { SearchQuery, SemanticSearchResult } from '@devflow/core';
+import { ClaudeAdapter } from './adapter';
+
+export class MCPServer {
+  private claudeAdapter: ClaudeAdapter;
+
+  constructor(claudeAdapter: ClaudeAdapter) {
+    this.claudeAdapter = claudeAdapter;
+  }
+
+  async handleSearch(query: SearchQuery): Promise<SemanticSearchResult[]> {
+    // Implementation here
+    return [];
+  }
+}

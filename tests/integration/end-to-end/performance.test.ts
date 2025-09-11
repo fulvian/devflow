@@ -10,7 +10,7 @@ import { PerformanceBenchmark } from '../../../tools/performance-benchmark.js';
 import type { BenchmarkResult, PerformanceTargets } from '../../../packages/shared/src/types.js';
 
 describe('DevFlow Performance Benchmarking', () => {
-  let devFlow: DevFlowCore;
+  let devFlow: MultiPlatformCoordinator;
   let benchmark: PerformanceBenchmark;
   
   const PERFORMANCE_TARGETS: PerformanceTargets = {
@@ -22,7 +22,7 @@ describe('DevFlow Performance Benchmarking', () => {
   };
 
   beforeAll(async () => {
-    devFlow = new DevFlowCore({ dbPath: ':memory:' });
+    devFlow = new MultiPlatformCoordinator({ dbPath: ':memory:' });
     benchmark = new PerformanceBenchmark(devFlow);
     await devFlow.initialize();
   });

@@ -43,8 +43,8 @@ export class ClaudeCodeSyntheticIntegration {
 
       this.gateway = new SyntheticGateway({
         apiKey: env.SYNTHETIC_API_KEY,
-        baseUrl: env.SYNTHETIC_BASE_URL,
-        timeoutMs: env.SYNTHETIC_TIMEOUT_MS,
+        baseUrl: env.SYNTHETIC_BASE_URL ?? '',
+        timeoutMs: env.SYNTHETIC_TIMEOUT_MS ?? 30000,
       });
 
       this.codeModifier = new AutonomousCodeModifier(this.gateway);
@@ -106,7 +106,9 @@ export class ClaudeCodeSyntheticIntegration {
 
     const modificationRequest: CodeModificationRequest = {
       task: request,
-      files: context?.projectFiles || [context?.currentFile || ''].filter(Boolean),
+      files: (context?.projectFiles && context.projectFiles.length > 0)
+        ? context.projectFiles
+        : ([context?.currentFile].filter(Boolean) as string[]),
       constraints: [
         'Maintain existing code style and patterns',
         'Add comprehensive error handling',
@@ -114,7 +116,7 @@ export class ClaudeCodeSyntheticIntegration {
         'Preserve existing functionality'
       ],
       dryRun: false,
-      requireApproval: this.config.requireApproval,
+      requireApproval: this.config.requireApproval ?? true,
     };
 
     console.log('🔧 Executing autonomous code modification...');
@@ -149,7 +151,7 @@ export class ClaudeCodeSyntheticIntegration {
    */
   private async handleStandardRequest(prompt: string): Promise<string> {
     return await syntheticCommand.execute(prompt, {
-      agent: this.config.defaultAgent,
+      agent: (this.config.defaultAgent ?? 'auto') as 'code' | 'reasoning' | 'context' | 'auto',
       maxTokens: 1000,
     });
   }

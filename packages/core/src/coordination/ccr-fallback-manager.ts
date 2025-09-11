@@ -118,7 +118,7 @@ export class CCRFallbackManager {
       };
       
       // Store emergency context
-      await this.memory.storeEmergencyContext(taskId, preservedContext);
+      await this.memory.storeEmergencyContext(taskId, `session-${taskId}`, preservedContext);
       
       console.log(`[CCR] Context preserved: ${memoryBlocks.length} blocks, session state extracted`);
       return preservedContext;
@@ -143,7 +143,7 @@ export class CCRFallbackManager {
     const nextPlatform = this.fallbackChain[nextIndex];
     console.log(`[CCR] Next platform: ${nextPlatform}`);
     
-    return nextPlatform;
+    return nextPlatform || 'synthetic';
   }
 
   /**
@@ -261,7 +261,7 @@ export class CCRFallbackManager {
   /**
    * Calculate context utilization for a session
    */
-  private async calculateUtilization(sessionId: string): Promise<number> {
+  private async calculateUtilization(_sessionId: string): Promise<number> {
     // This would integrate with actual context size monitoring
     // For now, return a mock value
     return Math.random() * 0.5; // Mock utilization
@@ -274,8 +274,8 @@ export class CCRFallbackManager {
     const baseConfig: CCRConfig = {
       log: true,
       NON_INTERACTIVE_MODE: true,
-      OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
-      OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
+      OPENAI_API_KEY: process.env['OPENAI_API_KEY'] || '',
+      OPENROUTER_API_KEY: process.env['OPENROUTER_API_KEY'] || '',
       router: {
         default: 'openrouter,anthropic/claude-3.5-sonnet',
         codex: 'openai,gpt-4o',
@@ -315,7 +315,7 @@ export class CCRFallbackManager {
    * Inject context into target platform
    */
   private async injectContextToPlatform(
-    context: PreservedContext, 
+    _context: PreservedContext, 
     platform: string
   ): Promise<void> {
     console.log(`[CCR] Injecting context into ${platform}...`);

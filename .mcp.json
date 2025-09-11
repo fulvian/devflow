@@ -1,0 +1,14 @@
+{
+  "mcpServers": {
+    "devflow-synthetic-cc-sessions": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "DEVFLOW_STORAGE_MODE": "cc-sessions",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "DEVFLOW_MCP_MODE": "synthetic",
+        "NODE_ENV": "production"
+      }
+    }
+  }
+}

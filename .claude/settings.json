@@ -21,6 +21,15 @@
         ]
       },
       {
+        "matcher": "mcp__devflow-synthetic-cc-sessions__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/auto-approve-mcp.py"
+          }
+        ]
+      },
+      {
         "matcher": "Task",
         "hooks": [
           {
@@ -36,6 +45,10 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
           }
         ]
       }
@@ -47,6 +60,10 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
           }
         ]
       }
@@ -56,5 +73,62 @@
     "type": "command",
     "command": "$CLAUDE_PROJECT_DIR/.claude/statusline-script.sh",
     "padding": 0
+  },
+  "devflow": {
+    "enabled": true,
+    "auto_inject": true,
+    "handoff_enabled": true,
+    "verbose": false,
+    "memory_provider": "sqlite",
+    "vector_provider": "openai",
+    "platforms": {
+      "claude_code": {
+        "enabled": true,
+        "specializations": [
+          "architecture",
+          "complex_reasoning",
+          "system_design"
+        ]
+      },
+      "openai_codex": {
+        "enabled": true,
+        "api_key_env": "OPENAI_API_KEY",
+        "specializations": [
+          "implementation",
+          "bulk_coding",
+          "pattern_following"
+        ]
+      },
+      "synthetic": {
+        "enabled": true,
+        "api_key_env": "SYNTHETIC_API_KEY",
+        "specializations": [
+          "rapid_prototyping",
+          "code_generation",
+          "debugging"
+        ]
+      },
+      "gemini": {
+        "enabled": true,
+        "api_key_env": "GEMINI_API_KEY",
+        "specializations": [
+          "reasoning",
+          "analysis",
+          "documentation"
+        ]
+      }
+    },
+    "routing": {
+      "confidence_threshold": 0.8,
+      "fallback_platform": "claude_code",
+      "cost_optimization": true
+    }
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "mcp__devflow-synthetic-cc-sessions",
+      "mcp__devflow-synthetic-cc-sessions__.*"
+    ]
   }
 }

@@ -38,7 +38,7 @@ const MemoryBlockSchema = z.object({
   id: z.string().optional(),
   taskId: z.string(),
   sessionId: z.string(),
-  blockType: z.enum(['architectural', 'implementation', 'debugging', 'maintenance', 'context', 'decision']),
+  blockType: z.enum(['architectural', 'implementation', 'debugging', 'maintenance', 'context', 'decision', 'emergency_context', 'context_snapshot']),
   label: z.string(),
   content: z.string(),
   metadata: z.record(z.any()).default({}),

@@ -1,5 +1,5 @@
 import { SQLiteMemoryManager } from '@devflow/core';
-import type { MemoryBlock } from '@devflow/shared';
+// import type { MemoryBlock } from '@devflow/shared';
 import { extractFromClaudeContext } from './extractor.js';
 import { injectToClaudeContext } from './injector.js';
 import { detectImportant } from './detector.js';

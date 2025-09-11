@@ -28,8 +28,8 @@ export class SyntheticCommand {
 
       this.gateway = new SyntheticGateway({
         apiKey: env.SYNTHETIC_API_KEY,
-        baseUrl: env.SYNTHETIC_BASE_URL,
-        timeoutMs: env.SYNTHETIC_TIMEOUT_MS,
+        baseUrl: env.SYNTHETIC_BASE_URL ?? '',
+        timeoutMs: env.SYNTHETIC_TIMEOUT_MS ?? 30000,
       });
 
       this.isInitialized = true;
@@ -63,8 +63,8 @@ export class SyntheticCommand {
           role: 'user' as const,
           content: prompt,
         }],
-        maxTokens: options.maxTokens,
-        temperature: options.temperature,
+        maxTokens: options.maxTokens ?? 1500,
+        temperature: options.temperature ?? 0.1,
       };
 
       let result;
@@ -83,8 +83,9 @@ export class SyntheticCommand {
       response += `**Agent**: ${result.agent} (${result.model})\n`;
       response += `**Time**: ${executionTime}ms | **Tokens**: ${result.tokensUsed}\n`;
       
-      if (result.classification) {
-        response += `**Classification**: ${result.classification.type} (${(result.classification.confidence * 100).toFixed(0)}% confidence)\n`;
+      if ((result as any).classification) {
+        const cls = (result as any).classification;
+        response += `**Classification**: ${cls.type} (${(cls.confidence * 100).toFixed(0)}% confidence)\n`;
       }
       
       response += `\n---\n\n${result.text}`;

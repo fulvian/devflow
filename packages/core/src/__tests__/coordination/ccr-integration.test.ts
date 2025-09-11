@@ -5,10 +5,11 @@
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
-import { CCRFallbackManager } from '../src/coordination/ccr-fallback-manager.js';
-import { SessionLimitDetector } from '../src/coordination/session-limit-detector.js';
-import { ContextPreservation } from '../src/coordination/context-preservation.js';
-import { SQLiteMemoryManager } from '../src/memory/manager.js';
+import { CCRFallbackManager } from '../../coordination/ccr-fallback-manager.js';
+import { SessionLimitDetector } from '../../coordination/session-limit-detector.js';
+import { ContextPreservation } from '../../coordination/context-preservation.js';
+import { SQLiteMemoryManager } from '../../memory/manager.js';
+import { unlinkSync } from 'fs';
 
 // Mock dependencies
 vi.mock('child_process', () => ({
@@ -28,8 +29,18 @@ describe('CCR Session Independence', () => {
   let preservation: ContextPreservation;
 
   beforeEach(async () => {
+    // Set up test database path
+    process.env['DEVFLOW_DB_PATH'] = 'devflow.test.sqlite';
+    
+    // Clean up test database before each test
+    try {
+      unlinkSync('devflow.test.sqlite');
+    } catch (e) {
+      // Database doesn't exist, that's fine
+    }
+
     // Initialize memory manager
-    memory = new SQLiteMemoryManager();
+    memory = new SQLiteMemoryManager('devflow.test.sqlite');
     await memory.initialize();
 
     // Initialize CCR components
@@ -38,8 +49,8 @@ describe('CCR Session Independence', () => {
     preservation = new ContextPreservation(memory);
 
     // Set up environment variables
-    process.env.OPENAI_API_KEY = 'test-openai-key';
-    process.env.OPENROUTER_API_KEY = 'test-openrouter-key';
+    process.env['OPENAI_API_KEY'] = 'test-openai-key';
+    process.env['OPENROUTER_API_KEY'] = 'test-openrouter-key';
   });
 
   afterEach(async () => {
@@ -56,7 +67,30 @@ describe('CCR Session Independence', () => {
     it('should handle Claude Code limit gracefully', async () => {
       await ccrManager.initialize();
       
-      const taskId = 'test-task-123';
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Test Task',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+      
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+      
       const handoff = await ccrManager.handleClaudeCodeLimit(taskId);
       
       expect(handoff).toBeDefined();
@@ -67,21 +101,48 @@ describe('CCR Session Independence', () => {
     it('should preserve context during handoff', async () => {
       await ccrManager.initialize();
       
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Test Task',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+      
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+      
       // Create test memory blocks
       await memory.storeMemoryBlock({
-        taskId: 'test-task',
-        sessionId: 'test-session',
+        taskId,
+        sessionId,
         blockType: 'architectural',
         label: 'Test Decision',
         content: 'This is a test architectural decision',
-        metadata: {},
-        importanceScore: 0.9
+        metadata: {
+          platform: 'claude_code'
+        },
+        importanceScore: 0.9,
+        relationships: []
       });
 
-      const handoff = await ccrManager.handleClaudeCodeLimit('test-task');
+      const handoff = await ccrManager.handleClaudeCodeLimit(taskId);
       
       expect(handoff.context.memoryBlocks).toHaveLength(1);
-      expect(handoff.context.memoryBlocks[0].content).toBe('This is a test architectural decision');
+      expect(handoff.context.memoryBlocks?.[0]?.content).toBe('This is a test architectural decision');
     });
   });
 
@@ -122,53 +183,131 @@ describe('CCR Session Independence', () => {
 
   describe('ContextPreservation', () => {
     it('should preserve context for CCR handoff', async () => {
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Test Task',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+      
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+      
       // Create test data
       await memory.storeMemoryBlock({
-        taskId: 'test-task',
-        sessionId: 'test-session',
+        taskId,
+        sessionId,
         blockType: 'architectural',
         label: 'Test Decision',
         content: 'Important architectural decision',
-        metadata: {},
-        importanceScore: 0.9
+        metadata: {
+          platform: 'claude_code'
+        },
+        importanceScore: 0.9,
+        relationships: []
       });
 
       const preservedContext = await preservation.preserveForCCRHandoff(
-        'test-task',
-        'test-session',
+        taskId,
+        sessionId,
         'claude_code'
       );
 
       expect(preservedContext).toBeDefined();
-      expect(preservedContext.taskId).toBe('test-task');
+      expect(preservedContext.taskId).toBe(taskId);
       expect(preservedContext.platform).toBe('claude_code');
       expect(preservedContext.memoryBlocks).toHaveLength(1);
     });
 
     it('should create context snapshots', async () => {
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Test Task for Snapshot',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+
       const snapshot = await preservation.createSnapshot(
-        'test-task',
-        'test-session',
+        taskId,
+        sessionId,
         'claude_code',
         'test'
       );
 
       expect(snapshot).toBeDefined();
-      expect(snapshot.taskId).toBe('test-task');
+      expect(snapshot.taskId).toBe(taskId);
       expect(snapshot.platform).toBe('claude_code');
       expect(snapshot.metadata.totalBlocks).toBeGreaterThanOrEqual(0);
     });
 
     it('should apply compression when context is too large', async () => {
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Test Task',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+      
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+      
       // Create large context
       const largeBlocks = Array.from({ length: 100 }, (_, i) => ({
-        taskId: 'test-task',
-        sessionId: 'test-session',
+        taskId,
+        sessionId,
         blockType: 'architectural' as const,
         label: `Block ${i}`,
         content: 'x'.repeat(1000), // 1k chars each
-        metadata: {},
-        importanceScore: i < 10 ? 0.9 : 0.3 // First 10 are important
+        metadata: {
+          platform: 'claude_code' as const
+        },
+        importanceScore: i < 10 ? 0.9 : 0.3, // First 10 are important
+        relationships: []
       }));
 
       for (const block of largeBlocks) {
@@ -176,8 +315,8 @@ describe('CCR Session Independence', () => {
       }
 
       const preservedContext = await preservation.preserveForCCRHandoff(
-        'test-task',
-        'test-session',
+        taskId,
+        sessionId,
         'claude_code'
       );
 
@@ -193,24 +332,51 @@ describe('CCR Session Independence', () => {
       await ccrManager.initialize();
       await detector.startMonitoring();
 
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Integration Test Task',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+      
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+
       // Create test session data
       await memory.storeMemoryBlock({
-        taskId: 'integration-test',
-        sessionId: 'integration-session',
+        taskId,
+        sessionId,
         blockType: 'architectural',
         label: 'Integration Test Decision',
         content: 'This is an integration test decision',
-        metadata: {},
-        importanceScore: 0.95
+        metadata: {
+          platform: 'claude_code'
+        },
+        importanceScore: 0.95,
+        relationships: []
       });
 
       // Simulate session limit reached
-      const handoff = await ccrManager.handleClaudeCodeLimit('integration-test');
+      const handoff = await ccrManager.handleClaudeCodeLimit(taskId);
 
       // Verify handoff was successful
       expect(handoff.success).toBe(true);
       expect(handoff.context.memoryBlocks).toHaveLength(1);
-      expect(handoff.context.memoryBlocks[0].content).toBe('This is an integration test decision');
+      expect(handoff.context.memoryBlocks?.[0]?.content).toBe('This is an integration test decision');
 
       // Clean up
       await detector.stopMonitoring();
@@ -219,12 +385,36 @@ describe('CCR Session Independence', () => {
     it('should handle multiple platform fallbacks', async () => {
       await ccrManager.initialize();
 
+      // Create test task and session first
+      const taskId = await memory.createTaskContext({
+        title: 'Fallback Test Task',
+        priority: 'm-',
+        status: 'planning',
+        architecturalContext: {},
+        implementationContext: {},
+        debuggingContext: {},
+        maintenanceContext: {},
+      });
+      
+      const sessionId = await memory.startSession({
+        taskId,
+        platform: 'claude_code',
+        sessionType: 'development',
+        tokensUsed: 0,
+        apiCalls: 0,
+        estimatedCostUsd: 0,
+        compactionEvents: 0,
+        taskProgressDelta: 0,
+        errorsEncountered: 0,
+        metadata: {},
+      });
+
       // Test fallback chain
       const platforms = ['claude_code', 'codex', 'synthetic', 'gemini'];
       
       for (let i = 0; i < platforms.length - 1; i++) {
         const currentPlatform = platforms[i];
-        const handoff = await ccrManager.handleClaudeCodeLimit('fallback-test');
+        const handoff = await ccrManager.handleClaudeCodeLimit(taskId);
         
         expect(handoff.fromPlatform).toBe(currentPlatform);
         expect(handoff.success).toBe(true);

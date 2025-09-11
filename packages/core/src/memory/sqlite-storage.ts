@@ -4,7 +4,7 @@
  * WAL mode enabled for concurrent access
  */
 
-import { UniversalContextFormat } from './universal-context-format';
+import type { UniversalContextFormat } from './universal-context-format.js';
 import Database from 'sqlite3';
 import * as path from 'path';
 
@@ -225,9 +225,9 @@ export class SQLiteStorage {
             reject(err);
             return;
           }
-          stats.totalContexts = row.total;
-          stats.avgCost = row.avgCost || 0;
-          stats.avgQuality = row.avgQuality || 0;
+          stats.totalContexts = (row as any).total;
+          stats.avgCost = (row as any).avgCost || 0;
+          stats.avgQuality = (row as any).avgQuality || 0;
         });
 
         // Get contexts by platform

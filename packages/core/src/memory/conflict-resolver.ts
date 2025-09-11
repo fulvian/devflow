@@ -4,7 +4,7 @@
  * Handles concurrent edits and version conflicts
  */
 
-import { UniversalContextFormat } from './universal-context-format';
+import type { UniversalContextFormat } from './universal-context-format.js';
 
 export interface ConflictResolutionStrategy {
   name: string;

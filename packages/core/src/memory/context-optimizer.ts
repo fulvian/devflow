@@ -4,7 +4,7 @@
  * Optimizes context for memory usage and platform requirements
  */
 
-import { UniversalContextFormat } from './universal-context-format';
+import type { UniversalContextFormat } from './universal-context-format.js';
 import * as zlib from 'zlib';
 
 export interface OptimizationOptions {
@@ -95,7 +95,7 @@ export class ContextOptimizer {
       
     } catch (error) {
       console.error('❌ Decompression failed:', error);
-      throw new Error(`Failed to decompress context ${context.id}: ${error.message}`);
+      throw new Error(`Failed to decompress context ${context.id}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -178,7 +178,9 @@ export class ContextOptimizer {
       
       for (let i = 0; i < Math.min(targetKeys, keys.length); i++) {
         const key = keys[i];
-        result[key] = this.truncateData(data[key], ratio);
+        if (key !== undefined) {
+          result[key] = this.truncateData(data[key], ratio);
+        }
       }
       
       return result;
@@ -200,9 +202,9 @@ export class ContextOptimizer {
     
     return {
       isCompressed: metadata.compressed || false,
-      originalSize: metadata.originalSize,
+      originalSize: metadata.originalSize || currentSize,
       currentSize,
-      compressionRatio: metadata.compressionRatio,
+      compressionRatio: metadata.compressionRatio || 1.0,
       isOptimized: metadata.optimized || metadata.compressed || false
     };
   }

@@ -1,0 +1,51 @@
+# DevFlow Staging Deployment Configuration
+version: '3.8'
+
+services:
+  # Core Coordinator Service
+  coordinator:
+    build:
+      context: .
+      dockerfile: docker/coordinator.Dockerfile
+    environment:
+      - NODE_ENV=staging
+      - DATABASE_PATH=/var/lib/sqlite/devflow-staging.sqlite
+      - LOG_LEVEL=debug
+      - LOG_PATH=/var/log/devflow
+      - MAX_CONTEXT_TOKENS=8000
+      - DEFAULT_TIMEOUT_MS=30000
+      - VECTOR_EMBEDDING_ENABLED=true
+      - SEMANTIC_SEARCH_ENABLED=true
+      - EMBEDDING_MODEL=text-embedding-3-small
+      - DAILY_BUDGET_USD=20
+      - MAX_COST_PER_TASK_USD=5
+      - HEALTH_CHECK_ENABLED=true
+      - HEALTH_CHECK_PORT=3000
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "3000:3000"
+    volumes:
+      - sqlite-staging-data:/var/lib/sqlite
+      - logs-staging:/var/log/devflow
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+volumes:
+  sqlite-staging-data:
+    driver: local
+  logs-staging:
+    driver: local
+
+networks:
+  default:
+    name: devflow-staging-network

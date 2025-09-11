@@ -5,18 +5,21 @@
  */
 
 import { SyntheticCommand } from './synthetic-command.js';
-import { CommandRegistry, CommandHandler, commandRegistry } from '../command-registry.js';
+import type { CommandRegistry, CommandHandler } from '../command-registry.js';
+import { commandRegistry } from '../command-registry.js';
 
 // Helper function to parse command arguments and options
-function parseCommandArguments(args: string[]): { prompt: string, options: Record<string, any> } {
+function parseCommandArguments(args: string[] = []): { prompt: string, options: Record<string, any> } {
     const options: Record<string, any> = {};
     let prompt = '';
 
     for (let i = 0; i < args.length; i++) {
         const arg = args[i];
-        if (arg.startsWith('--')) {
+        if (arg && arg.startsWith('--')) {
             const [key, value] = arg.split('=');
-            options[key.slice(2)] = value || true;
+            if (key) {
+                options[key.slice(2)] = (value ?? true);
+            }
         } else {
             prompt += arg + ' ';
         }
@@ -26,7 +29,7 @@ function parseCommandArguments(args: string[]): { prompt: string, options: Recor
 }
 
 // Command handler for /synthetic
-const syntheticCommandHandler: CommandHandler = async (args: string[]) => {
+const syntheticCommandHandler: CommandHandler = async (args: string[] = []) => {
     const { prompt, options } = parseCommandArguments(args);
     const syntheticCommand = new SyntheticCommand();
 
@@ -39,7 +42,7 @@ const syntheticCommandHandler: CommandHandler = async (args: string[]) => {
 };
 
 // Command handler for /synthetic-code
-const syntheticCodeCommandHandler: CommandHandler = async (args: string[]) => {
+const syntheticCodeCommandHandler: CommandHandler = async (args: string[] = []) => {
     const { prompt, options } = parseCommandArguments(args);
     const syntheticCommand = new SyntheticCommand();
 
@@ -52,7 +55,7 @@ const syntheticCodeCommandHandler: CommandHandler = async (args: string[]) => {
 };
 
 // Command handler for /synthetic-reasoning
-const syntheticReasoningCommandHandler: CommandHandler = async (args: string[]) => {
+const syntheticReasoningCommandHandler: CommandHandler = async (args: string[] = []) => {
     const { prompt, options } = parseCommandArguments(args);
     const syntheticCommand = new SyntheticCommand();
 
@@ -65,7 +68,7 @@ const syntheticReasoningCommandHandler: CommandHandler = async (args: string[]) 
 };
 
 // Command handler for /synthetic-context
-const syntheticContextCommandHandler: CommandHandler = async (args: string[]) => {
+const syntheticContextCommandHandler: CommandHandler = async (args: string[] = []) => {
     const { prompt, options } = parseCommandArguments(args);
     const syntheticCommand = new SyntheticCommand();
 
@@ -78,7 +81,7 @@ const syntheticContextCommandHandler: CommandHandler = async (args: string[]) =>
 };
 
 // Command handler for /synthetic-status
-const syntheticStatusCommandHandler: CommandHandler = async (args: string[]) => {
+const syntheticStatusCommandHandler: CommandHandler = async (_args: string[] = []) => {
     const syntheticCommand = new SyntheticCommand();
 
     try {
@@ -90,7 +93,7 @@ const syntheticStatusCommandHandler: CommandHandler = async (args: string[]) => 
 };
 
 // Command handler for /synthetic-help
-const syntheticHelpCommandHandler: CommandHandler = async (args: string[]) => {
+const syntheticHelpCommandHandler: CommandHandler = async (_args: string[] = []) => {
     const syntheticCommand = new SyntheticCommand();
 
     try {

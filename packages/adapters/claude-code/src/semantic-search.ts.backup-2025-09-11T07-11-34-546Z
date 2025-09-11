@@ -1,0 +1,174 @@
+import { VectorEmbeddingService } from '@devflow/vector';
+
+interface SearchQuery {
+  text: string;
+  limit?: number;
+  filters?: Record<string, any>;
+  weights?: { keyword: number; vector: number };
+}
+
+interface SemanticSearchResult {
+  id: string;
+  content: string;
+  score: number;
+  source: string;
+  metadata?: Record<string, any>;
+}
+
+interface SemanticSearchServiceConfig {
+  vectorService: VectorEmbeddingService;
+  database: any; // SQLite connection
+}
+
+export class SemanticSearchService {
+  private vectorService: VectorEmbeddingService;
+  private db: any;
+  
+  constructor(config: SemanticSearchServiceConfig) {
+    this.vectorService = config.vectorService;
+    this.db = config.database;
+  }
+
+  async hybridSearch(query: string, options: any = {}): Promise<SemanticSearchResult[]> {
+    const limit = options.limit || 10;
+    const weights = options.weights || { keyword: 0.3, vector: 0.7 };
+    
+    // Get keyword search results
+    const keywordResults = await this.keywordSearch(query, { limit });
+    
+    // Get vector search results
+    const vectorResults = await this.vectorSearch(query, { limit });
+    
+    // Combine and score results
+    const combinedResults = this.combineResults(keywordResults, vectorResults, weights);
+    
+    // Sort by combined score
+    return combinedResults
+      .sort((a, b) => b.score - a.score)
+      .slice(0, limit);
+  }
+
+  private async keywordSearch(query: string, options: any): Promise<SemanticSearchResult[]> {
+    const limit = options.limit || 10;
+    
+    // FTS5 query
+    const stmt = this.db.prepare(`
+      SELECT id, content, source, metadata, rank
+      FROM memory_fts
+      WHERE memory_fts MATCH ?
+      ORDER BY rank
+      LIMIT ?
+    `);
+    
+    const results = stmt.all(query, limit);
+    
+    return results.map((row: any) => ({
+      id: row.id,
+      content: row.content,
+      score: 1 / (1 + row.rank), // Convert rank to similarity score
+      source: row.source,
+      metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+    }));
+  }
+
+  private async vectorSearch(query: string, options: any): Promise<SemanticSearchResult[]> {
+    const limit = options.limit || 10;
+    
+    // Generate query embedding
+    const queryEmbedding = await this.vectorService.embed(query);
+    
+    // Find similar vectors
+    const stmt = this.db.prepare(`
+      SELECT id, content, source, metadata, embedding
+      FROM memory_vectors
+      ORDER BY vector_distance(?, embedding)
+      LIMIT ?
+    `);
+    
+    const results = stmt.all(JSON.stringify(queryEmbedding), limit);
+    
+    // Calculate cosine similarities
+    const similarities = results.map((row: any) => {
+      const embedding = JSON.parse(row.embedding);
+      const similarity = this.cosineSimilarity(queryEmbedding, embedding);
+      return { ...row, similarity };
+    });
+    
+    return similarities.map((row: any) => ({
+      id: row.id,
+      content: row.content,
+      score: row.similarity,
+      source: row.source,
+      metadata: row.metadata ? JSON.parse(row.metadata) : undefined
+    }));
+  }
+
+  private combineResults(
+    keywordResults: SemanticSearchResult[],
+    vectorResults: SemanticSearchResult[],
+    weights: { keyword: number; vector: number }
+  ): SemanticSearchResult[] {
+    const combined: Record<string, SemanticSearchResult> = {};
+    
+    // Add keyword results
+    for (const result of keywordResults) {
+      combined[result.id] = {
+        ...result,
+        score: result.score * weights.keyword
+      };
+    }
+    
+    // Add or combine vector results
+    for (const result of vectorResults) {
+      if (combined[result.id]) {
+        combined[result.id].score += result.score * weights.vector;
+      } else {
+        combined[result.id] = {
+          ...result,
+          score: result.score * weights.vector
+        };
+      }
+    }
+    
+    return Object.values(combined);
+  }
+
+  private cosineSimilarity(a: number[], b: number[]): number {
+    const dotProduct = a.reduce((sum, _, i) => sum + a[i] * b[i], 0);
+    const magnitudeA = Math.sqrt(a.reduce((sum, val) => sum + val * val, 0));
+    const magnitudeB = Math.sqrt(b.reduce((sum, val) => sum + val * val, 0));
+    
+    if (magnitudeA === 0 || magnitudeB === 0) return 0;
+    
+    return dotProduct / (magnitudeA * magnitudeB);
+  }
+
+  async extractContext(results: SemanticSearchResult[], maxTokens: number = 2000): Promise<string> {
+    let context = '';
+    let tokens = 0;
+    
+    for (const result of results) {
+      const contentTokens = result.content.split(' ').length;
+      if (tokens + contentTokens > maxTokens) break;
+      
+      context += `${result.content}\n\n`;
+      tokens += contentTokens;
+    }
+    
+    return context.trim();
+  }
+
+  async healthCheck(): Promise<boolean> {
+    try {
+      // Test vector service
+      await this.vectorService.embed('test');
+      
+      // Test database connection
+      this.db.prepare('SELECT 1').get();
+      
+      return true;
+    } catch {
+      return false;
+    }
+  }
+}

@@ -4,11 +4,11 @@
  * Tests for Phase 1 completion validation
  */
 
-import { CrossPlatformSynchronizer } from './cross-platform-synchronizer';
-import { ConflictResolver } from './conflict-resolver';
-import { ContextOptimizer } from './context-optimizer';
-import { SQLiteStorage } from './sqlite-storage';
-import { UniversalContextFormat } from './universal-context-format';
+import { CrossPlatformSynchronizer } from './cross-platform-synchronizer.js';
+import { ConflictResolver } from './conflict-resolver.js';
+import { ContextOptimizer } from './context-optimizer.js';
+import { SQLiteStorage } from './sqlite-storage.js';
+import type { UniversalContextFormat } from './universal-context-format.js';
 
 // Test Suite
 async function runCrossPlatformMemoryTests() {
@@ -46,7 +46,7 @@ async function runCrossPlatformMemoryTests() {
 
     storage.close();
   } catch (error) {
-    console.log('   ❌ SQLite Storage: FAILED -', error.message);
+    console.log('   ❌ SQLite Storage: FAILED -', error instanceof Error ? error.message : String(error));
   }
 
   // Test 2: Context Optimizer
@@ -67,7 +67,7 @@ async function runCrossPlatformMemoryTests() {
     };
 
     const compressed = optimizer.compress(largeContext);
-    const decompressed = optimizer.decompress(compressed);
+    const _decompressed = optimizer.decompress(compressed);
     
     const stats = optimizer.getOptimizationStats(compressed);
     
@@ -78,7 +78,7 @@ async function runCrossPlatformMemoryTests() {
       console.log('   ❌ Context Optimizer: FAILED - Insufficient compression');
     }
   } catch (error) {
-    console.log('   ❌ Context Optimizer: FAILED -', error.message);
+    console.log('   ❌ Context Optimizer: FAILED -', error instanceof Error ? error.message : String(error));
   }
 
   // Test 3: Conflict Resolver
@@ -110,7 +110,7 @@ async function runCrossPlatformMemoryTests() {
       console.log('   ❌ Conflict Resolver: FAILED - Merge failed');
     }
   } catch (error) {
-    console.log('   ❌ Conflict Resolver: FAILED -', error.message);
+    console.log('   ❌ Conflict Resolver: FAILED -', error instanceof Error ? error.message : String(error));
   }
 
   // Test 4: Cross-Platform Synchronizer
@@ -137,7 +137,7 @@ async function runCrossPlatformMemoryTests() {
     const syncTime = Date.now() - startTime;
     
     const retrieved = await synchronizer.getContextById('test-4');
-    const syncStatus = synchronizer.getSyncStatus();
+    const _syncStatus = synchronizer.getSyncStatus();
     
     if (retrieved && retrieved.id === context.id && syncTime < 200) {
       console.log(`   ✅ Cross-Platform Synchronizer: PASSED (${syncTime}ms < 200ms target)`);
@@ -148,7 +148,7 @@ async function runCrossPlatformMemoryTests() {
 
     synchronizer.close();
   } catch (error) {
-    console.log('   ❌ Cross-Platform Synchronizer: FAILED -', error.message);
+    console.log('   ❌ Cross-Platform Synchronizer: FAILED -', error instanceof Error ? error.message : String(error));
   }
 
   // Test 5: Platform-specific Optimization
@@ -184,7 +184,7 @@ async function runCrossPlatformMemoryTests() {
       console.log('   ❌ Platform-specific Optimization: FAILED - Optimization rules not applied correctly');
     }
   } catch (error) {
-    console.log('   ❌ Platform-specific Optimization: FAILED -', error.message);
+    console.log('   ❌ Platform-specific Optimization: FAILED -', error instanceof Error ? error.message : String(error));
   }
 
   // Test 6: End-to-End Integration
@@ -238,7 +238,7 @@ async function runCrossPlatformMemoryTests() {
 
     synchronizer.close();
   } catch (error) {
-    console.log('   ❌ End-to-End Integration: FAILED -', error.message);
+    console.log('   ❌ End-to-End Integration: FAILED -', error instanceof Error ? error.message : String(error));
   }
 
   // Test Results

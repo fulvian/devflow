@@ -7,10 +7,10 @@
 // CORE MEMORY INTERFACES
 // ============================================================================
 
-export type Platform = 'claude_code' | 'openai_codex' | 'gemini_cli' | 'cursor' | 'openrouter';
+export type Platform = 'claude_code' | 'openai_codex' | 'codex' | 'synthetic' | 'gemini_cli' | 'gemini' | 'cursor' | 'openrouter';
 export type TaskPriority = 'h-' | 'm-' | 'l-' | '?-';
 export type TaskStatus = 'planning' | 'active' | 'blocked' | 'completed' | 'archived';
-export type BlockType = 'architectural' | 'implementation' | 'debugging' | 'maintenance' | 'context' | 'decision';
+export type BlockType = 'architectural' | 'implementation' | 'debugging' | 'maintenance' | 'context' | 'decision' | 'emergency_context' | 'context_snapshot';
 export type SessionType = 'development' | 'review' | 'debugging' | 'handoff' | 'planning';
 export type EntityType = 'person' | 'technology' | 'pattern' | 'antipattern' | 'rule' | 'preference';
 
@@ -136,6 +136,11 @@ export interface CoordinationSession {
 }
 
 export interface HandoffContext {
+  platform: Platform;
+  task: string;
+  context?: string;
+  preserveArchitecture: boolean;
+  timestamp: Date;
   preservedDecisions: string[];
   contextSummary: string;
   nextSteps: string[];
@@ -297,6 +302,10 @@ export interface SemanticSearchOptions {
   platforms?: Platform[];
   blockTypes?: BlockType[];
   taskIds?: string[];
+  // Hybrid search options
+  mode?: 'keyword-only' | 'vector-only' | 'hybrid';
+  weights?: { keyword: number; semantic: number };
+  fusionMethod?: 'weighted' | 'harmonic' | 'geometric';
 }
 
 export interface SemanticSearchResult {
@@ -304,6 +313,21 @@ export interface SemanticSearchResult {
   similarity: number;
   relevanceScore: number;
   context: string; // Surrounding context for the match
+}
+
+// Alias for hybrid search compatibility
+export type HybridSearchOptions = SemanticSearchOptions;
+export interface HybridSearchResult extends SemanticSearchResult {
+  scores: {
+    keyword: number;
+    semantic: number;
+    hybrid: number;
+    importance: number;
+  };
+  matchType: 'keyword' | 'semantic' | 'both';
+  keywordMatches: string[];
+  semanticContext: string;
+  explanation: string;
 }
 
 // ============================================================================
@@ -452,3 +476,28 @@ export type DatabaseEntity<T> = T & {
   readonly createdAt: Date;
   updatedAt: Date;
 };
+
+// ============================================================================
+// DEVFLOW INTEGRATION TYPES
+// ============================================================================
+
+/**
+ * Search query for DevFlow semantic search
+ */
+export interface SearchQuery {
+  query: string;
+  maxResults?: number;
+  blockTypes?: BlockType[];
+  threshold?: number;
+  taskId?: string;
+  sessionId?: string;
+}
+
+/**
+ * Search result from DevFlow semantic search
+ */
+export interface SearchResult {
+  block: MemoryBlock;
+  similarity: number;
+  searchType: 'vector' | 'text' | 'task' | 'session' | 'importance';
+}

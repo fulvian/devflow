@@ -1,0 +1,22 @@
+import { SQLiteMemoryManager, VectorEmbeddingService } from '@devflow/core';
+import { MemoryBlock, SemanticSearchOptions, SemanticSearchResult } from '@devflow/core';
+
+export class SemanticSearchService {
+  private memoryManager: SQLiteMemoryManager;
+  private vectorService: VectorEmbeddingService;
+
+  constructor(memoryManager: SQLiteMemoryManager, vectorService: VectorEmbeddingService) {
+    this.memoryManager = memoryManager;
+    this.vectorService = vectorService;
+  }
+
+  async search(query: string, options: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
+    // Implementation here
+    return [];
+  }
+
+  async hybridSearch(query: string, options: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
+    // Implementation here
+    return [];
+  }
+}

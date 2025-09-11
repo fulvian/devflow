@@ -13,7 +13,7 @@ export async function registerSyntheticCommands() {
   
   // Register each command with Claude Code
   // Note: This is a placeholder - actual implementation depends on Claude Code's command system
-  Object.entries(commands).forEach(([commandName, handler]) => {
+  Object.entries(commands).forEach(([commandName]) => {
     console.log(`Registering command: ${commandName}`);
     // Claude Code would register the command here
     // registerCommand(commandName, handler);

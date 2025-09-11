@@ -15,28 +15,90 @@ import { getDB } from '../database/connection.js';
 import { ensureMigrations } from '../database/migrations.js';
 import { BlockService } from './blocks.js';
 import { ContextService } from './contexts.js';
-import { SessionService } from './sessions.js';
+// import { SessionService } from './sessions.js';
 import { SearchService } from './search.js';
+import { SemanticSearchService } from './semantic.js';
+import { VectorEmbeddingService } from '../ml/VectorEmbeddingService.js';
 import { compactContext } from './compaction.js';
 
 export class SQLiteMemoryManager implements MemoryManager {
   private blockSvc;
   private ctxSvc;
-  private sessSvc;
   private searchSvc;
+  private semanticSvc: SemanticSearchService;
 
   constructor(dbPath?: string) {
     const db = dbPath ? getDB({ path: dbPath }) : getDB();
     ensureMigrations(db);
-    this.blockSvc = new BlockService(db);
+    const vectorService = new VectorEmbeddingService();
+    this.blockSvc = new BlockService(db, vectorService);
     this.ctxSvc = new ContextService(db);
-    this.sessSvc = new SessionService(db);
     this.searchSvc = new SearchService(db);
+    this.semanticSvc = new SemanticSearchService(db, this.searchSvc, vectorService);
+  }
+
+  async initialize(): Promise<void> {
+    // Initialize database connections and services
+    await ensureMigrations(getDB());
+  }
+
+  async cleanup(): Promise<void> {
+    // Clean up resources
+    // Database connections are managed by the connection pool
+  }
+
+  getAllBlocks(taskId?: string): MemoryBlock[] {
+    return this.blockSvc.getAllBlocks(taskId);
+  }
+
+  async storeEmergencyContext(taskId: string, sessionId: string, context: any): Promise<void> {
+    // Store emergency context for fallback scenarios
+    const block: Omit<MemoryBlock, 'id' | 'createdAt' | 'lastAccessed' | 'accessCount'> = {
+      taskId,
+      sessionId,
+      blockType: 'emergency_context',
+      label: `Emergency Context - ${new Date().toISOString()}`,
+      content: JSON.stringify(context),
+      metadata: { platform: 'claude_code', emergency: true },
+      importanceScore: 0.9,
+      relationships: []
+    };
+    await this.storeMemoryBlock(block);
+  }
+
+  async retrieveEmergencyContext(taskId: string, _sessionId: string): Promise<any> {
+    const blocks = this.blockSvc.find({
+      taskId: taskId,
+      blockTypes: ['emergency_context'],
+      platforms: ['claude_code']
+    });
+    
+    const emergencyBlock = blocks.find(block => 
+      block.metadata?.['emergency'] === true && 
+      block.label?.includes('Emergency Context')
+    );
+    
+    if (emergencyBlock) {
+      return JSON.parse(emergencyBlock.content);
+    }
+    return null;
+  }
+
+  async getSession(sessionId: string): Promise<any> {
+    // Return session info - this is a simplified implementation
+    return {
+      id: sessionId,
+      status: 'active',
+      startTime: new Date(),
+      platform: 'claude_code'
+    };
   }
 
   async storeMemoryBlock(block: Omit<MemoryBlock, 'id' | 'createdAt' | 'lastAccessed' | 'accessCount'>): Promise<string> {
-    return this.blockSvc.create(block);
+    // Use the async create method which now handles embedding generation automatically
+    return await this.blockSvc.create(block);
   }
+
   async retrieveMemoryBlocks(query: MemoryQuery): Promise<MemoryBlock[]> {
     return this.blockSvc.find(query);
   }
@@ -61,10 +123,48 @@ export class SQLiteMemoryManager implements MemoryManager {
   }
 
   async startSession(session: Omit<CoordinationSession, 'id' | 'startTime' | 'durationSeconds'>): Promise<string> {
-    return this.sessSvc.start(session);
+    // Start a new session
+    const db = getDB();
+    const stmt = db.prepare(`
+      INSERT INTO coordination_sessions (
+        task_id, platform, session_type, tokens_used, api_calls,
+        estimated_cost_usd, compaction_events, task_progress_delta,
+        errors_encountered, metadata
+      ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `);
+    const info = stmt.run(
+      session.taskId,
+      session.platform,
+      session.sessionType,
+      session.tokensUsed,
+      session.apiCalls,
+      session.estimatedCostUsd,
+      session.compactionEvents,
+      session.taskProgressDelta,
+      session.errorsEncountered,
+      JSON.stringify(session.metadata)
+    );
+    const row = db.prepare('SELECT id FROM coordination_sessions WHERE rowid = ?').get(info.lastInsertRowid) as { id: string };
+    return row.id;
   }
   async endSession(sessionId: string, metrics: SessionEndMetrics): Promise<void> {
-    this.sessSvc.end(sessionId, metrics);
+    // End a session with metrics
+    const db = getDB();
+    const stmt = db.prepare(`
+      UPDATE coordination_sessions 
+      SET end_time = ?, duration_seconds = ?, final_tokens_used = ?,
+          final_api_calls = ?, final_cost_usd = ?, final_errors = ?
+      WHERE id = ?
+    `);
+    stmt.run(
+      new Date().toISOString(),
+      (metrics as any).durationSeconds || 0,
+      (metrics as any).tokensUsed || 0,
+      (metrics as any).apiCalls || 0,
+      (metrics as any).costUsd || 0,
+      (metrics as any).errorsEncountered || 0,
+      sessionId
+    );
   }
   async getActiveSession(_taskId: string): Promise<CoordinationSession | null> {
     // For brevity, omitted. Could track active by end_time IS NULL
@@ -90,7 +190,15 @@ export class SQLiteMemoryManager implements MemoryManager {
   }
 
   async semanticSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
-    return this.searchSvc.semantic(query, options);
+    // Use the new hybrid semantic search service
+    const hybridResults = await this.semanticSvc.hybridSearch(query, options);
+    // Convert HybridSearchResult to SemanticSearchResult for backward compatibility
+    return hybridResults.map(result => ({
+      block: result.block,
+      similarity: result.scores.semantic || result.scores.hybrid,
+      relevanceScore: result.relevanceScore,
+      context: result.context
+    }));
   }
 
   // CCR Integration Methods
@@ -98,68 +206,47 @@ export class SQLiteMemoryManager implements MemoryManager {
     return this.blockSvc.getAllBlocks();
   }
 
-  async storeEmergencyContext(context: any): Promise<void> {
-    // Store emergency context for CCR fallback
-    await this.blockSvc.createBlock({
-      id: `emergency_${Date.now()}`,
-      content: JSON.stringify(context),
-      type: 'emergency_context',
-      importance: 1.0,
-      recency: 1.0,
-      taskId: context.taskId || 'unknown',
-      sessionId: context.sessionId || 'unknown',
-      platform: context.platform || 'unknown',
-      metadata: {
-        emergency: true,
-        timestamp: new Date().toISOString(),
-        contextSize: JSON.stringify(context).length
-      }
-    });
-  }
-
-  async retrieveEmergencyContext(taskId: string): Promise<any> {
-    const blocks = await this.blockSvc.queryBlocks({
-      taskId,
-      type: 'emergency_context',
-      limit: 1
-    });
-    
-    if (blocks.length > 0) {
-      return JSON.parse(blocks[0].content);
-    }
-    return null;
-  }
-
   async storeContextSnapshot(snapshot: any): Promise<void> {
-    await this.blockSvc.createBlock({
-      id: `snapshot_${Date.now()}`,
+    await this.blockSvc.create({
       content: JSON.stringify(snapshot),
-      type: 'context_snapshot',
-      importance: 0.9,
-      recency: 1.0,
+      blockType: 'context_snapshot',
+      label: `Context Snapshot ${Date.now()}`,
       taskId: snapshot.taskId || 'unknown',
       sessionId: snapshot.sessionId || 'unknown',
-      platform: snapshot.platform || 'unknown',
       metadata: {
+        platform: snapshot.platform || 'unknown',
         snapshot: true,
         timestamp: new Date().toISOString(),
         contextSize: JSON.stringify(snapshot).length
-      }
+      },
+      importanceScore: 0.9,
+      relationships: []
     });
   }
 
   async deleteContextSnapshot(snapshotId: string): Promise<void> {
-    await this.blockSvc.deleteBlock(snapshotId);
+    await this.blockSvc.remove(snapshotId);
   }
 
   async getActiveSessions(): Promise<any[]> {
-    return this.sessSvc.getActiveSessions();
+    // Get active sessions from database
+    const db = getDB();
+    const stmt = db.prepare(`
+      SELECT * FROM coordination_sessions 
+      WHERE end_time IS NULL 
+      ORDER BY start_time DESC
+    `);
+    return stmt.all() as any[];
   }
 
   async updateSessionHandoff(sessionId: string, handoffData: any): Promise<void> {
-    await this.sessSvc.updateSession(sessionId, {
-      handoffData,
-      lastActivity: new Date().toISOString()
-    });
+    // Update session with handoff data
+    const db = getDB();
+    const stmt = db.prepare(`
+      UPDATE coordination_sessions 
+      SET handoff_data = ?, last_activity = ?
+      WHERE id = ?
+    `);
+    stmt.run(JSON.stringify(handoffData), new Date().toISOString(), sessionId);
   }
 }

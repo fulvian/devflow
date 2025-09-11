@@ -22,6 +22,8 @@ export type {
   CompactionResult,
   SemanticSearchOptions,
   SemanticSearchResult,
+  HybridSearchOptions,
+  HybridSearchResult,
   KnowledgeEntity,
   ExtractionSource,
   EntityRelationship,
@@ -33,7 +35,9 @@ export type {
   DatabaseEntity,
   ExtractedContext as MemoryExtractedContext,
   CompactionStrategy as MemoryCompactionStrategy,
-  ValidationResult as MemoryValidationResult
+  ValidationResult as MemoryValidationResult,
+  SearchQuery,
+  SearchResult
 } from './types/memory.js';
 
 // Platform types - prefixed to avoid conflicts with memory types
