@@ -345,6 +345,183 @@ export class EnhancedSyntheticMCPServer {
             required: ['task_id', 'request'],
           },
         },
+        
+        // === DIRECT FILE OPERATIONS ===
+        {
+          name: 'synthetic_file_write',
+          description: '✏️ WRITE FILE - Write/overwrite content to a file',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              file_path: {
+                type: 'string',
+                description: 'Path to the file to write (relative to project root)',
+              },
+              content: {
+                type: 'string',
+                description: 'Content to write to the file',
+              },
+              backup: {
+                type: 'boolean',
+                description: 'Create backup before overwriting',
+                default: true,
+              },
+            },
+            required: ['file_path', 'content'],
+          },
+        },
+        {
+          name: 'synthetic_file_read',
+          description: '📖 READ FILE - Read content from a file',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              file_path: {
+                type: 'string',
+                description: 'Path to the file to read (relative to project root)',
+              },
+            },
+            required: ['file_path'],
+          },
+        },
+        {
+          name: 'synthetic_file_create',
+          description: '📁 CREATE FILE - Create a new file with content',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              file_path: {
+                type: 'string',
+                description: 'Path to the file to create (relative to project root)',
+              },
+              content: {
+                type: 'string',
+                description: 'Content to write to the file',
+              },
+              backup: {
+                type: 'boolean',
+                description: 'Create backup if file exists',
+                default: true,
+              },
+            },
+            required: ['file_path', 'content'],
+          },
+        },
+        {
+          name: 'synthetic_file_delete',
+          description: '🗑️ DELETE FILE - Delete a file (requires SYNTHETIC_DELETE_ENABLED=true)',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              file_path: {
+                type: 'string',
+                description: 'Path to the file to delete (relative to project root)',
+              },
+              backup: {
+                type: 'boolean',
+                description: 'Create backup before deleting',
+                default: true,
+              },
+            },
+            required: ['file_path'],
+          },
+        },
+        {
+          name: 'synthetic_batch_operations',
+          description: '⚡ BATCH FILE OPERATIONS - Execute multiple file operations atomically',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier for the batch operation',
+              },
+              operations: {
+                type: 'array',
+                items: {
+                  type: 'object',
+                  properties: {
+                    type: {
+                      type: 'string',
+                      enum: ['create', 'write', 'delete', 'move', 'copy', 'mkdir', 'rmdir'],
+                      description: 'Type of operation to perform',
+                    },
+                    path: {
+                      type: 'string',
+                      description: 'File/directory path (relative to project root)',
+                    },
+                    content: {
+                      type: 'string',
+                      description: 'Content for create/write operations',
+                    },
+                    targetPath: {
+                      type: 'string',
+                      description: 'Target path for move/copy operations',
+                    },
+                    recursive: {
+                      type: 'boolean',
+                      description: 'Recursive flag for directory operations',
+                    },
+                    backup: {
+                      type: 'boolean',
+                      description: 'Create backup before operation',
+                    },
+                  },
+                  required: ['type', 'path'],
+                },
+                description: 'Array of file operations to execute',
+              },
+              description: {
+                type: 'string',
+                description: 'Description of the batch operation',
+                default: '',
+              },
+            },
+            required: ['task_id', 'operations'],
+          },
+        },
+        {
+          name: 'synthetic_code_to_file',
+          description: '💾 GENERATE CODE TO FILE - Generate code and write directly to file',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier',
+              },
+              file_path: {
+                type: 'string',
+                description: 'Target file path (relative to project root)',
+              },
+              objective: {
+                type: 'string',
+                description: 'What code to generate',
+              },
+              language: {
+                type: 'string',
+                description: 'Programming language',
+              },
+              requirements: {
+                type: 'array',
+                items: { type: 'string' },
+                description: 'Technical requirements',
+              },
+              context: {
+                type: 'string',
+                description: 'Additional context',
+                default: '',
+              },
+              backup: {
+                type: 'boolean',
+                description: 'Create backup if file exists',
+                default: true,
+              },
+            },
+            required: ['task_id', 'file_path', 'objective', 'language'],
+          },
+        },
+        
         {
           name: 'synthetic_batch_code',
           description: '⚡ BATCH CODE GENERATION - Process multiple related files in a single call to optimize Synthetic API usage',
@@ -439,6 +616,21 @@ export class EnhancedSyntheticMCPServer {
             return await this.handleWithErrorHandling(() => this.handleBatchCodeGeneration(args as any, requestId), requestId);
           case 'synthetic_file_analyzer':
             return await this.handleWithErrorHandling(() => this.handleFileAnalysis(args as any, requestId), requestId);
+          
+          // === DIRECT FILE OPERATION HANDLERS ===
+          case 'synthetic_file_write':
+            return await this.handleWithErrorHandling(() => this.handleFileWrite(args as any, requestId), requestId);
+          case 'synthetic_file_read':
+            return await this.handleWithErrorHandling(() => this.handleFileRead(args as any, requestId), requestId);
+          case 'synthetic_file_create':
+            return await this.handleWithErrorHandling(() => this.handleFileCreate(args as any, requestId), requestId);
+          case 'synthetic_file_delete':
+            return await this.handleWithErrorHandling(() => this.handleFileDelete(args as any, requestId), requestId);
+          case 'synthetic_batch_operations':
+            return await this.handleWithErrorHandling(() => this.handleBatchOperations(args as any, requestId), requestId);
+          case 'synthetic_code_to_file':
+            return await this.handleWithErrorHandling(() => this.handleCodeToFile(args as any, requestId), requestId);
+          
           default:
             return this.formatErrorResponse(
               MCPErrorFactory.create(MCPErrorCode.INVALID_INPUT, `Unknown tool: ${name}`),
@@ -1274,6 +1466,274 @@ ${response.choices[0].message.content}
     return this.allowedPaths.some(allowedPath => 
       fullPath.startsWith(allowedPath)
     );
+  }
+
+  // === DIRECT FILE OPERATION HANDLERS ===
+  
+  private async handleFileWrite(args: {
+    file_path: string;
+    content: string;
+    backup?: boolean;
+  }, requestId: string) {
+    console.log(`[Synthetic MCP] File write operation: ${args.file_path}`);
+    
+    const result = await this.fileManager.writeFile(
+      args.file_path, 
+      args.content, 
+      args.backup !== false
+    );
+    
+    const auditEntry = {
+      operation: 'file_write',
+      file_path: args.file_path,
+      timestamp: new Date().toISOString(),
+      status: result.status,
+      backup_created: result.backupPath ? true : false,
+      request_id: requestId
+    };
+    
+    console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: `# ✏️ FILE WRITE OPERATION\n\n**File**: \`${args.file_path}\`\n**Status**: ${result.status}\n**Message**: ${result.message}\n${result.backupPath ? `**Backup Created**: \`${result.backupPath}\`\n` : ''}\n**Content Size**: ${args.content.length} characters`
+      }]
+    };
+  }
+
+  private async handleFileRead(args: {
+    file_path: string;
+  }, requestId: string) {
+    console.log(`[Synthetic MCP] File read operation: ${args.file_path}`);
+    
+    const result = await this.fileManager.readFile(args.file_path);
+    
+    const auditEntry = {
+      operation: 'file_read',
+      file_path: args.file_path,
+      timestamp: new Date().toISOString(),
+      status: result.status,
+      content_size: result.content.length,
+      request_id: requestId
+    };
+    
+    console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+    
+    if (result.status === 'ERROR') {
+      return {
+        content: [{
+          type: 'text',
+          text: `# ❌ FILE READ ERROR\n\n**File**: \`${args.file_path}\`\n**Error**: ${result.message}`
+        }]
+      };
+    }
+    
+    return {
+      content: [{
+        type: 'text',
+        text: `# 📖 FILE READ OPERATION\n\n**File**: \`${args.file_path}\`\n**Size**: ${result.content.length} characters\n**Status**: ${result.status}\n\n## Content:\n\n\`\`\`\n${result.content}\n\`\`\``
+      }]
+    };
+  }
+
+  private async handleFileCreate(args: {
+    file_path: string;
+    content: string;
+    backup?: boolean;
+  }, requestId: string) {
+    console.log(`[Synthetic MCP] File create operation: ${args.file_path}`);
+    
+    const result = await this.fileManager.createFile(
+      args.file_path, 
+      args.content, 
+      args.backup !== false
+    );
+    
+    const auditEntry = {
+      operation: 'file_create',
+      file_path: args.file_path,
+      timestamp: new Date().toISOString(),
+      status: result.status,
+      backup_created: result.backupPath ? true : false,
+      request_id: requestId
+    };
+    
+    console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: `# 📁 FILE CREATE OPERATION\n\n**File**: \`${args.file_path}\`\n**Status**: ${result.status}\n**Message**: ${result.message}\n${result.backupPath ? `**Backup Created**: \`${result.backupPath}\`\n` : ''}\n**Content Size**: ${args.content.length} characters`
+      }]
+    };
+  }
+
+  private async handleFileDelete(args: {
+    file_path: string;
+    backup?: boolean;
+  }, requestId: string) {
+    console.log(`[Synthetic MCP] File delete operation: ${args.file_path}`);
+    
+    if (!SYNTHETIC_DELETE_ENABLED) {
+      return {
+        content: [{
+          type: 'text',
+          text: `# ❌ DELETE OPERATION DISABLED\n\n**File**: \`${args.file_path}\`\n**Error**: Delete operations require SYNTHETIC_DELETE_ENABLED=true in environment`
+        }]
+      };
+    }
+    
+    const result = await this.fileManager.deleteFile(
+      args.file_path, 
+      args.backup !== false
+    );
+    
+    const auditEntry = {
+      operation: 'file_delete',
+      file_path: args.file_path,
+      timestamp: new Date().toISOString(),
+      status: result.status,
+      backup_created: result.backupPath ? true : false,
+      request_id: requestId
+    };
+    
+    console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: `# 🗑️ FILE DELETE OPERATION\n\n**File**: \`${args.file_path}\`\n**Status**: ${result.status}\n**Message**: ${result.message}\n${result.backupPath ? `**Backup Created**: \`${result.backupPath}\`\n` : ''}`
+      }]
+    };
+  }
+
+  private async handleBatchOperations(args: {
+    task_id: string;
+    operations: Array<{
+      type: 'create' | 'write' | 'delete' | 'move' | 'copy' | 'mkdir' | 'rmdir';
+      path: string;
+      content?: string;
+      targetPath?: string;
+      recursive?: boolean;
+      backup?: boolean;
+    }>;
+    description?: string;
+  }, requestId: string) {
+    console.log(`[Synthetic MCP] Batch operations: ${args.task_id} (${args.operations.length} ops)`);
+    
+    const operations = args.operations.map(op => ({
+      type: op.type,
+      path: op.path,
+      content: op.content,
+      targetPath: op.targetPath,
+      recursive: op.recursive,
+      backup: op.backup !== false
+    }));
+    
+    const results = await this.fileManager.executeOperations(operations);
+    
+    const auditEntry = {
+      operation: 'batch_operations',
+      task_id: args.task_id,
+      operations_count: args.operations.length,
+      timestamp: new Date().toISOString(),
+      success_count: results.filter(r => r.status === 'SUCCESS').length,
+      error_count: results.filter(r => r.status === 'ERROR').length,
+      request_id: requestId
+    };
+    
+    console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+    
+    let resultText = `# ⚡ BATCH FILE OPERATIONS\n\n**Task ID**: ${args.task_id}\n**Operations**: ${args.operations.length}\n**Description**: ${args.description || 'N/A'}\n\n## Results:\n\n`;
+    
+    results.forEach((result, index) => {
+      const op = args.operations[index];
+      const statusEmoji = result.status === 'SUCCESS' ? '✅' : result.status === 'ERROR' ? '❌' : '⚠️';
+      resultText += `${statusEmoji} **${op.type}** \`${result.path}\` - ${result.message}\n`;
+      if (result.backupPath) {
+        resultText += `   📋 Backup: \`${result.backupPath}\`\n`;
+      }
+    });
+    
+    return {
+      content: [{
+        type: 'text',
+        text: resultText
+      }]
+    };
+  }
+
+  private async handleCodeToFile(args: {
+    task_id: string;
+    file_path: string;
+    objective: string;
+    language: string;
+    requirements?: string[];
+    context?: string;
+    backup?: boolean;
+  }, requestId: string) {
+    console.log(`[Synthetic MCP] Code to file operation: ${args.file_path}`);
+    
+    // First generate the code using existing code generation
+    const codeResult = await this.handleCodeGeneration({
+      task_id: args.task_id,
+      objective: args.objective,
+      language: args.language,
+      requirements: args.requirements,
+      context: args.context
+    }, requestId);
+    
+    // Extract generated code from the result
+    let generatedCode = '';
+    if (codeResult.content && codeResult.content[0] && codeResult.content[0].text) {
+      const text = codeResult.content[0].text;
+      // Extract code from markdown code blocks
+      const codeBlockRegex = /```[\w]*\n?([\s\S]*?)```/g;
+      let match = codeBlockRegex.exec(text);
+      if (match) {
+        generatedCode = match[1].trim();
+      } else {
+        generatedCode = text;
+      }
+    }
+    
+    if (!generatedCode) {
+      return {
+        content: [{
+          type: 'text',
+          text: `# ❌ CODE GENERATION FAILED\n\n**File**: \`${args.file_path}\`\n**Error**: Could not extract generated code`
+        }]
+      };
+    }
+    
+    // Write the generated code to file
+    const writeResult = await this.fileManager.writeFile(
+      args.file_path,
+      generatedCode,
+      args.backup !== false
+    );
+    
+    const auditEntry = {
+      operation: 'code_to_file',
+      task_id: args.task_id,
+      file_path: args.file_path,
+      language: args.language,
+      timestamp: new Date().toISOString(),
+      status: writeResult.status,
+      code_size: generatedCode.length,
+      backup_created: writeResult.backupPath ? true : false,
+      request_id: requestId
+    };
+    
+    console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+    
+    return {
+      content: [{
+        type: 'text',
+        text: `# 💾 CODE GENERATION TO FILE\n\n**Task ID**: ${args.task_id}\n**File**: \`${args.file_path}\`\n**Language**: ${args.language}\n**Objective**: ${args.objective}\n\n## Write Result:\n**Status**: ${writeResult.status}\n**Message**: ${writeResult.message}\n**Code Size**: ${generatedCode.length} characters\n${writeResult.backupPath ? `**Backup Created**: \`${writeResult.backupPath}\`\n` : ''}\n\n## Generated Code Preview:\n\`\`\`${args.language}\n${generatedCode.substring(0, 500)}${generatedCode.length > 500 ? '...' : ''}\n\`\`\``
+      }]
+    };
   }
 
   async run(): Promise<void> {
