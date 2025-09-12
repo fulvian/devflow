@@ -11,10 +11,18 @@
         "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
         "hf:deepseek-ai/DeepSeek-V3"
       ]
+    },
+    {
+      "name": "openrouter_provider",
+      "api_base_url": "https://openrouter.ai/api/v1/chat/completions",
+      "api_key": "${OPENROUTER_API_KEY}",
+      "models": [
+        "qwen/qwen3-coder"
+      ]
     }
   ],
   "Router": {
-    "default": "synthetic_provider,hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+    "default": "openrouter_provider,qwen/qwen3-coder",
     "codex": "synthetic_provider,hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
     "synthetic": "synthetic_provider,hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
     "longContext": "synthetic_provider,hf:deepseek-ai/DeepSeek-V3",

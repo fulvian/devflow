@@ -19,10 +19,19 @@ export interface PathfindingResult {
 }
 
 export class NavigationEngine {
+  private normalizeId(id: string): string {
+    return id.toLowerCase().replace(/[^a-z0-9]/g, '_');
+  }
+
   async associativeTraversal(mentalMap: MentalMap, startNodeId: string, context: any): Promise<NavigationPath> {
-    const startNode = mentalMap.nodes.find(n => n.id === startNodeId);
+    const normalizedId = this.normalizeId(startNodeId);
+    const startNode = mentalMap.nodes.find(n => 
+      this.normalizeId(n.id) === normalizedId || 
+      this.normalizeId(n.label) === normalizedId
+    );
+    
     if (!startNode) {
-      throw new Error(`Start node ${startNodeId} not found`);
+      throw new Error(`Start node ${startNodeId} not found (tried normalized: ${normalizedId})`);
     }
 
     return {
