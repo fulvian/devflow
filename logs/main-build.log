@@ -1,13 +1,57 @@
-
-> @devflow/cognitive-task-memory@3.0.0 prebuild
-> npm run clean
-
-
-> @devflow/cognitive-task-memory@3.0.0 clean
-> rm -rf dist
-
-
-> @devflow/cognitive-task-memory@3.0.0 build
-> tsc
-
-sh: tsc: command not found
+Scope: 7 of 8 workspace projects
+mcp-servers/synthetic build$ tsc
+packages/shared build$ tsc -b
+packages/shared build: Done
+mcp-servers/synthetic build: Done
+packages/adapters/synthetic build$ tsc -b --force --verbose
+packages/adapters/synthetic build: 4:57:11 PM - Projects in this build: 
+packages/adapters/synthetic build:     * ../../shared/tsconfig.json
+packages/adapters/synthetic build:     * tsconfig.json
+packages/adapters/synthetic build: 4:57:11 PM - Project '../../shared/tsconfig.json' is being forcibly rebuilt
+packages/adapters/synthetic build: 4:57:11 PM - Building project '/Users/fulvioventura/devflow/packages/shared/tsconfig.json'...
+packages/adapters/synthetic build: 4:57:12 PM - Project 'tsconfig.json' is being forcibly rebuilt
+packages/adapters/synthetic build: 4:57:12 PM - Building project '/Users/fulvioventura/devflow/packages/adapters/synthetic/tsconfig.json'...
+packages/adapters/synthetic build: Done
+packages/claude-adapter build$ tsc -b tsconfig.json
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(112,16): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(112,43): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(114,24): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(135,16): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(135,42): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(136,29): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(137,7): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(156,40): error TS2345: Argument of type 'unknown' is not assignable to parameter of type 'ApiErrorResponseBody'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(347,16): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(347,43): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(349,24): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(361,16): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(361,43): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(362,7): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/claude-usage-limit-detector.ts(362,23): error TS2304: Cannot find name 'window'.
+packages/claude-adapter build: ../core/src/coordination/emergency-ccr-activator.ts(54,26): error TS2339: Property 'getDatabase' does not exist on type 'SQLiteMemoryManager'.
+packages/claude-adapter build: ../core/src/coordination/emergency-ccr-activator.ts(80,47): error TS2339: Property 'queryBlocks' does not exist on type 'SQLiteMemoryManager'.
+packages/claude-adapter build: ../core/src/coordination/emergency-ccr-activator.ts(161,59): error TS2339: Property 'getCurrentContext' does not exist on type 'CCSessionsManager'.
+packages/claude-adapter build: ../core/src/database/migrations.ts(6,34): error TS1343: The 'import.meta' meta-property is only allowed when the '--module' option is 'es2020', 'es2022', 'esnext', 'system', 'node16', 'node18', 'node20', or 'nodenext'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(235,7): error TS2322: Type 'Date | undefined' is not assignable to type 'Date'.
+packages/claude-adapter build:   Type 'undefined' is not assignable to type 'Date'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(236,7): error TS2322: Type 'Date | undefined' is not assignable to type 'Date'.
+packages/claude-adapter build:   Type 'undefined' is not assignable to type 'Date'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(345,7): error TS2322: Type 'Date | undefined' is not assignable to type 'Date'.
+packages/claude-adapter build:   Type 'undefined' is not assignable to type 'Date'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(346,7): error TS2322: Type 'Date | undefined' is not assignable to type 'Date'.
+packages/claude-adapter build:   Type 'undefined' is not assignable to type 'Date'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(523,5): error TS2322: Type '{ id: any; projectId: any; name: any; description: any; startDate: Date | undefined; endDate: Date | undefined; createdAt: Date; updatedAt: Date; status: any; priority: any; progress: any; metadata: any; }[]' is not assignable to type 'RoadmapPlan[]'.
+packages/claude-adapter build:   Type '{ id: any; projectId: any; name: any; description: any; startDate: Date | undefined; endDate: Date | undefined; createdAt: Date; updatedAt: Date; status: any; priority: any; progress: any; metadata: any; }' is not assignable to type 'RoadmapPlan'.
+packages/claude-adapter build:     Types of property 'startDate' are incompatible.
+packages/claude-adapter build:       Type 'Date | undefined' is not assignable to type 'Date'.
+packages/claude-adapter build:         Type 'undefined' is not assignable to type 'Date'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(543,5): error TS2322: Type '{ id: any; roadmapId: any; name: any; description: any; startDate: Date | undefined; endDate: Date | undefined; createdAt: Date; updatedAt: Date; status: any; priority: any; progress: any; dependencies: any; assignee: any; metadata: any; }[]' is not assignable to type 'MacroTaskWithBranch[]'.
+packages/claude-adapter build:   Type '{ id: any; roadmapId: any; name: any; description: any; startDate: Date | undefined; endDate: Date | undefined; createdAt: Date; updatedAt: Date; status: any; priority: any; progress: any; dependencies: any; assignee: any; metadata: any; }' is not assignable to type 'MacroTaskWithBranch'.
+packages/claude-adapter build:     Types of property 'startDate' are incompatible.
+packages/claude-adapter build:       Type 'Date | undefined' is not assignable to type 'Date'.
+packages/claude-adapter build:         Type 'undefined' is not assignable to type 'Date'.
+packages/claude-adapter build: ../core/src/task-hierarchy/service.ts(590,38): error TS2339: Property 'estimatedDuration' does not exist on type 'MacroTaskWithBranch'.
+packages/claude-adapter build: Failed
+/Users/fulvioventura/devflow/packages/claude-adapter:
+ ERR_PNPM_RECURSIVE_RUN_FIRST_FAIL  @devflow/claude-adapter@0.1.0 build: `tsc -b tsconfig.json`
+Exit status 2

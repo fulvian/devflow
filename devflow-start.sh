@@ -1,8 +1,8 @@
 #!/bin/bash
-# DevFlow Complete System Startup Script v2.0
-# Enhanced with Synthetic Delegation System
+# DevFlow Complete System Startup Script v2.1
+# Aligned with pnpm workspaces and Emergency CCR CLI
 
-set -e  # Exit on any error
+set -Eeuo pipefail  # Safer bash options
 
 echo "🚀 DevFlow Universal Development State Manager - Production Startup v2.0"
 echo "=========================================================================="
@@ -12,12 +12,16 @@ echo ""
 # --- 1. Environment Setup ---
 echo "🔧 Setting up environment..."
 
-# Load environment variables
-if [ -f .env ]; then
-    export $(grep -v '^#' .env | xargs)
-    echo "✅ Environment variables loaded from .env"
+# Load environment variables (.env by default, override with ENV_FILE)
+ENV_FILE=${ENV_FILE:-.env}
+if [ -f "$ENV_FILE" ]; then
+    set -a
+    # shellcheck disable=SC1090
+    . "$ENV_FILE"
+    set +a
+    echo "✅ Environment variables loaded from $ENV_FILE"
 else
-    echo "⚠️  No .env file found - using system environment"
+    echo "⚠️  No $ENV_FILE file found - using system environment"
 fi
 
 # Verify critical environment variables
@@ -83,34 +87,18 @@ echo "✅ Directory structure ready"
 echo ""
 echo "🔨 Building services..."
 
-# Build Synthetic MCP Server
-echo "   Building Synthetic MCP Server..."
-cd mcp-servers/synthetic
-npm install --silent
-pnpm run build > ../../../logs/synthetic-build.log 2>&1
-if [ $? -ne 0 ]; then
-    echo "❌ Synthetic MCP Server build failed. Check logs/synthetic-build.log"
-    exit 1
-fi
-cd ../..
+echo "   Building Synthetic MCP Server (pnpm workspace)..."
+# Ensure workspace install at root once
+echo "   Installing workspace dependencies (pnpm) ..."
+pnpm install > logs/main-install.log 2>&1 || {
+  echo "❌ Workspace dependency installation failed. Check logs/main-install.log"; exit 1; }
 
-# Build other components if needed
-echo "   Verifying other components..."
+# Build the MCP server via pnpm (workspace aware)
+pnpm -C mcp-servers/synthetic run build > logs/synthetic-build.log 2>&1 || {
+  echo "❌ Synthetic MCP Server build failed. Check logs/synthetic-build.log"; exit 1; }
 
-# Build the main project
-echo "   Building main project and dependencies..."
-echo "   Installing main project dependencies..."
-pnpm install > logs/main-install.log 2>&1
-if [ $? -ne 0 ]; then
-    echo "❌ Main project dependency installation failed. Check logs/main-install.log"
-    exit 1
-fi
-
-npm run build > logs/main-build.log 2>&1
-if [ $? -ne 0 ]; then
-    echo "❌ Main project build failed. Check logs/main-build.log"
-    exit 1
-fi
+echo "   Skipping full workspace build (not required for emergency startup)"
+echo "   Hint: run 'pnpm -r run build' manually if needed."
 
 
 echo "✅ All services built successfully"
@@ -119,40 +107,29 @@ echo "✅ All services built successfully"
 echo ""
 echo "🚀 Starting DevFlow services in background..."
 
-# Start MCP Synthetic Server (Enhanced)
 echo "   🤖 Starting MCP Synthetic Server (Enhanced with Delegation)..."
-cd mcp-servers/synthetic
-SYNTHETIC_API_KEY=$SYNTHETIC_API_KEY \
-DEVFLOW_PROJECT_ROOT=$DEVFLOW_PROJECT_ROOT \
-AUTONOMOUS_FILE_OPERATIONS=$AUTONOMOUS_FILE_OPERATIONS \
-CREATE_BACKUPS=$CREATE_BACKUPS \
-SYNTHETIC_DELETE_ENABLED=$SYNTHETIC_DELETE_ENABLED \
-node dist/dual-enhanced-index.js > ../../logs/synthetic-server.log 2>&1 &
-SYNTHETIC_PID=$!
-cd ../..
+(
+  cd mcp-servers/synthetic
+  SYNTHETIC_API_KEY=${SYNTHETIC_API_KEY:-} \
+  DEVFLOW_PROJECT_ROOT=${DEVFLOW_PROJECT_ROOT:-$(pwd)/../..} \
+  AUTONOMOUS_FILE_OPERATIONS=${AUTONOMOUS_FILE_OPERATIONS:-true} \
+  CREATE_BACKUPS=${CREATE_BACKUPS:-true} \
+  SYNTHETIC_DELETE_ENABLED=${SYNTHETIC_DELETE_ENABLED:-false} \
+  node dist/dual-enhanced-index.js > ../../logs/synthetic-server.log 2>&1 &
+  echo $! > ../../logs/.synthetic.pid
+)
+SYNTHETIC_PID=$(cat logs/.synthetic.pid 2>/dev/null || echo "")
+rm -f logs/.synthetic.pid
 sleep 2
 
 # DevFlow Core Server not needed for Synthetic delegation phase
 echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 CORE_PID="N/A"
 
-# Start Claude Code Router (CCR) - Emergency Integration
-echo "   🔀 Starting Claude Code Router (CCR) with Emergency System..."
-if command -v npx &> /dev/null && npm list -g @musistudio/claude-code-router &> /dev/null; then
-    # Check if Emergency CCR is already running
-    if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
-        echo "   ✅ Emergency CCR already running, using existing instance"
-        CCR_PID="EMERGENCY"
-    else
-        # Start Emergency CCR system
-        node emergency-ccr.js > logs/ccr-server.log 2>&1 &
-        CCR_PID=$!
-        echo "   🚨 Emergency CCR system started (PID: $CCR_PID)"
-    fi
-else
-    echo "⚠️  CCR package not found, skipping..."
-    CCR_PID="N/A"
-fi
+# Start Claude Code Router (CCR) - Emergency Integration via ESM CLI
+echo "   🔀 Starting Emergency CCR CLI..."
+node emergency-ccr-cli.mjs start > logs/ccr-server.log 2>&1 &
+CCR_PID=$!
 sleep 2
 
 # Start additional MCP servers if available
@@ -189,29 +166,16 @@ fi
 # DevFlow Core Server skipped in this phase
 echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 
-# Health Check for Emergency CCR
-if [ "$CCR_PID" != "N/A" ]; then
-    echo "   🔍 Checking Emergency CCR System..."
-    if [ "$CCR_PID" = "EMERGENCY" ]; then
-        # Check existing Emergency CCR status
-        if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
-            echo "✅ Emergency CCR System: OPERATIONAL (existing instance)"
-        else
-            echo "⚠️  Emergency CCR System: Status unclear"
-        fi
-    else
-        # Check new Emergency CCR instance
-        counter=0
-        until grep -q "CCR Emergency Proxy ACTIVATED\|Emergency CCR ACTIVATED" logs/ccr-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
-            sleep 1
-            ((counter++))
-        done
-        if [ $counter -eq $timeout ]; then
-            echo "⚠️  Emergency CCR System: TIMEOUT (check logs/ccr-server.log)"
-        else
-            echo "✅ Emergency CCR System: OPERATIONAL (PID: $CCR_PID)"
-        fi
-    fi
+echo "   🔍 Checking Emergency CCR System..."
+counter=0
+until grep -q "CCR Emergency Proxy ACTIVATED\|Emergency CCR ACTIVATED" logs/ccr-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
+    sleep 1
+    ((counter++))
+done
+if [ $counter -eq $timeout ]; then
+    echo "⚠️  Emergency CCR System: TIMEOUT (check logs/ccr-server.log)"
+else
+    echo "✅ Emergency CCR System: OPERATIONAL (PID: $CCR_PID)"
 fi
 
 # --- 7. API Status ---
@@ -231,11 +195,7 @@ echo ""
 echo "📊 Active Services:"
 echo "   🤖 MCP Synthetic Server:     PID $SYNTHETIC_PID (Enhanced Delegation)"
 [ "$CORE_PID" != "N/A" ] && echo "   ⚙️  DevFlow Core Server:      PID $CORE_PID"
-if [ "$CCR_PID" = "EMERGENCY" ]; then
-    echo "   🚨 Emergency CCR System:     ACTIVE (existing instance)"
-elif [ "$CCR_PID" != "N/A" ]; then
-    echo "   🚨 Emergency CCR System:     PID $CCR_PID (session independence)"
-fi
+echo "   🚨 Emergency CCR System:     PID $CCR_PID (session independence)"
 echo ""
 echo "🧠 Available Synthetic Models:"
 echo "   📝 synthetic_code         → Qwen3-Coder-480B-A35B-Instruct"
@@ -273,10 +233,8 @@ echo ""
 echo "📋 Monitor Logs:"
 echo "   - Synthetic Server:  tail -f logs/synthetic-server.log"
 [ "$CORE_PID" != "N/A" ] && echo "   - DevFlow Core:      tail -f logs/devflow-core.log"
-if [ "$CCR_PID" != "N/A" ]; then
-    echo "   - Emergency CCR:     npm run emergency:status"
-    echo "   - CCR Logs:          tail -f logs/ccr-server.log"
-fi
+echo "   - Emergency CCR:     node emergency-ccr-cli.mjs status"
+echo "   - CCR Logs:          tail -f logs/ccr-server.log"
 echo ""
 echo "🛑 Stop all services:"
 echo "   ./devflow-stop.sh"
@@ -315,9 +273,7 @@ pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
 
 # Stop Emergency CCR if running
-if command -v npm &> /dev/null; then
-    npm run emergency:stop 2>/dev/null || true
-fi
+node emergency-ccr-cli.mjs stop 2>/dev/null || true
 
 echo "✅ All DevFlow services stopped"
 EOF

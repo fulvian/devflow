@@ -119,7 +119,7 @@ export class SyntheticEmbeddingModel implements EmbeddingModel {
       }
 
       // Parse response
-      const data = await response.json();
+      const data: any = await response.json();
       
       // Validate response structure
       if (!data || !Array.isArray(data.data)) {

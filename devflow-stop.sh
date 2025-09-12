@@ -20,8 +20,6 @@ pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
 
 # Stop Emergency CCR if running
-if command -v npm &> /dev/null; then
-    npm run emergency:stop 2>/dev/null || true
-fi
+node emergency-ccr-cli.mjs stop 2>/dev/null || true
 
 echo "✅ All DevFlow services stopped"
