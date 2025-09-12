@@ -1,5 +1,18 @@
-npm error Missing script: "emergency:start"
-npm error
-npm error To see a list of scripts, run:
-npm error   npm run
-npm error A complete log of this run can be found in: /Users/fulvioventura/.npm-cache-alt/_logs/2025-09-12T09_52_18_999Z-debug-0.log
+node:internal/modules/esm/resolve:275
+    throw new ERR_MODULE_NOT_FOUND(
+          ^
+
+Error [ERR_MODULE_NOT_FOUND]: Cannot find module '/Users/fulvioventura/devflow/packages/core/src/coordination/emergency-ccr-activator.js' imported from /Users/fulvioventura/devflow/emergency-ccr.js
+    at finalizeResolution (node:internal/modules/esm/resolve:275:11)
+    at moduleResolve (node:internal/modules/esm/resolve:860:10)
+    at defaultResolve (node:internal/modules/esm/resolve:984:11)
+    at ModuleLoader.defaultResolve (node:internal/modules/esm/loader:780:12)
+    at #cachedDefaultResolve (node:internal/modules/esm/loader:704:25)
+    at ModuleLoader.resolve (node:internal/modules/esm/loader:687:38)
+    at ModuleLoader.getModuleJobForImport (node:internal/modules/esm/loader:305:38)
+    at ModuleJob._link (node:internal/modules/esm/module_job:137:49) {
+  code: 'ERR_MODULE_NOT_FOUND',
+  url: 'file:///Users/fulvioventura/devflow/packages/core/src/coordination/emergency-ccr-activator.js'
+}
+
+Node.js v22.15.0

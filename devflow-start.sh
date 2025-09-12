@@ -87,7 +87,7 @@ echo "🔨 Building services..."
 echo "   Building Synthetic MCP Server..."
 cd mcp-servers/synthetic
 npm install --silent
-npm run build > ../../../logs/synthetic-build.log 2>&1
+pnpm run build > ../../../logs/synthetic-build.log 2>&1
 if [ $? -ne 0 ]; then
     echo "❌ Synthetic MCP Server build failed. Check logs/synthetic-build.log"
     exit 1
@@ -96,6 +96,22 @@ cd ../..
 
 # Build other components if needed
 echo "   Verifying other components..."
+
+# Build the main project
+echo "   Building main project and dependencies..."
+echo "   Installing main project dependencies..."
+pnpm install > logs/main-install.log 2>&1
+if [ $? -ne 0 ]; then
+    echo "❌ Main project dependency installation failed. Check logs/main-install.log"
+    exit 1
+fi
+
+npm run build > logs/main-build.log 2>&1
+if [ $? -ne 0 ]; then
+    echo "❌ Main project build failed. Check logs/main-build.log"
+    exit 1
+fi
+
 
 echo "✅ All services built successfully"
 
@@ -129,7 +145,7 @@ if command -v npx &> /dev/null && npm list -g @musistudio/claude-code-router &> 
         CCR_PID="EMERGENCY"
     else
         # Start Emergency CCR system
-        npm run emergency:start > logs/ccr-server.log 2>&1 &
+        node emergency-ccr.js > logs/ccr-server.log 2>&1 &
         CCR_PID=$!
         echo "   🚨 Emergency CCR system started (PID: $CCR_PID)"
     fi

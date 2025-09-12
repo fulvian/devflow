@@ -1,0 +1,13 @@
+
+> @devflow/cognitive-task-memory@3.0.0 prebuild
+> npm run clean
+
+
+> @devflow/cognitive-task-memory@3.0.0 clean
+> rm -rf dist
+
+
+> @devflow/cognitive-task-memory@3.0.0 build
+> tsc
+
+sh: tsc: command not found
