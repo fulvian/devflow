@@ -1,0 +1,389 @@
+// cognitive-mapping.types.ts
+
+/**
+ * Types for cognitive mapping system
+ * 
+ * This file contains all the TypeScript interfaces and types required for
+ * representing cognitive maps, nodes, edges, and navigation patterns
+ * in a cognitive mapping system with Neo4j integration.
+ */
+
+// ======================
+// Core Cognitive Mapping Types
+// ======================
+
+/**
+ * Represents a cognitive node in a mental map
+ */
+export interface CognitiveNode {
+  /** Unique identifier for the node */
+  id: string;
+  
+  /** Display label for the node */
+  label: string;
+  
+  /** Node type classification */
+  type: CognitiveNodeType;
+  
+  /** Position coordinates in 2D space */
+  position: {
+    x: number;
+    y: number;
+  };
+  
+  /** Additional properties associated with the node */
+  properties: Record<string, any>;
+  
+  /** Creation timestamp */
+  createdAt: Date;
+  
+  /** Last updated timestamp */
+  updatedAt: Date;
+}
+
+/**
+ * Represents a connection between cognitive nodes
+ */
+export interface CognitiveEdge {
+  /** Unique identifier for the edge */
+  id: string;
+  
+  /** Source node ID */
+  sourceNodeId: string;
+  
+  /** Target node ID */
+  targetNodeId: string;
+  
+  /** Relationship type */
+  relationshipType: CognitiveRelationshipType;
+  
+  /** Edge weight/strength */
+  weight: number;
+  
+  /** Additional properties */
+  properties: Record<string, any>;
+  
+  /** Creation timestamp */
+  createdAt: Date;
+  
+  /** Last updated timestamp */
+  updatedAt: Date;
+}
+
+/**
+ * Represents a complete mental map structure
+ */
+export interface MentalMap {
+  /** Unique identifier for the mental map */
+  id: string;
+  
+  /** Map name/title */
+  name: string;
+  
+  /** Description of the mental map */
+  description: string;
+  
+  /** Collection of nodes in the map */
+  nodes: CognitiveNode[];
+  
+  /** Collection of edges connecting nodes */
+  edges: CognitiveEdge[];
+  
+  /** Map owner/user identifier */
+  ownerId: string;
+  
+  /** Map visibility setting */
+  isPublic: boolean;
+  
+  /** Creation timestamp */
+  createdAt: Date;
+  
+  /** Last updated timestamp */
+  updatedAt: Date;
+  
+  /** Map tags/categories */
+  tags: string[];
+}
+
+/**
+ * Represents a navigation pattern through cognitive nodes
+ */
+export interface NavigationPattern {
+  /** Unique identifier for the pattern */
+  id: string;
+  
+  /** Pattern name */
+  name: string;
+  
+  /** Sequence of node IDs representing the navigation path */
+  nodeSequence: string[];
+  
+  /** Frequency of this pattern occurrence */
+  frequency: number;
+  
+  /** Associated mental map ID */
+  mentalMapId: string;
+  
+  /** Creation timestamp */
+  createdAt: Date;
+  
+  /** Last updated timestamp */
+  updatedAt: Date;
+}
+
+// ======================
+// Enumerations
+// ======================
+
+/**
+ * Types of cognitive nodes
+ */
+export enum CognitiveNodeType {
+  CONCEPT = 'concept',
+  ENTITY = 'entity',
+  ACTION = 'action',
+  ATTRIBUTE = 'attribute',
+  GOAL = 'goal',
+  OBSTACLE = 'obstacle',
+  SOLUTION = 'solution',
+  MEMORY = 'memory',
+  EMOTION = 'emotion',
+  EXPERIENCE = 'experience'
+}
+
+/**
+ * Types of cognitive relationships
+ */
+export enum CognitiveRelationshipType {
+  ASSOCIATED_WITH = 'associated_with',
+  CAUSES = 'causes',
+  PART_OF = 'part_of',
+  SIMILAR_TO = 'similar_to',
+  OPPOSITE_OF = 'opposite_of',
+  LEADS_TO = 'leads_to',
+  DEPENDS_ON = 'depends_on',
+  CONTRADICTS = 'contradicts',
+  SUPPORTS = 'supports',
+  INHIBITS = 'inhibits'
+}
+
+// ======================
+// Neo4j Integration Types
+// ======================
+
+/**
+ * Neo4j node representation
+ */
+export interface Neo4jNode {
+  /** Node identity */
+  identity: number;
+  
+  /** Node labels */
+  labels: string[];
+  
+  /** Node properties */
+  properties: Record<string, any>;
+}
+
+/**
+ * Neo4j relationship representation
+ */
+export interface Neo4jRelationship {
+  /** Relationship identity */
+  identity: number;
+  
+  /** Start node identity */
+  start: number;
+  
+  /** End node identity */
+  end: number;
+  
+  /** Relationship type */
+  type: string;
+  
+  /** Relationship properties */
+  properties: Record<string, any>;
+}
+
+/**
+ * Neo4j query result structure
+ */
+export interface Neo4jResult {
+  /** Query records */
+  records: Neo4jRecord[];
+  
+  /** Query summary */
+  summary: Neo4jSummary;
+}
+
+/**
+ * Neo4j record in query results
+ */
+export interface Neo4jRecord {
+  /** Record keys */
+  keys: string[];
+  
+  /** Record values */
+  _fields: any[];
+  
+  /** Get value by key */
+  get(key: string): any;
+}
+
+/**
+ * Neo4j query summary
+ */
+export interface Neo4jSummary {
+  /** Query text */
+  query: {
+    text: string;
+  };
+  
+  /** Query counters */
+  counters: {
+    containsUpdates: () => boolean;
+    updates: () => Record<string, number>;
+  };
+  
+  /** Query execution time */
+  resultConsumedAfter: number;
+}
+
+/**
+ * Neo4j configuration options
+ */
+export interface Neo4jConfig {
+  /** Database URI */
+  uri: string;
+  
+  /** Authentication username */
+  username: string;
+  
+  /** Authentication password */
+  password: string;
+  
+  /** Database name (optional) */
+  database?: string;
+  
+  /** Connection encryption */
+  encrypted?: boolean;
+  
+  /** Connection timeout in milliseconds */
+  connectionTimeout?: number;
+}
+
+// ======================
+// Utility Types
+// ======================
+
+/**
+ * Generic response structure for API operations
+ */
+export interface CognitiveMapResponse<T> {
+  /** Operation success status */
+  success: boolean;
+  
+  /** Response data */
+  data?: T;
+  
+  /** Error information if operation failed */
+  error?: {
+    /** Error message */
+    message: string;
+    
+    /** Error code */
+    code?: string;
+    
+    /** Additional error details */
+    details?: Record<string, any>;
+  };
+  
+  /** Response timestamp */
+  timestamp: Date;
+}
+
+/**
+ * Pagination parameters for listing operations
+ */
+export interface PaginationParams {
+  /** Page number (1-based) */
+  page: number;
+  
+  /** Number of items per page */
+  limit: number;
+  
+  /** Sort field */
+  sortBy?: string;
+  
+  /** Sort order */
+  sortOrder?: 'asc' | 'desc';
+}
+
+/**
+ * Pagination result structure
+ */
+export interface PaginationResult<T> {
+  /** Items for current page */
+  items: T[];
+  
+  /** Current page number */
+  page: number;
+  
+  /** Number of items per page */
+  limit: number;
+  
+  /** Total number of items */
+  total: number;
+  
+  /** Total number of pages */
+  totalPages: number;
+}
+
+/**
+ * Filter criteria for cognitive map queries
+ */
+export interface CognitiveMapFilter {
+  /** Filter by node types */
+  nodeTypes?: CognitiveNodeType[];
+  
+  /** Filter by relationship types */
+  relationshipTypes?: CognitiveRelationshipType[];
+  
+  /** Text search term */
+  searchTerm?: string;
+  
+  /** Date range filter */
+  dateRange?: {
+    from?: Date;
+    to?: Date;
+  };
+  
+  /** Owner ID filter */
+  ownerId?: string;
+  
+  /** Tag filters */
+  tags?: string[];
+}
+
+// ======================
+// Export Statement
+// ======================
+
+export {
+  CognitiveNode,
+  CognitiveEdge,
+  MentalMap,
+  NavigationPattern,
+  CognitiveNodeType,
+  CognitiveRelationshipType,
+  Neo4jNode,
+  Neo4jRelationship,
+  Neo4jResult,
+  Neo4jRecord,
+  Neo4jSummary,
+  Neo4jConfig,
+  CognitiveMapResponse,
+  PaginationParams,
+  PaginationResult,
+  CognitiveMapFilter
+};

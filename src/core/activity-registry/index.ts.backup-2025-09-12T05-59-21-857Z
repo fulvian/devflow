@@ -1,0 +1,98 @@
+/**
+ * DevFlow Activity Registry System - Phase 2
+ * 
+ * This module provides comprehensive activity tracking with:
+ * - Git integration for automatic commit capture
+ * - Agent reasoning chain preservation
+ * - Development flow pattern recognition  
+ * - Full-text search with temporal queries
+ * - Cross-reference with task hierarchy
+ */
+
+// Export all types
+export * from './types';
+
+// Main Activity Registry
+export { ActivityRegistry, StorageAdapter } from './activity-registry';
+
+// Git Integration
+export { GitIntegration } from './git-integration';
+
+// Pattern Recognition
+export { PatternRecognitionEngine } from './pattern-recognition';
+
+// Search Engine (placeholder - would need full implementation)
+export class ActivitySearchEngine {
+  private registry: ActivityRegistry;
+
+  constructor(registry: ActivityRegistry) {
+    this.registry = registry;
+  }
+
+  /**
+   * Full-text search across activities
+   * @param query - Search query
+   * @returns Search results
+   */
+  async search(query: string): Promise<SearchResult[]> {
+    const activities = this.registry.queryActivities({ searchText: query });
+    
+    return activities.map(activity => ({
+      activity,
+      relevanceScore: this.calculateRelevance(activity, query),
+      matchedFields: this.getMatchedFields(activity, query)
+    }));
+  }
+
+  private calculateRelevance(activity: any, query: string): number {
+    // Simplified relevance calculation
+    const queryLower = query.toLowerCase();
+    let score = 0;
+    
+    if (activity.description.toLowerCase().includes(queryLower)) score += 0.5;
+    if (activity.action.toLowerCase().includes(queryLower)) score += 0.3;
+    
+    return Math.min(score, 1.0);
+  }
+
+  private getMatchedFields(activity: any, query: string): string[] {
+    const queryLower = query.toLowerCase();
+    const fields: string[] = [];
+    
+    if (activity.description.toLowerCase().includes(queryLower)) fields.push('description');
+    if (activity.action.toLowerCase().includes(queryLower)) fields.push('action');
+    
+    return fields;
+  }
+}
+
+// Simple SQLite Storage Adapter
+export class SQLiteStorageAdapter implements StorageAdapter {
+  private dbPath: string;
+
+  constructor(dbPath: string) {
+    this.dbPath = dbPath;
+  }
+
+  async saveActivity(activity: any): Promise<void> {
+    // In a real implementation, would use SQLite to persist activity
+    console.log(`Saving activity ${activity.id} to ${this.dbPath}`);
+  }
+
+  async loadActivities(): Promise<any[]> {
+    // In a real implementation, would load from SQLite
+    console.log(`Loading activities from ${this.dbPath}`);
+    return [];
+  }
+
+  async saveTaskHierarchy(task: any): Promise<void> {
+    // In a real implementation, would save task hierarchy
+    console.log(`Saving task ${task.taskId} to ${this.dbPath}`);
+  }
+
+  async loadTaskHierarchy(): Promise<any[]> {
+    // In a real implementation, would load task hierarchy
+    console.log(`Loading task hierarchy from ${this.dbPath}`);
+    return [];
+  }
+}

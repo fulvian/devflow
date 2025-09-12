@@ -1,12 +1,5 @@
-
-> devflow@0.1.0 emergency:start
-> node emergency-ccr-cli.mjs start
-
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-11T21:48:11.510Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-11T21:48:12.451Z - CCR stdout: Loaded JSON config from: /Users/fulvioventura/.claude-code-router/config.json
-[CCRAutoStarter] 2025-09-11T21:48:12.529Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
+npm error Missing script: "emergency:start"
+npm error
+npm error To see a list of scripts, run:
+npm error   npm run
+npm error A complete log of this run can be found in: /Users/fulvioventura/.npm-cache-alt/_logs/2025-09-12T05_50_30_232Z-debug-0.log

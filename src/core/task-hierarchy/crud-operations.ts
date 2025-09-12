@@ -1,270 +1,184 @@
-// src/core/task-hierarchy/crud-operations.ts
+/**
+ * In-memory database implementation to replace better-sqlite3
+ * This provides a mock implementation for development and testing
+ */
 
-import { Database } from 'better-sqlite3';
-import { taskHierarchyDb } from './database';
-import { 
-  ProjectDefinition, 
-  RoadmapPlan, 
-  MacroTaskWithBranch, 
-  MicroTaskGranular, 
-  TaskStatus, 
-  TaskPriority 
-} from './types';
-
-export class TaskHierarchyCRUD {
-  private db: Database.Database;
+// Mock database class to replace better-sqlite3
+class InMemoryDatabase {
+  private data: Map<string, any[]> = new Map();
+  private tables: Set<string> = new Set();
 
   constructor() {
-    this.db = taskHierarchyDb.getDatabase();
+    // Initialize with empty state
   }
 
-  // Project CRUD Operations
-  public createProject(project: Omit<ProjectDefinition, 'id' | 'createdAt' | 'updatedAt'>): ProjectDefinition {
-    const id = this.generateId();
-    const createdAt = new Date();
-    const updatedAt = new Date();
+  /**
+   * Execute a SQL statement
+   */
+  exec(sql: string): void {
+    // Parse SQL to determine action
+    const normalizedSql = sql.trim().toUpperCase();
     
-    const stmt = this.db.prepare(`
-      INSERT INTO progetti (id, title, description, start_date, end_date, status, priority, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
-      id,
-      project.title,
-      project.description,
-      project.startDate.toISOString(),
-      project.endDate.toISOString(),
-      project.status,
-      project.priority,
-      createdAt.toISOString(),
-      updatedAt.toISOString()
-    );
-    
-    return { ...project, id, createdAt, updatedAt };
+    if (normalizedSql.startsWith('CREATE TABLE')) {
+      const match = sql.match(/CREATE TABLE\s+(\w+)/i);
+      if (match) {
+        this.tables.add(match[1]);
+        this.data.set(match[1], []);
+      }
+    }
   }
 
-  public getProjectById(id: string): ProjectDefinition | null {
-    const stmt = this.db.prepare('SELECT * FROM progetti WHERE id = ?');
-    const result = stmt.get(id);
-    
-    if (!result) return null;
-    
-    return this.mapToProject(result);
+  /**
+   * Prepare a statement for execution
+   */
+  prepare(sql: string): InMemoryStatement {
+    return new InMemoryStatement(sql, this);
   }
 
-  public updateProject(id: string, updates: Partial<ProjectDefinition>): ProjectDefinition | null {
-    const project = this.getProjectById(id);
-    if (!project) return null;
-    
-    const updatedProject = { ...project, ...updates, updatedAt: new Date() };
-    
-    const stmt = this.db.prepare(`
-      UPDATE progetti 
-      SET title = ?, description = ?, start_date = ?, end_date = ?, status = ?, priority = ?, updated_at = ?
-      WHERE id = ?
-    `);
-    
-    stmt.run(
-      updatedProject.title,
-      updatedProject.description,
-      updatedProject.startDate.toISOString(),
-      updatedProject.endDate.toISOString(),
-      updatedProject.status,
-      updatedProject.priority,
-      updatedProject.updatedAt.toISOString(),
-      id
-    );
-    
-    return updatedProject;
+  /**
+   * Get all rows from a table
+   */
+  getAll(table: string): any[] {
+    return this.data.get(table) || [];
   }
 
-  public deleteProject(id: string): boolean {
-    const stmt = this.db.prepare('DELETE FROM progetti WHERE id = ?');
-    const result = stmt.run(id);
-    return result.changes > 0;
+  /**
+   * Insert a row into a table
+   */
+  insert(table: string, row: any): void {
+    if (!this.data.has(table)) {
+      this.data.set(table, []);
+    }
+    this.data.get(table)?.push(row);
   }
 
-  // Roadmap CRUD Operations
-  public createRoadmap(roadmap: Omit<RoadmapPlan, 'id' | 'createdAt' | 'updatedAt'>): RoadmapPlan {
-    const id = this.generateId();
-    const createdAt = new Date();
-    const updatedAt = new Date();
+  /**
+   * Update rows in a table
+   */
+  update(table: string, updates: any, where: (row: any) => boolean): number {
+    const rows = this.data.get(table) || [];
+    let count = 0;
     
-    const stmt = this.db.prepare(`
-      INSERT INTO roadmaps (id, project_id, title, description, start_date, end_date, status, priority, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
+    for (let i = 0; i < rows.length; i++) {
+      if (where(rows[i])) {
+        rows[i] = { ...rows[i], ...updates };
+        count++;
+      }
+    }
     
-    stmt.run(
-      id,
-      roadmap.projectId,
-      roadmap.title,
-      roadmap.description,
-      roadmap.startDate.toISOString(),
-      roadmap.endDate.toISOString(),
-      roadmap.status,
-      roadmap.priority,
-      createdAt.toISOString(),
-      updatedAt.toISOString()
-    );
-    
-    return { ...roadmap, id, createdAt, updatedAt };
+    return count;
   }
 
-  public getRoadmapById(id: string): RoadmapPlan | null {
-    const stmt = this.db.prepare('SELECT * FROM roadmaps WHERE id = ?');
-    const result = stmt.get(id);
+  /**
+   * Delete rows from a table
+   */
+  delete(table: string, where: (row: any) => boolean): number {
+    const rows = this.data.get(table) || [];
+    let count = 0;
     
-    if (!result) return null;
+    for (let i = rows.length - 1; i >= 0; i--) {
+      if (where(rows[i])) {
+        rows.splice(i, 1);
+        count++;
+      }
+    }
     
-    return this.mapToRoadmap(result);
-  }
-
-  // Macro Task CRUD Operations
-  public createMacroTask(macroTask: Omit<MacroTaskWithBranch, 'id' | 'createdAt' | 'updatedAt'>): MacroTaskWithBranch {
-    const id = this.generateId();
-    const createdAt = new Date();
-    const updatedAt = new Date();
-    
-    const stmt = this.db.prepare(`
-      INSERT INTO macro_tasks (id, roadmap_id, title, description, branch_name, estimated_hours, status, priority, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
-      id,
-      macroTask.roadmapId,
-      macroTask.title,
-      macroTask.description,
-      macroTask.branchName,
-      macroTask.estimatedHours,
-      macroTask.status,
-      macroTask.priority,
-      createdAt.toISOString(),
-      updatedAt.toISOString()
-    );
-    
-    return { ...macroTask, id, createdAt, updatedAt };
-  }
-
-  public getMacroTaskById(id: string): MacroTaskWithBranch | null {
-    const stmt = this.db.prepare('SELECT * FROM macro_tasks WHERE id = ?');
-    const result = stmt.get(id);
-    
-    if (!result) return null;
-    
-    return this.mapToMacroTask(result);
-  }
-
-  // Micro Task CRUD Operations
-  public createMicroTask(microTask: Omit<MicroTaskGranular, 'id' | 'createdAt' | 'updatedAt'>): MicroTaskGranular {
-    const id = this.generateId();
-    const createdAt = new Date();
-    const updatedAt = new Date();
-    
-    const stmt = this.db.prepare(`
-      INSERT INTO micro_tasks (id, macro_task_id, title, description, estimated_minutes, status, priority, created_at, updated_at)
-      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-    `);
-    
-    stmt.run(
-      id,
-      microTask.macroTaskId,
-      microTask.title,
-      microTask.description,
-      microTask.estimatedMinutes,
-      microTask.status,
-      microTask.priority,
-      createdAt.toISOString(),
-      updatedAt.toISOString()
-    );
-    
-    return { ...microTask, id, createdAt, updatedAt };
-  }
-
-  public getMicroTaskById(id: string): MicroTaskGranular | null {
-    const stmt = this.db.prepare('SELECT * FROM micro_tasks WHERE id = ?');
-    const result = stmt.get(id);
-    
-    if (!result) return null;
-    
-    return this.mapToMicroTask(result);
-  }
-
-  // Batch Operations
-  public batchCreateProjects(projects: Array<Omit<ProjectDefinition, 'id' | 'createdAt' | 'updatedAt'>>): ProjectDefinition[] {
-    const transaction = this.db.transaction(() => {
-      return projects.map(project => this.createProject(project));
-    });
-    
-    return transaction();
-  }
-
-  // Utility Methods
-  private generateId(): string {
-    return Date.now().toString(36) + Math.random().toString(36).substr(2);
-  }
-
-  private mapToProject(row: any): ProjectDefinition {
-    return {
-      id: row.id,
-      title: row.title,
-      description: row.description,
-      startDate: new Date(row.start_date),
-      endDate: new Date(row.end_date),
-      status: row.status as TaskStatus,
-      priority: row.priority as TaskPriority,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
-    };
-  }
-
-  private mapToRoadmap(row: any): RoadmapPlan {
-    return {
-      id: row.id,
-      projectId: row.project_id,
-      title: row.title,
-      description: row.description,
-      startDate: new Date(row.start_date),
-      endDate: new Date(row.end_date),
-      status: row.status as TaskStatus,
-      priority: row.priority as TaskPriority,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
-    };
-  }
-
-  private mapToMacroTask(row: any): MacroTaskWithBranch {
-    return {
-      id: row.id,
-      roadmapId: row.roadmap_id,
-      title: row.title,
-      description: row.description,
-      branchName: row.branch_name,
-      estimatedHours: row.estimated_hours,
-      actualHours: row.actual_hours,
-      status: row.status as TaskStatus,
-      priority: row.priority as TaskPriority,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
-    };
-  }
-
-  private mapToMicroTask(row: any): MicroTaskGranular {
-    return {
-      id: row.id,
-      macroTaskId: row.macro_task_id,
-      title: row.title,
-      description: row.description,
-      estimatedMinutes: row.estimated_minutes,
-      actualMinutes: row.actual_minutes,
-      status: row.status as TaskStatus,
-      priority: row.priority as TaskPriority,
-      createdAt: new Date(row.created_at),
-      updatedAt: new Date(row.updated_at)
-    };
+    return count;
   }
 }
 
-export const taskHierarchyCRUD = new TaskHierarchyCRUD();
+/**
+ * Mock statement class to replace better-sqlite3 Statement
+ */
+class InMemoryStatement {
+  private sql: string;
+  private db: InMemoryDatabase;
+
+  constructor(sql: string, db: InMemoryDatabase) {
+    this.sql = sql;
+    this.db = db;
+  }
+
+  /**
+   * Run the statement with parameters
+   */
+  run(...params: any[]): { changes: number; lastInsertRowid?: number } {
+    // This is a simplified implementation
+    // In a real scenario, you'd parse the SQL and execute accordingly
+    return { changes: 0 };
+  }
+
+  /**
+   * Get all results
+   */
+  all(...params: any[]): any[] {
+    // Simplified implementation
+    const match = this.sql.match(/FROM\s+(\w+)/i);
+    if (match) {
+      return this.db.getAll(match[1]);
+    }
+    return [];
+  }
+
+  /**
+   * Get one result
+   */
+  get(...params: any[]): any | undefined {
+    const results = this.all(...params);
+    return results.length > 0 ? results[0] : undefined;
+  }
+}
+
+/**
+ * Database interface to maintain existing API
+ */
+interface Database {
+  exec(sql: string): void;
+  prepare(sql: string): InMemoryStatement;
+}
+
+/**
+ * Temporal consistency validation function
+ * @param data The data to validate
+ * @returns Boolean indicating if temporal consistency is maintained
+ */
+function validateTemporalConsistency(data: any): boolean {
+  // Mock implementation - in a real scenario, this would check:
+  // 1. That timestamps are in chronological order
+  // 2. That there are no temporal overlaps
+  // 3. That all required temporal fields are present
+  
+  if (!data || typeof data !== 'object') {
+    return false;
+  }
+
+  // Check if data has temporal fields
+  const hasTimestamps = 'createdAt' in data || 'updatedAt' in data || 'timestamp' in data;
+  
+  // Basic validation - ensure temporal fields are valid dates if present
+  if (data.createdAt && isNaN(Date.parse(data.createdAt))) {
+    return false;
+  }
+  
+  if (data.updatedAt && isNaN(Date.parse(data.updatedAt))) {
+    return false;
+  }
+  
+  if (data.timestamp && isNaN(Date.parse(data.timestamp))) {
+    return false;
+  }
+
+  // If we have temporal data, check chronological order
+  if (data.createdAt && data.updatedAt) {
+    const created = new Date(data.createdAt);
+    const updated = new Date(data.updatedAt);
+    if (updated < created) {
+      return false;
+    }
+  }
+
+  return true;
+}
+
+// Export the mock implementations
+export { InMemoryDatabase as Database, InMemoryStatement as Statement, validateTemporalConsistency };
