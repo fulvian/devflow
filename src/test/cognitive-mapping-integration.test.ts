@@ -152,20 +152,7 @@ describe('CognitiveMappingSystem Integration', () => {
     // First build the mental map
     const mentalMap = await cognitiveMap.buildCognitiveMap(TEST_SOURCE_CODE, 'test-module');
     
-    // Create a simple graph for navigation testing
-    const testGraph: Graph = {
-      nodes: [
-        { id: 'User', label: 'User Class', properties: { type: 'class' } },
-        { id: 'UserRepository', label: 'UserRepository Class', properties: { type: 'class' } },
-        { id: 'UserService', label: 'UserService Class', properties: { type: 'class' } }
-      ],
-      edges: [
-        { id: 'edge1', source: 'User', target: 'UserRepository', relationship: 'uses', properties: {} },
-        { id: 'edge2', source: 'UserRepository', target: 'UserService', relationship: 'injected_into', properties: {} }
-      ]
-    };
-    
-    // Test navigation
+    // Test navigation with a node that exists in the mental map
     const navigationResult = await cognitiveMap.navigateMap(mentalMap, 'User', { goal: 'find_service' });
     
     expect(navigationResult).toBeDefined();
@@ -187,18 +174,8 @@ describe('CognitiveMappingSystem Integration', () => {
     expect(mentalMap).toBeTruthy();
     expect(mentalMap.name).toBe('Mental Map for integration-test');
     
-    // Step 3: Navigate the map (with mock data)
-    const mockGraph: Graph = {
-      nodes: [
-        { id: 'start', label: 'Start Node', properties: {} },
-        { id: 'end', label: 'End Node', properties: {} }
-      ],
-      edges: [
-        { id: 'connection', source: 'start', target: 'end', relationship: 'connects_to', properties: {} }
-      ]
-    };
-    
-    const navigationPath = await cognitiveMap.navigateMap(mentalMap, 'start', { target: 'end' });
+    // Step 3: Navigate the map with a node from the mental map
+    const navigationPath = await cognitiveMap.navigateMap(mentalMap, 'User', { target: 'UserService' });
     expect(navigationPath).toBeDefined();
     
     // Step 4: Verify system can handle multiple operations

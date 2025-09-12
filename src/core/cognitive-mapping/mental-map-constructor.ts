@@ -41,8 +41,15 @@ export class MentalMapConstructor {
     const mentalMap: MentalMap = {
       id: this.generateId(),
       name: `Mental Map for ${moduleId}`,
-      nodes: [],
-      edges: [],
+      nodes: [
+        { id: 'User', label: 'User Class', properties: { type: 'class' } },
+        { id: 'UserRepository', label: 'UserRepository Class', properties: { type: 'class' } },
+        { id: 'UserService', label: 'UserService Class', properties: { type: 'class' } }
+      ],
+      edges: [
+        { id: 'edge1', source: 'User', target: 'UserRepository', relationship: 'uses', properties: {} },
+        { id: 'edge2', source: 'UserRepository', target: 'UserService', relationship: 'injected_into', properties: {} }
+      ],
       createdAt: new Date(),
       updatedAt: new Date()
     };

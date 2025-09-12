@@ -11,7 +11,7 @@
     "postbuild": "echo 'DevFlow build completed successfully'",
     "dev": "tsc --watch",
     "test": "jest",
-    "devflow": "node dist/cli/unified-devflow-cli.js"
+    "devflow": "node dist/index.js"
   },
   "keywords": [
     "devflow",
@@ -33,7 +33,8 @@
     "openai": "^4.0.0",
     "ora": "^5.4.1",
     "redis": "^4.6.7",
-    "sqlite3": "^5.1.6"
+    "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "@types/jest": "^29.5.3",

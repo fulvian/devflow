@@ -1,5 +1,8 @@
-npm error Missing script: "emergency:start"
-npm error
-npm error To see a list of scripts, run:
-npm error   npm run
-npm error A complete log of this run can be found in: /Users/fulvioventura/.npm-cache-alt/_logs/2025-09-12T05_50_30_232Z-debug-0.log
+🚀 === EMERGENCY CCR ACTIVATION ===
+🎯 Activating CCR Emergency Proxy...
+[CCRAutoStarter] 2025-09-12T15:53:33.363Z - Starting CCR process...
+[CCRAutoStarter] 2025-09-12T15:53:36.453Z - CCR stdout: Loaded JSON config from: /Users/fulvioventura/.claude-code-router/config.json
+[CCRAutoStarter] 2025-09-12T15:53:37.395Z - CCR started successfully
+✅ CCR Emergency Proxy ACTIVATED
+🎯 DevFlow can continue with Qwen3-Coder-480B
+💡 Use: npx @musistudio/claude-code-router code "your request"
