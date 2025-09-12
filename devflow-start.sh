@@ -122,7 +122,7 @@ CORE_PID="N/A"
 
 # Start Claude Code Router (CCR) - Emergency Integration
 echo "   🔀 Starting Claude Code Router (CCR) with Emergency System..."
-if command -v npx &> /dev/null && npm list @musistudio/claude-code-router &> /dev/null; then
+if command -v npx &> /dev/null && npm list -g @musistudio/claude-code-router &> /dev/null; then
     # Check if Emergency CCR is already running
     if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
         echo "   ✅ Emergency CCR already running, using existing instance"
