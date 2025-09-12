@@ -1,0 +1,390 @@
+/**
+ * DevFlow Phase 1 Database Schema Implementation
+ * 
+ * This module provides a complete SQLite database implementation for DevFlow Phase 1,
+ * including all necessary tables, indexes, triggers, and FTS capabilities.
+ */
+
+import Database from 'better-sqlite3';
+import { createHash } from 'crypto';
+import { existsSync, mkdirSync, copyFileSync } from 'fs';
+import { dirname, join } from 'path';
+
+// Database configuration constants
+const DB_CONFIG = {
+  CACHE_SIZE: 65536, // 64MB cache (65536 pages * 1KB)
+  WAL_MODE: 'wal',
+  FOREIGN_KEYS: 1,
+  JOURNAL_MODE: 'wal'
+};
+
+/**
+ * DevFlow Database Schema Manager
+ */
+export class DevFlowDatabase {
+  private db: Database.Database;
+  private readonly dbPath: string;
+
+  constructor(dbPath: string) {
+    this.dbPath = dbPath;
+    this.db = this.initializeDatabase();
+    this.configureDatabase();
+    this.createSchema();
+    this.createIndexes();
+    this.createTriggers();
+    this.createFTSTables();
+  }
+
+  /**
+   * Initialize the SQLite database connection
+   */
+  private initializeDatabase(): Database.Database {
+    // Ensure directory exists
+    const dir = dirname(this.dbPath);
+    if (!existsSync(dir)) {
+      mkdirSync(dir, { recursive: true });
+    }
+
+    return new Database(this.dbPath);
+  }
+
+  /**
+   * Configure database settings for production use
+   */
+  private configureDatabase(): void {
+    // Configure performance settings
+    this.db.pragma(`cache_size = ${DB_CONFIG.CACHE_SIZE}`);
+    this.db.pragma(`journal_mode = ${DB_CONFIG.JOURNAL_MODE}`);
+    this.db.pragma(`foreign_keys = ${DB_CONFIG.FOREIGN_KEYS}`);
+    
+    // Set synchronous mode for WAL
+    this.db.pragma('synchronous = NORMAL');
+    
+    // Enable WAL checkpointing
+    this.db.pragma('wal_autocheckpoint = 1000');
+  }
+
+  /**
+   * Create the complete database schema
+   */
+  private createSchema(): void {
+    // Task contexts table for hierarchical task management
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS task_contexts (
+        id TEXT PRIMARY KEY,
+        parent_id TEXT,
+        session_id TEXT NOT NULL,
+        task_name TEXT NOT NULL,
+        task_description TEXT,
+        task_status TEXT NOT NULL DEFAULT 'pending',
+        task_priority INTEGER DEFAULT 1,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        completed_at DATETIME,
+        metadata TEXT,
+        FOREIGN KEY (parent_id) REFERENCES task_contexts(id) ON DELETE CASCADE,
+        FOREIGN KEY (session_id) REFERENCES coordination_sessions(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Memory block embeddings for vector storage
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS memory_block_embeddings (
+        id TEXT PRIMARY KEY,
+        task_context_id TEXT NOT NULL,
+        embedding_vector BLOB NOT NULL,
+        embedding_metadata TEXT,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        FOREIGN KEY (task_context_id) REFERENCES task_contexts(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Coordination sessions for cross-session persistence
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS coordination_sessions (
+        id TEXT PRIMARY KEY,
+        session_name TEXT NOT NULL,
+        session_description TEXT,
+        session_status TEXT NOT NULL DEFAULT 'active',
+        started_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        ended_at DATETIME,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        session_metadata TEXT
+      )
+    `);
+
+    // Platform performance metrics
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS platform_performance (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        metric_name TEXT NOT NULL,
+        metric_value REAL NOT NULL,
+        metric_unit TEXT,
+        recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        metadata TEXT,
+        FOREIGN KEY (session_id) REFERENCES coordination_sessions(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Cost analytics for resource tracking
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS cost_analytics (
+        id TEXT PRIMARY KEY,
+        session_id TEXT NOT NULL,
+        resource_type TEXT NOT NULL,
+        cost_amount REAL NOT NULL,
+        cost_currency TEXT NOT NULL DEFAULT 'USD',
+        usage_amount REAL,
+        usage_unit TEXT,
+        recorded_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        metadata TEXT,
+        FOREIGN KEY (session_id) REFERENCES coordination_sessions(id) ON DELETE CASCADE
+      )
+    `);
+
+    // Knowledge entities for semantic understanding
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS knowledge_entities (
+        id TEXT PRIMARY KEY,
+        entity_type TEXT NOT NULL,
+        entity_name TEXT NOT NULL,
+        entity_description TEXT,
+        entity_data TEXT,
+        confidence_score REAL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        metadata TEXT
+      )
+    `);
+
+    // Entity relationships for knowledge graph
+    this.db.exec(`
+      CREATE TABLE IF NOT EXISTS entity_relationships (
+        id TEXT PRIMARY KEY,
+        source_entity_id TEXT NOT NULL,
+        target_entity_id TEXT NOT NULL,
+        relationship_type TEXT NOT NULL,
+        relationship_strength REAL,
+        created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        updated_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+        metadata TEXT,
+        FOREIGN KEY (source_entity_id) REFERENCES knowledge_entities(id) ON DELETE CASCADE,
+        FOREIGN KEY (target_entity_id) REFERENCES knowledge_entities(id) ON DELETE CASCADE
+      )
+    `);
+  }
+
+  /**
+   * Create indexes for query optimization
+   */
+  private createIndexes(): void {
+    // Task context indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_task_contexts_session ON task_contexts(session_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_task_contexts_parent ON task_contexts(parent_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_task_contexts_status ON task_contexts(task_status)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_task_contexts_priority ON task_contexts(task_priority)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_task_contexts_created ON task_contexts(created_at)');
+
+    // Memory block indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_memory_blocks_task ON memory_block_embeddings(task_context_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_memory_blocks_created ON memory_block_embeddings(created_at)');
+
+    // Coordination session indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_status ON coordination_sessions(session_status)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_sessions_started ON coordination_sessions(started_at)');
+
+    // Performance metrics indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_performance_session ON platform_performance(session_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_performance_metric ON platform_performance(metric_name)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_performance_recorded ON platform_performance(recorded_at)');
+
+    // Cost analytics indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_cost_session ON cost_analytics(session_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_cost_resource ON cost_analytics(resource_type)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_cost_recorded ON cost_analytics(recorded_at)');
+
+    // Knowledge entities indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_entities_type ON knowledge_entities(entity_type)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_entities_name ON knowledge_entities(entity_name)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_entities_created ON knowledge_entities(created_at)');
+
+    // Entity relationships indexes
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_relationships_source ON entity_relationships(source_entity_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_relationships_target ON entity_relationships(target_entity_id)');
+    this.db.exec('CREATE INDEX IF NOT EXISTS idx_relationships_type ON entity_relationships(relationship_type)');
+  }
+
+  /**
+   * Create triggers for automatic timestamp maintenance
+   */
+  private createTriggers(): void {
+    // Task contexts update trigger
+    this.db.exec(`
+      CREATE TRIGGER IF NOT EXISTS task_contexts_updated_trigger
+      AFTER UPDATE ON task_contexts
+      BEGIN
+        UPDATE task_contexts SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+      END
+    `);
+
+    // Memory blocks update trigger
+    this.db.exec(`
+      CREATE TRIGGER IF NOT EXISTS memory_blocks_updated_trigger
+      AFTER UPDATE ON memory_block_embeddings
+      BEGIN
+        UPDATE memory_block_embeddings SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+      END
+    `);
+
+    // Coordination sessions update trigger
+    this.db.exec(`
+      CREATE TRIGGER IF NOT EXISTS coordination_sessions_updated_trigger
+      AFTER UPDATE ON coordination_sessions
+      BEGIN
+        UPDATE coordination_sessions SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+      END
+    `);
+
+    // Knowledge entities update trigger
+    this.db.exec(`
+      CREATE TRIGGER IF NOT EXISTS knowledge_entities_updated_trigger
+      AFTER UPDATE ON knowledge_entities
+      BEGIN
+        UPDATE knowledge_entities SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+      END
+    `);
+
+    // Entity relationships update trigger
+    this.db.exec(`
+      CREATE TRIGGER IF NOT EXISTS entity_relationships_updated_trigger
+      AFTER UPDATE ON entity_relationships
+      BEGIN
+        UPDATE entity_relationships SET updated_at = CURRENT_TIMESTAMP WHERE id = NEW.id;
+      END
+    `);
+  }
+
+  /**
+   * Create FTS5 tables for full-text search capabilities
+   */
+  private createFTSTables(): void {
+    // FTS table for task contexts
+    this.db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS task_contexts_fts USING fts5(
+        task_name,
+        task_description,
+        metadata,
+        content='task_contexts',
+        content_rowid='id'
+      )
+    `);
+
+    // FTS table for knowledge entities
+    this.db.exec(`
+      CREATE VIRTUAL TABLE IF NOT EXISTS knowledge_entities_fts USING fts5(
+        entity_name,
+        entity_description,
+        entity_data,
+        content='knowledge_entities',
+        content_rowid='id'
+      )
+    `);
+  }
+
+  /**
+   * Perform database health check and validation
+   */
+  public healthCheck(): { status: string; details: any } {
+    try {
+      // Check if all tables exist
+      const tables = this.db.prepare(`
+        SELECT name FROM sqlite_master 
+        WHERE type='table' AND name IN (
+          'task_contexts', 'memory_block_embeddings', 'coordination_sessions',
+          'platform_performance', 'cost_analytics', 'knowledge_entities',
+          'entity_relationships', 'task_contexts_fts', 'knowledge_entities_fts'
+        )
+      `).all();
+
+      const expectedTables = 9;
+      const foundTables = tables.length;
+
+      // Check foreign key integrity
+      const fkCheck = this.db.prepare('PRAGMA foreign_key_check').all();
+
+      // Check WAL mode
+      const walMode = this.db.prepare("PRAGMA journal_mode").get();
+
+      return {
+        status: foundTables === expectedTables && fkCheck.length === 0 ? 'healthy' : 'degraded',
+        details: {
+          tables: { expected: expectedTables, found: foundTables },
+          foreign_keys: fkCheck.length === 0 ? 'ok' : 'issues',
+          journal_mode: walMode,
+          cache_size: this.db.prepare("PRAGMA cache_size").get()
+        }
+      };
+    } catch (error) {
+      return {
+        status: 'unhealthy',
+        details: { error: error.message }
+      };
+    }
+  }
+
+  /**
+   * Get database connection for direct queries
+   */
+  public getConnection(): Database.Database {
+    return this.db;
+  }
+
+  /**
+   * Close database connection
+   */
+  public close(): void {
+    this.db.close();
+  }
+}
+
+/**
+ * Database utility functions
+ */
+export class DatabaseUtils {
+  /**
+   * Generate a unique ID for database records
+   */
+  public static generateId(prefix: string = 'df'): string {
+    return `${prefix}_${createHash('sha256')
+      .update(Date.now().toString() + Math.random().toString())
+      .digest('hex')
+      .substring(0, 16)}`;
+  }
+
+  /**
+   * Convert vector to BLOB for storage
+   */
+  public static vectorToBlob(vector: number[]): Buffer {
+    const buffer = Buffer.alloc(vector.length * 4);
+    for (let i = 0; i < vector.length; i++) {
+      buffer.writeFloatLE(vector[i], i * 4);
+    }
+    return buffer;
+  }
+
+  /**
+   * Convert BLOB back to vector
+   */
+  public static blobToVector(blob: Buffer): number[] {
+    const vector: number[] = [];
+    for (let i = 0; i < blob.length; i += 4) {
+      vector.push(blob.readFloatLE(i));
+    }
+    return vector;
+  }
+}

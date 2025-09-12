@@ -213,12 +213,32 @@ class CCRAutoStarter {
         }
       }
 
+      // Load environment variables from .env file
+      const env = { ...process.env };
+      try {
+        const fs = await import('fs');
+        const path = await import('path');
+        const envFile = path.join(process.cwd(), '.env');
+        if (fs.existsSync(envFile)) {
+          const envContent = fs.readFileSync(envFile, 'utf8');
+          envContent.split('\n').forEach(line => {
+            const [key, ...valueParts] = line.split('=');
+            if (key && valueParts.length > 0) {
+              env[key.trim()] = valueParts.join('=').trim();
+            }
+          });
+        }
+      } catch (error) {
+        console.warn('Failed to load .env file:', error.message);
+      }
+
       this.ccrProcess = spawn('npx', [
         '@musistudio/claude-code-router',
         'start'
       ], {
         stdio: ['ignore', 'pipe', 'pipe'],
-        detached: false
+        detached: false,
+        env: env
       });
 
       this.setupProcessHandlers();

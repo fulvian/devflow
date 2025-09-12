@@ -27,7 +27,8 @@ fi
 # Verify critical environment variables
 REQUIRED_VARS=("SYNTHETIC_API_KEY" "DEVFLOW_PROJECT_ROOT")
 for var in "${REQUIRED_VARS[@]}"; do
-    if [ -z "${!var}" ]; then
+    # Use eval to safely check if variable is set and not empty
+    if ! eval "[ -n \"\${$var:-}\" ]"; then
         echo "❌ ERROR: Required environment variable $var is not set"
         echo "   Please add it to your .env file or system environment"
         exit 1
@@ -128,6 +129,10 @@ CORE_PID="N/A"
 
 # Start Claude Code Router (CCR) - Emergency Integration via ESM CLI
 echo "   🔀 Starting Emergency CCR CLI..."
+# Load environment variables for CCR
+set -a
+. .env
+set +a
 node emergency-ccr-cli.mjs start > logs/ccr-server.log 2>&1 &
 CCR_PID=$!
 sleep 2

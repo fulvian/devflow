@@ -9,6 +9,7 @@
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
@@ -22,13 +23,10 @@
     "moduleResolution": "node",
     "baseUrl": "./",
     "paths": {
-      "@src/*": ["src/*"],
-      "@components/*": ["src/components/*"],
-      "@utils/*": ["src/utils/*"],
-      "@types/*": ["src/types/*"]
+      "@core/*": ["src/core/*"],
+      "@test/*": ["src/test/*"],
+      "@config/*": ["src/config/*"]
     },
-    "resolveJsonModule": true,
-    "allowSyntheticDefaultImports": true,
     "experimentalDecorators": true,
     "emitDecoratorMetadata": true
   },
@@ -38,7 +36,6 @@
   "exclude": [
     "node_modules",
     "dist",
-    "**/*.spec.ts",
-    "**/*.test.ts"
+    "coverage"
   ]
 }

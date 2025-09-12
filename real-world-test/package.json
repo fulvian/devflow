@@ -1,18 +1,31 @@
 {
-  "name": "devflow-cognitive-test-suite",
+  "name": "devflow-real-world-test",
   "version": "1.0.0",
-  "description": "Test suite for DevFlow Cognitive Task+Memory System Phase 1",
-  "main": "index.js",
+  "description": "Real-world test suite for DevFlow Cognitive Task+Memory System",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
   "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
     "test": "jest",
     "test:watch": "jest --watch",
     "test:coverage": "jest --coverage",
     "test:integration": "jest src/test/integration",
-    "test:scenarios": "jest src/test/scenarios",
-    "setup:test-env": "ts-node src/test/setup/test-environment.ts",
-    "build": "tsc",
-    "start": "node dist/index.js"
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "init-db": "ts-node src/scripts/init-database.ts",
+    "test-db": "ts-node src/scripts/test-database.ts"
   },
+  "keywords": [
+    "devflow",
+    "cognitive",
+    "task-memory",
+    "ai",
+    "testing"
+  ],
+  "author": "DevFlow Team",
+  "license": "MIT",
   "dependencies": {
     "sqlite3": "^5.1.6",
     "uuid": "^9.0.0",
