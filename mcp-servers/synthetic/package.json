@@ -3,10 +3,10 @@
   "version": "1.0.0",
   "description": "MCP Server for Synthetic.new integration with DevFlow",
   "type": "module",
-  "main": "dist/simple-batch-index.js",
+  "main": "dist/dual-enhanced-index.js",
   "scripts": {
     "build": "tsc",
-    "start": "node dist/simple-batch-index.js",
+    "start": "node dist/dual-enhanced-index.js",
     "dev": "tsx watch src/index.ts"
   },
   "dependencies": {
