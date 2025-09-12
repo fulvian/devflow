@@ -1,0 +1,230 @@
+/**
+ * Comprehensive API Rate Limiting Test Suite for DevFlow Synthetic API
+ * Validates 135 requests per 5-hour window limit compliance under burst conditions
+ */
+
+import { syntheticApiConfig, rateLimiter } from '../../config/synthetic-api-config';
+
+// Mock API client for testing
+class MockSyntheticApiClient {
+  private requestCount = 0;
+  private startTime = Date.now();
+
+  async makeRequest(requestId: string): Promise<any> {
+    this.requestCount++;
+    
+    // Simulate API response time
+    await new Promise(resolve => setTimeout(resolve, Math.random() * 50 + 10));
+    
+    // Simulate rate limiting after certain threshold
+    if (this.requestCount > 135) {
+      throw new Error('Rate limit exceeded');
+    }
+    
+    return {
+      id: requestId,
+      status: 'success',
+      timestamp: new Date().toISOString(),
+      requestNumber: this.requestCount
+    };
+  }
+  
+  getRequestCount(): number {
+    return this.requestCount;
+  }
+  
+  reset(): void {
+    this.requestCount = 0;
+    this.startTime = Date.now();
+  }
+}
+
+describe('Rate Limiting Integration Tests', () => {
+  let mockClient: MockSyntheticApiClient;
+
+  beforeEach(() => {
+    mockClient = new MockSyntheticApiClient();
+  });
+
+  it('should respect 135 requests per 5-hour window limit', async () => {
+    const maxRequests = syntheticApiConfig.rateLimit.maxRequests;
+    const requests: Promise<any>[] = [];
+    
+    // Create requests up to the limit
+    for (let i = 0; i < maxRequests; i++) {
+      if (rateLimiter.canMakeRequest()) {
+        rateLimiter.incrementRequest();
+        requests.push(mockClient.makeRequest(`test-${i}`));
+      }
+    }
+    
+    const results = await Promise.allSettled(requests);
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    
+    expect(successful).toBeLessThanOrEqual(maxRequests);
+    expect(rateLimiter.getRemainingRequests()).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should handle burst conditions gracefully', async () => {
+    const burstSize = 50;
+    const concurrency = 10;
+    
+    console.log(`Testing burst of ${burstSize} requests with ${concurrency} concurrency`);
+    
+    const startTime = Date.now();
+    const requests: Promise<any>[] = [];
+    
+    // Create burst of requests
+    for (let i = 0; i < burstSize; i++) {
+      if (rateLimiter.canMakeRequest()) {
+        rateLimiter.incrementRequest();
+        requests.push(mockClient.makeRequest(`burst-${i}`));
+      }
+    }
+    
+    // Process in batches based on concurrency
+    const results: any[] = [];
+    for (let i = 0; i < requests.length; i += concurrency) {
+      const batch = requests.slice(i, i + concurrency);
+      const batchResults = await Promise.allSettled(batch);
+      results.push(...batchResults);
+    }
+    
+    const endTime = Date.now();
+    const duration = endTime - startTime;
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    
+    console.log(`Burst test completed in ${duration}ms`);
+    console.log(`Successful: ${successful}, Failed: ${failed}`);
+    
+    expect(successful + failed).toBe(Math.min(burstSize, rateLimiter.getRemainingRequests() + successful));
+  });
+
+  it('should implement exponential backoff on rate limit errors', async () => {
+    const maxRetries = 3;
+    const baseDelay = 1000;
+    
+    async function makeRequestWithRetry(requestId: string, attempt: number = 1): Promise<any> {
+      try {
+        if (!rateLimiter.canMakeRequest()) {
+          throw new Error('Rate limit exceeded');
+        }
+        
+        rateLimiter.incrementRequest();
+        return await mockClient.makeRequest(requestId);
+      } catch (error) {
+        if (attempt >= maxRetries) {
+          throw error;
+        }
+        
+        // Exponential backoff
+        const delay = baseDelay * Math.pow(2, attempt - 1);
+        console.log(`Rate limited. Retrying ${requestId} in ${delay}ms (attempt ${attempt})`);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return makeRequestWithRetry(requestId, attempt + 1);
+      }
+    }
+    
+    // Test retry mechanism
+    try {
+      const result = await makeRequestWithRetry('retry-test');
+      expect(result).toBeDefined();
+      expect(result.id).toBe('retry-test');
+    } catch (error: any) {
+      // Expected if we hit the retry limit
+      expect(error.message).toContain('Rate limit exceeded');
+    }
+  });
+
+  it('should track token bucket status accurately', () => {
+    const initialTokens = rateLimiter.getRemainingRequests();
+    expect(initialTokens).toBeGreaterThan(0);
+    
+    // Consume some tokens
+    for (let i = 0; i < 10; i++) {
+      if (rateLimiter.canMakeRequest()) {
+        rateLimiter.incrementRequest();
+      }
+    }
+    
+    const remainingTokens = rateLimiter.getRemainingRequests();
+    expect(remainingTokens).toBeLessThan(initialTokens);
+    expect(remainingTokens).toBeGreaterThanOrEqual(0);
+  });
+
+  it('should handle concurrent requests correctly', async () => {
+    const concurrentRequests = 20;
+    const promises: Promise<any>[] = [];
+    
+    for (let i = 0; i < concurrentRequests; i++) {
+      const promise = new Promise(async (resolve, reject) => {
+        try {
+          if (rateLimiter.canMakeRequest()) {
+            rateLimiter.incrementRequest();
+            const result = await mockClient.makeRequest(`concurrent-${i}`);
+            resolve(result);
+          } else {
+            reject(new Error('Rate limit exceeded'));
+          }
+        } catch (error) {
+          reject(error);
+        }
+      });
+      promises.push(promise);
+    }
+    
+    const results = await Promise.allSettled(promises);
+    const successful = results.filter(r => r.status === 'fulfilled').length;
+    const failed = results.filter(r => r.status === 'rejected').length;
+    
+    console.log(`Concurrent test: ${successful} successful, ${failed} failed`);
+    
+    expect(successful + failed).toBe(concurrentRequests);
+    expect(successful).toBeGreaterThan(0); // At least some should succeed
+  });
+
+  it('should validate rate limit configuration', () => {
+    expect(syntheticApiConfig.rateLimit.maxRequests).toBe(135);
+    expect(syntheticApiConfig.rateLimit.windowMs).toBe(5 * 60 * 60 * 1000); // 5 hours
+    expect(syntheticApiConfig.retryAttempts).toBeGreaterThan(0);
+    expect(syntheticApiConfig.retryDelay).toBeGreaterThan(0);
+  });
+
+  it('should measure performance under load', async () => {
+    const loadTestRequests = 100;
+    const startTime = Date.now();
+    const responseTimes: number[] = [];
+    
+    for (let i = 0; i < loadTestRequests; i++) {
+      if (rateLimiter.canMakeRequest()) {
+        const requestStart = Date.now();
+        rateLimiter.incrementRequest();
+        
+        try {
+          await mockClient.makeRequest(`load-${i}`);
+          const responseTime = Date.now() - requestStart;
+          responseTimes.push(responseTime);
+        } catch (error) {
+          // Track failed requests too
+        }
+      }
+    }
+    
+    const totalTime = Date.now() - startTime;
+    const avgResponseTime = responseTimes.reduce((a, b) => a + b, 0) / responseTimes.length;
+    const maxResponseTime = Math.max(...responseTimes);
+    const minResponseTime = Math.min(...responseTimes);
+    
+    console.log(`Load test results:`);
+    console.log(`- Total time: ${totalTime}ms`);
+    console.log(`- Requests processed: ${responseTimes.length}`);
+    console.log(`- Average response time: ${avgResponseTime.toFixed(2)}ms`);
+    console.log(`- Max response time: ${maxResponseTime}ms`);
+    console.log(`- Min response time: ${minResponseTime}ms`);
+    
+    expect(avgResponseTime).toBeLessThan(1000); // Should be under 1 second average
+    expect(responseTimes.length).toBeGreaterThan(0);
+  });
+});

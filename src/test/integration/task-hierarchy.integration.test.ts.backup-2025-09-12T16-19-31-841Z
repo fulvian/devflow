@@ -1,0 +1,209 @@
+import { DevFlowDatabase, DatabaseUtils } from '../../core/database/devflow-database';
+import { join } from 'path';
+import { existsSync, unlinkSync } from 'fs';
+
+describe('Task Hierarchy Integration Tests', () => {
+  let db: DevFlowDatabase;
+  let testDbPath: string;
+
+  beforeAll(() => {
+    // Create test database
+    testDbPath = join(__dirname, '../../../test-devflow.db');
+    if (existsSync(testDbPath)) {
+      unlinkSync(testDbPath);
+    }
+    db = new DevFlowDatabase(testDbPath);
+  });
+
+  afterAll(() => {
+    if (db) {
+      db.close();
+    }
+    if (existsSync(testDbPath)) {
+      unlinkSync(testDbPath);
+    }
+  });
+
+  it('should create and retrieve task hierarchy', async () => {
+    const connection = db.getConnection();
+    
+    // Create a coordination session first
+    const sessionId = DatabaseUtils.generateId('session');
+    const createSession = connection.prepare(`
+      INSERT INTO coordination_sessions (id, session_name, session_description)
+      VALUES (?, ?, ?)
+    `);
+    createSession.run(sessionId, 'Test Session', 'Integration test session');
+
+    // Create root task
+    const rootTaskId = DatabaseUtils.generateId('task');
+    const createTask = connection.prepare(`
+      INSERT INTO task_contexts (id, session_id, task_name, task_description, task_status)
+      VALUES (?, ?, ?, ?, ?)
+    `);
+    createTask.run(rootTaskId, sessionId, 'Root Task', 'Main integration test task', 'active');
+
+    // Create child tasks
+    const child1Id = DatabaseUtils.generateId('task');
+    const child2Id = DatabaseUtils.generateId('task');
+    
+    createTask.run(child1Id, sessionId, 'Child Task 1', 'First subtask', 'pending');
+    createTask.run(child2Id, sessionId, 'Child Task 2', 'Second subtask', 'pending');
+
+    // Update child tasks to have parent relationship
+    const updateParent = connection.prepare(`
+      UPDATE task_contexts SET parent_id = ? WHERE id = ?
+    `);
+    updateParent.run(rootTaskId, child1Id);
+    updateParent.run(rootTaskId, child2Id);
+
+    // Verify hierarchy creation
+    const getTasksInSession = connection.prepare(`
+      SELECT * FROM task_contexts WHERE session_id = ?
+    `);
+    const tasks = getTasksInSession.all(sessionId);
+    
+    expect(tasks).toHaveLength(3);
+    expect(tasks.find(t => t.id === rootTaskId)).toBeDefined();
+    expect(tasks.find(t => t.id === child1Id)).toBeDefined();
+    expect(tasks.find(t => t.id === child2Id)).toBeDefined();
+
+    // Verify parent-child relationships
+    const childTasks = tasks.filter(t => t.parent_id === rootTaskId);
+    expect(childTasks).toHaveLength(2);
+  });
+
+  it('should handle task status updates', async () => {
+    const connection = db.getConnection();
+    
+    // Create session and task
+    const sessionId = DatabaseUtils.generateId('session');
+    const taskId = DatabaseUtils.generateId('task');
+    
+    const createSession = connection.prepare(`
+      INSERT INTO coordination_sessions (id, session_name)
+      VALUES (?, ?)
+    `);
+    createSession.run(sessionId, 'Status Test Session');
+
+    const createTask = connection.prepare(`
+      INSERT INTO task_contexts (id, session_id, task_name, task_status)
+      VALUES (?, ?, ?, ?)
+    `);
+    createTask.run(taskId, sessionId, 'Status Test Task', 'pending');
+
+    // Update task status
+    const updateStatus = connection.prepare(`
+      UPDATE task_contexts SET task_status = ? WHERE id = ?
+    `);
+    updateStatus.run('in-progress', taskId);
+
+    // Verify status update
+    const getTask = connection.prepare(`
+      SELECT task_status, updated_at FROM task_contexts WHERE id = ?
+    `);
+    const task = getTask.get(taskId);
+    
+    expect(task.task_status).toBe('in-progress');
+    expect(task.updated_at).toBeDefined();
+  });
+
+  it('should create memory block embeddings', async () => {
+    const connection = db.getConnection();
+    
+    // Create session and task
+    const sessionId = DatabaseUtils.generateId('session');
+    const taskId = DatabaseUtils.generateId('task');
+    const embeddingId = DatabaseUtils.generateId('emb');
+    
+    const createSession = connection.prepare(`
+      INSERT INTO coordination_sessions (id, session_name)
+      VALUES (?, ?)
+    `);
+    createSession.run(sessionId, 'Embedding Test Session');
+
+    const createTask = connection.prepare(`
+      INSERT INTO task_contexts (id, session_id, task_name)
+      VALUES (?, ?, ?)
+    `);
+    createTask.run(taskId, sessionId, 'Embedding Test Task');
+
+    // Create embedding vector
+    const vector = [0.1, 0.5, -0.2, 0.8, 0.3];
+    const vectorBlob = DatabaseUtils.vectorToBlob(vector);
+    
+    const createEmbedding = connection.prepare(`
+      INSERT INTO memory_block_embeddings (id, task_context_id, embedding_vector, embedding_metadata)
+      VALUES (?, ?, ?, ?)
+    `);
+    createEmbedding.run(embeddingId, taskId, vectorBlob, JSON.stringify({ model: 'test', dimensions: 5 }));
+
+    // Verify embedding creation
+    const getEmbedding = connection.prepare(`
+      SELECT * FROM memory_block_embeddings WHERE id = ?
+    `);
+    const embedding = getEmbedding.get(embeddingId);
+    
+    expect(embedding).toBeDefined();
+    expect(embedding.task_context_id).toBe(taskId);
+    
+    // Verify vector conversion
+    const retrievedVector = DatabaseUtils.blobToVector(embedding.embedding_vector);
+    expect(retrievedVector).toHaveLength(5);
+    expect(retrievedVector[0]).toBeCloseTo(0.1, 6);
+    expect(retrievedVector[4]).toBeCloseTo(0.3, 6);
+  });
+
+  it('should perform database health check', () => {
+    const healthCheck = db.healthCheck();
+    
+    expect(healthCheck.status).toBe('healthy');
+    expect(healthCheck.details.tables.expected).toBe(9);
+    expect(healthCheck.details.tables.found).toBe(9);
+    expect(healthCheck.details.foreign_keys).toBe('ok');
+  });
+
+  it('should handle cascade deletions', async () => {
+    const connection = db.getConnection();
+    
+    // Create session, task, and embedding
+    const sessionId = DatabaseUtils.generateId('session');
+    const taskId = DatabaseUtils.generateId('task');
+    const embeddingId = DatabaseUtils.generateId('emb');
+    
+    const createSession = connection.prepare(`
+      INSERT INTO coordination_sessions (id, session_name)
+      VALUES (?, ?)
+    `);
+    createSession.run(sessionId, 'Cascade Test Session');
+
+    const createTask = connection.prepare(`
+      INSERT INTO task_contexts (id, session_id, task_name)
+      VALUES (?, ?, ?)
+    `);
+    createTask.run(taskId, sessionId, 'Cascade Test Task');
+
+    const vector = [0.1, 0.2, 0.3];
+    const vectorBlob = DatabaseUtils.vectorToBlob(vector);
+    
+    const createEmbedding = connection.prepare(`
+      INSERT INTO memory_block_embeddings (id, task_context_id, embedding_vector)
+      VALUES (?, ?, ?)
+    `);
+    createEmbedding.run(embeddingId, taskId, vectorBlob);
+
+    // Delete the task - should cascade delete the embedding
+    const deleteTask = connection.prepare(`
+      DELETE FROM task_contexts WHERE id = ?
+    `);
+    deleteTask.run(taskId);
+
+    // Verify embedding was deleted
+    const getEmbedding = connection.prepare(`
+      SELECT * FROM memory_block_embeddings WHERE id = ?
+    `);
+    const embedding = getEmbedding.get(embeddingId);
+    
+    expect(embedding).toBeUndefined();
+  });
+});

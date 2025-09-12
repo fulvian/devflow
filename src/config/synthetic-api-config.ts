@@ -1,246 +1,127 @@
-/**
- * Production Configuration for Synthetic API Integration
- * Task ID: DEVFLOW-PROD-002-IMPL-E
- * 
- * This module provides environment-specific configuration for the Synthetic API integration,
- * including endpoints, authentication, batch processing, rate limiting, and error handling.
- */
+import { z } from 'zod';
 
-// Environment types
-export type Environment = 'development' | 'staging' | 'production';
+// Environment validation schema
+const EnvironmentSchema = z.object({
+  SYNTHETIC_API_KEY: z.string().min(1, 'API key is required'),
+  SYNTHETIC_API_BASE_URL: z.string().url().default('https://api.synthetic.io/v1'),
+  NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
+});
 
-// Authentication configuration
-export interface AuthConfig {
-  /** API key for authentication */
-  apiKey: string;
-  /** Authentication header name */
-  headerName: string;
-  /** Token refresh interval in milliseconds */
-  refreshInterval: number;
-}
+// Validate and parse environment variables
+const getValidatedEnvironment = () => {
+  try {
+    return EnvironmentSchema.parse(process.env);
+  } catch (error) {
+    if (error instanceof z.ZodError) {
+      const missingVars = error.errors.map(err => err.path.join('.')).join(', ');
+      throw new Error(`Missing or invalid environment variables: ${missingVars}`);
+    }
+    throw error;
+  }
+};
 
-// Rate limiting configuration
-export interface RateLimitConfig {
-  /** Maximum requests per time window */
-  maxRequests: number;
-  /** Time window in milliseconds */
-  windowMs: number;
-  /** Delay between requests in milliseconds */
-  delayMs: number;
-}
+const env = getValidatedEnvironment();
 
-// Retry policy configuration
-export interface RetryPolicy {
-  /** Maximum number of retry attempts */
-  maxAttempts: number;
-  /** Base delay between retries in milliseconds */
-  baseDelayMs: number;
-  /** Maximum delay between retries in milliseconds */
-  maxDelayMs: number;
-  /** Exponential backoff factor */
-  backoffFactor: number;
-  /** HTTP status codes that should trigger a retry */
-  retryableStatusCodes: number[];
-}
-
-// Batch processing configuration
-export interface BatchConfig {
-  /** Maximum number of items per batch */
-  maxBatchSize: number;
-  /** Maximum time to wait before sending a batch (milliseconds) */
-  maxBatchWaitTimeMs: number;
-  /** Concurrent batch processing limit */
-  maxConcurrentBatches: number;
-}
-
-// API endpoint configuration
-export interface ApiEndpointConfig {
-  /** Base URL for the API */
-  baseUrl: string;
-  /** Health check endpoint */
-  healthCheckPath: string;
-  /** Data submission endpoint */
-  submitPath: string;
-  /** Query endpoint */
-  queryPath: string;
-  /** Timeout for API requests in milliseconds */
-  timeoutMs: number;
-}
-
-// Complete configuration structure
+// Configuration types
 export interface SyntheticApiConfig {
-  /** Current environment */
-  environment: Environment;
-  /** API endpoint configuration */
-  endpoints: ApiEndpointConfig;
-  /** Authentication configuration */
-  auth: AuthConfig;
-  /** Rate limiting configuration */
-  rateLimit: RateLimitConfig;
-  /** Retry policy configuration */
-  retryPolicy: RetryPolicy;
-  /** Batch processing configuration */
-  batch: BatchConfig;
-  /** Enable detailed logging */
-  enableLogging: boolean;
-}
-
-/**
- * Default configuration values
- */
-const DEFAULT_CONFIG: Omit<SyntheticApiConfig, 'environment' | 'auth'> = {
-  endpoints: {
-    baseUrl: '',
-    healthCheckPath: '/health',
-    submitPath: '/submit',
-    queryPath: '/query',
-    timeoutMs: 30000
-  },
+  apiKey: string;
+  baseUrl: string;
+  environment: 'development' | 'staging' | 'production';
+  timeout: number;
+  retryAttempts: number;
+  retryDelay: number;
   rateLimit: {
-    maxRequests: 100,
-    windowMs: 60000,
-    delayMs: 100
-  },
-  retryPolicy: {
-    maxAttempts: 3,
-    baseDelayMs: 1000,
-    maxDelayMs: 30000,
-    backoffFactor: 2,
-    retryableStatusCodes: [429, 500, 502, 503, 504]
-  },
-  batch: {
-    maxBatchSize: 100,
-    maxBatchWaitTimeMs: 5000,
-    maxConcurrentBatches: 5
-  },
-  enableLogging: false
-};
-
-/**
- * Environment-specific configuration overrides
- */
-const ENVIRONMENT_CONFIGS: Record<Environment, Partial<SyntheticApiConfig>> = {
-  development: {
-    endpoints: {
-      baseUrl: 'http://localhost:8080/api/v1'
-    },
-    rateLimit: {
-      maxRequests: 50,
-      windowMs: 60000
-    },
-    enableLogging: true
-  },
-  staging: {
-    endpoints: {
-      baseUrl: 'https://staging-api.devflow.com/v1'
-    },
-    rateLimit: {
-      maxRequests: 200,
-      windowMs: 60000
-    },
-    enableLogging: true
-  },
-  production: {
-    endpoints: {
-      baseUrl: 'https://api.devflow.com/v1'
-    },
-    rateLimit: {
-      maxRequests: 1000,
-      windowMs: 60000
-    },
-    enableLogging: false
-  }
-};
-
-/**
- * Validates that required environment variables are present
- * @throws {Error} If required environment variables are missing
- */
-function validateEnvironment(): void {
-  const requiredVars = ['SYNTHETIC_API_KEY'];
-  const missingVars = requiredVars.filter(varName => !process.env[varName]);
-  
-  if (missingVars.length > 0) {
-    throw new Error(
-      `Missing required environment variables: ${missingVars.join(', ')}`
-    );
-  }
-}
-
-/**
- * Gets the current environment from environment variables
- * @returns The current environment
- */
-function getEnvironment(): Environment {
-  const env = process.env.NODE_ENV as Environment | undefined;
-  return env && ['development', 'staging', 'production'].includes(env) 
-    ? env 
-    : 'production';
-}
-
-/**
- * Creates a complete Synthetic API configuration by merging defaults with environment-specific values
- * @param environment The target environment
- * @returns Complete configuration object
- */
-function createConfig(environment: Environment): SyntheticApiConfig {
-  validateEnvironment();
-  
-  const envConfig = ENVIRONMENT_CONFIGS[environment];
-  
-  // Merge configurations with proper typing
-  const config: SyntheticApiConfig = {
-    environment,
-    endpoints: {
-      ...DEFAULT_CONFIG.endpoints,
-      ...envConfig.endpoints
-    },
-    auth: {
-      apiKey: process.env.SYNTHETIC_API_KEY!,
-      headerName: 'X-API-Key',
-      refreshInterval: 3600000 // 1 hour
-    },
-    rateLimit: {
-      ...DEFAULT_CONFIG.rateLimit,
-      ...envConfig.rateLimit
-    },
-    retryPolicy: {
-      ...DEFAULT_CONFIG.retryPolicy,
-      ...envConfig.retryPolicy
-    },
-    batch: {
-      ...DEFAULT_CONFIG.batch,
-      ...envConfig.batch
-    },
-    enableLogging: envConfig.enableLogging ?? DEFAULT_CONFIG.enableLogging
+    maxRequests: number;
+    windowMs: number;
   };
-
-  return config;
-}
-
-/**
- * Production configuration for Synthetic API integration
- */
-export const SYNTHETIC_API_CONFIG: SyntheticApiConfig = createConfig(getEnvironment());
-
-/**
- * Helper function to get the full URL for a specific endpoint
- * @param path The endpoint path
- * @returns The complete URL
- */
-export function getFullUrl(path: string): string {
-  return `${SYNTHETIC_API_CONFIG.endpoints.baseUrl}${path}`;
-}
-
-/**
- * Helper function to get authentication headers
- * @returns Authentication headers object
- */
-export function getAuthHeaders(): Record<string, string> {
-  return {
-    [SYNTHETIC_API_CONFIG.auth.headerName]: SYNTHETIC_API_CONFIG.auth.apiKey
+  logging: {
+    enabled: boolean;
+    level: 'debug' | 'info' | 'warn' | 'error';
   };
 }
 
-// Export for testing purposes
-export { validateEnvironment, getEnvironment, createConfig };
+// Production-ready configuration
+export const syntheticApiConfig: SyntheticApiConfig = {
+  apiKey: env.SYNTHETIC_API_KEY,
+  baseUrl: env.SYNTHETIC_API_BASE_URL,
+  environment: env.NODE_ENV,
+  timeout: env.NODE_ENV === 'production' ? 10000 : 15000, // 10s in prod, 15s elsewhere
+  retryAttempts: env.NODE_ENV === 'production' ? 3 : 1,
+  retryDelay: 1000, // 1 second base delay
+  rateLimit: {
+    maxRequests: 135, // As per requirements
+    windowMs: 5 * 60 * 60 * 1000, // 5 hours in milliseconds
+  },
+  logging: {
+    enabled: true,
+    level: env.NODE_ENV === 'production' ? 'info' : 'debug',
+  },
+};
+
+// Rate limiting state (in production, this would be stored in Redis or similar)
+class RateLimitState {
+  private requestCount: number = 0;
+  private windowStart: number = Date.now();
+  private config: SyntheticApiConfig;
+
+  constructor(config: SyntheticApiConfig) {
+    this.config = config;
+  }
+
+  canMakeRequest(): boolean {
+    const now = Date.now();
+    const windowEnd = this.windowStart + this.config.rateLimit.windowMs;
+
+    // Reset window if expired
+    if (now > windowEnd) {
+      this.requestCount = 0;
+      this.windowStart = now;
+      return true;
+    }
+
+    // Check if we're within rate limit
+    return this.requestCount < this.config.rateLimit.maxRequests;
+  }
+
+  incrementRequest(): void {
+    this.requestCount++;
+  }
+
+  getRemainingRequests(): number {
+    const windowEnd = this.windowStart + this.config.rateLimit.windowMs;
+    const timeLeft = windowEnd - Date.now();
+    
+    if (timeLeft <= 0) {
+      return this.config.rateLimit.maxRequests;
+    }
+    
+    return Math.max(0, this.config.rateLimit.maxRequests - this.requestCount);
+  }
+}
+
+// Export rate limiter instance
+export const rateLimiter = new RateLimitState(syntheticApiConfig);
+
+// Logging utility
+export const logger = {
+  debug: (message: string, meta?: Record<string, unknown>) => {
+    if (syntheticApiConfig.logging.enabled && syntheticApiConfig.logging.level === 'debug') {
+      console.debug(`[SyntheticAPI] DEBUG: ${message}`, meta);
+    }
+  },
+  info: (message: string, meta?: Record<string, unknown>) => {
+    if (syntheticApiConfig.logging.enabled && ['debug', 'info'].includes(syntheticApiConfig.logging.level)) {
+      console.info(`[SyntheticAPI] INFO: ${message}`, meta);
+    }
+  },
+  warn: (message: string, meta?: Record<string, unknown>) => {
+    if (syntheticApiConfig.logging.enabled && ['debug', 'info', 'warn'].includes(syntheticApiConfig.logging.level)) {
+      console.warn(`[SyntheticAPI] WARN: ${message}`, meta);
+    }
+  },
+  error: (message: string, meta?: Record<string, unknown>) => {
+    if (syntheticApiConfig.logging.enabled) {
+      console.error(`[SyntheticAPI] ERROR: ${message}`, meta);
+    }
+  }
+};
