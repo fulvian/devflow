@@ -300,7 +300,7 @@ export class ZTAToolInterceptor {
     if (!command) return false;
 
     // Extract the base command (first word)
-    const baseCommand = command.trim().split(/\s+/)[0];
+    const baseCommand = (command.trim().split(/\s+/)[0] ?? '') as string;
     
     // Check if it's in the whitelist
     if (this.config.readOnlyBashCommands.has(baseCommand)) {
@@ -309,7 +309,7 @@ export class ZTAToolInterceptor {
 
     // Check for git commands specifically
     if (command.startsWith('git ')) {
-      const gitSubCommand = command.split(/\s+/)[1];
+      const gitSubCommand = (command.split(/\s+/)[1] ?? '') as string;
       return ['status', 'log', 'diff', 'branch', 'show', 'remote'].includes(gitSubCommand);
     }
 
@@ -541,8 +541,8 @@ export async function interceptToolCallGlobal(
     prompt,
     userInput,
     timestamp: new Date(),
-    sessionId: process.env.CLAUDE_SESSION_ID,
-    userId: process.env.CLAUDE_USER_ID
+    sessionId: process.env['CLAUDE_SESSION_ID'] ?? '',
+    userId: process.env['CLAUDE_USER_ID'] ?? ''
   };
 
   return await interceptor.interceptToolCall(context);

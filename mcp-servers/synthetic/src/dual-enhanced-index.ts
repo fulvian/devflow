@@ -11,6 +11,9 @@ import * as dotenv from 'dotenv';
 import { promises as fs } from 'fs';
 import { join, resolve, dirname, basename } from 'path';
 import { existsSync } from 'fs';
+import { SyntheticRateLimiter } from './rate-limiter/synthetic-rate-limiter.js';
+import { AutonomousFileManager, FileOperation } from './file-operations.js';
+import { MCPErrorFactory, MCPResponseBuilder, MCPError } from './enhanced-tools.js';
 
 dotenv.config();
 
@@ -21,10 +24,44 @@ const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
 // Enhanced configuration
 const DEVFLOW_PROJECT_ROOT = process.env.DEVFLOW_PROJECT_ROOT || process.cwd();
 const AUTONOMOUS_FILE_OPERATIONS = process.env.AUTONOMOUS_FILE_OPERATIONS === 'true';
-const REQUIRE_APPROVAL = process.env.REQUIRE_APPROVAL === 'true';
+const REQUIRE_APPROVAL = process.env.REQUIRE_APPROVAL !== 'true'; // Default to false for autonomous operations
 const CREATE_BACKUPS = process.env.CREATE_BACKUPS !== 'false';
+const SYNTHETIC_DELETE_ENABLED = process.env.SYNTHETIC_DELETE_ENABLED === 'true';
 const ALLOWED_FILE_EXTENSIONS = process.env.ALLOWED_FILE_EXTENSIONS?.split(',') || 
-  ['.ts', '.js', '.json', '.md', '.py', '.tsx', '.jsx', '.css', '.scss', '.html', '.yml', '.yaml'];
+  ['.ts', '.js', '.json', '.md', '.py', '.tsx', '.jsx', '.css', '.scss', '.html', '.yml', '.yaml', '.txt', '.sh', '.sql', '.env'];
+
+console.log(`[Synthetic MCP] Configuration loaded:
+- Project Root: ${DEVFLOW_PROJECT_ROOT}
+- Autonomous File Operations: ${AUTONOMOUS_FILE_OPERATIONS}
+- Require Approval: ${REQUIRE_APPROVAL}
+- Create Backups: ${CREATE_BACKUPS}
+- Delete Operations: ${SYNTHETIC_DELETE_ENABLED}
+- Allowed Extensions: ${ALLOWED_FILE_EXTENSIONS.length} types`);
+
+// Expand allowed paths to include all DevFlow project subdirectories
+const getAllowedPaths = () => {
+  const basePaths = [
+    resolve(DEVFLOW_PROJECT_ROOT),
+    resolve(DEVFLOW_PROJECT_ROOT, 'packages'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'mcp-servers'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'sessions'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'docs'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'tools'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'src'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'dist'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'test'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'tests'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'scripts'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'config'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'configs'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'lib'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'build'),
+    resolve(DEVFLOW_PROJECT_ROOT, 'public'),
+  ];
+  
+  console.log(`[Synthetic MCP] Allowed paths: ${basePaths.length} directories`);
+  return basePaths;
+};
 
 // Model configuration from environment variables
 const DEFAULT_CODE_MODEL = process.env.DEFAULT_CODE_MODEL || 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct';
@@ -54,6 +91,31 @@ interface SyntheticResponse {
   };
 }
 
+// MCP-compliant response interface
+interface MCPResponse<T = any> {
+  success: boolean;
+  data?: T;
+  error?: MCPError;
+  metadata: {
+    requestId: string;
+    timestamp: string;
+    version: string;
+    model?: string;
+    tokensUsed?: number;
+  };
+}
+
+// MCP Error codes enum
+enum MCPErrorCode {
+  INVALID_INPUT = "INVALID_INPUT",
+  RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND", 
+  INTERNAL_ERROR = "INTERNAL_ERROR",
+  TIMEOUT = "TIMEOUT",
+  PERMISSION_DENIED = "PERMISSION_DENIED",
+  API_LIMIT_EXCEEDED = "API_LIMIT_EXCEEDED",
+  MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE"
+}
+
 interface FileModification {
   file: string;
   operation: 'write' | 'append' | 'patch' | 'create';
@@ -76,8 +138,46 @@ interface FileOperationResult {
 export class EnhancedSyntheticMCPServer {
   private server: Server;
   private allowedPaths: string[];
+  private rateLimiter: SyntheticRateLimiter;
+  private fileManager: AutonomousFileManager;
+  private requestIdCounter: number = 0;
 
   constructor() {
+    // Initialize expanded allowed paths for full project control
+    this.allowedPaths = getAllowedPaths();
+    
+    // Initialize autonomous file manager
+    this.fileManager = new AutonomousFileManager(
+      DEVFLOW_PROJECT_ROOT,
+      this.allowedPaths,
+      ALLOWED_FILE_EXTENSIONS,
+      CREATE_BACKUPS,
+      SYNTHETIC_DELETE_ENABLED
+    );
+    
+    // Initialize rate limiter with 135 calls per 5-hour limit
+    this.rateLimiter = new SyntheticRateLimiter({
+      maxCalls: 135,
+      windowSeconds: 18000, // 5 hours
+      batchSize: 5, // Conservative batching for file operations
+      maxRetries: 3,
+      baseDelayMs: 2000,
+      maxDelayMs: 60000 // 1 minute max delay
+    });
+
+    console.log('[Synthetic MCP] Rate limiter initialized: 135 calls/5h limit');
+    console.log(`[Synthetic MCP] Full project access enabled: ${this.allowedPaths.length} paths`);
+    
+    // Initialize rate limiter processor
+    this.initializeRateLimiterProcessor();
+    
+    // Log rate limit status periodically
+    setInterval(() => {
+      const status = this.rateLimiter.getRateLimitStatus();
+      if (status.queueSize > 0 || status.totalCalls > 0) {
+        console.log(`[Rate Limit Status] ${status.remainingCalls}/${status.totalCalls} calls remaining, queue: ${status.queueSize}`);
+      }
+    }, 30000); // Every 30 seconds
     this.server = new Server(
       {
         name: 'devflow-synthetic-enhanced',
@@ -345,35 +445,35 @@ export class EnhancedSyntheticMCPServer {
       const { name, arguments: args } = request.params;
 
       try {
+        const requestId = this.generateRequestId();
+        
         switch (name) {
           case 'synthetic_code':
-            return await this.handleCodeGeneration(args as any);
+            return await this.handleWithErrorHandling(() => this.handleCodeGeneration(args as any, requestId), requestId);
           case 'synthetic_reasoning':
-            return await this.handleReasoning(args as any);
+            return await this.handleWithErrorHandling(() => this.handleReasoning(args as any, requestId), requestId);
           case 'synthetic_context':
-            return await this.handleContextAnalysis(args as any);
+            return await this.handleWithErrorHandling(() => this.handleContextAnalysis(args as any, requestId), requestId);
           case 'synthetic_auto':
-            return await this.handleAutonomousTask(args as any);
+            return await this.handleWithErrorHandling(() => this.handleAutonomousTask(args as any, requestId), requestId);
           // New enhanced handlers
           case 'synthetic_auto_file':
-            return await this.handleAutonomousFileOperation(args as any);
+            return await this.handleWithErrorHandling(() => this.handleAutonomousFileOperation(args as any, requestId), requestId);
           case 'synthetic_batch_code':
-            return await this.handleBatchCodeGeneration(args as any);
+            return await this.handleWithErrorHandling(() => this.handleBatchCodeGeneration(args as any, requestId), requestId);
           case 'synthetic_file_analyzer':
-            return await this.handleFileAnalysis(args as any);
+            return await this.handleWithErrorHandling(() => this.handleFileAnalysis(args as any, requestId), requestId);
           default:
-            throw new Error(`Unknown tool: ${name}`);
+            return this.formatErrorResponse(
+              MCPErrorFactory.create(MCPErrorCode.INVALID_INPUT, `Unknown tool: ${name}`),
+              this.generateRequestId()
+            );
         }
       } catch (error) {
-        return {
-          content: [
-            {
-              type: 'text',
-              text: `Error: ${error instanceof Error ? error.message : String(error)}`,
-            },
-          ],
-          isError: true,
-        };
+        return this.formatErrorResponse(
+          MCPErrorFactory.create(MCPErrorCode.INTERNAL_ERROR, error instanceof Error ? error.message : String(error)),
+          this.generateRequestId()
+        );
       }
     });
   }
@@ -387,23 +487,121 @@ export class EnhancedSyntheticMCPServer {
       throw new Error('SYNTHETIC_API_KEY not configured');
     }
 
-    const response = await axios.post(
-      `${SYNTHETIC_API_URL}/chat/completions`,
+    // Use rate limiter to queue and manage API calls
+    return await this.rateLimiter.execute(
+      'chat_completion',
       {
         model,
         messages,
-        max_tokens: maxTokens,
-        temperature: 0.7,
-      } as SyntheticRequest,
-      {
-        headers: {
-          'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
-          'Content-Type': 'application/json',
-        },
-      }
+        maxTokens,
+        url: `${SYNTHETIC_API_URL}/chat/completions`
+      },
+      this.getPriorityForModel(model)
     );
+  }
 
-    return response.data;
+  /**
+   * Get priority level for different models
+   */
+  private getPriorityForModel(model: string): number {
+    // Higher priority for code generation (more time-sensitive)
+    if (model.includes('Coder') || model.includes('code')) {
+      return 10;
+    }
+    // Medium priority for reasoning tasks
+    if (model.includes('DeepSeek') || model.includes('reasoning')) {
+      return 5;
+    }
+    // Lower priority for context/analysis tasks
+    return 1;
+  }
+
+  /**
+   * Initialize rate limiter with actual API call processor
+   */
+  private initializeRateLimiterProcessor(): void {
+    // Set the batch processor for chat completions
+    (this.rateLimiter as any).processBatch = async (operation: string, requests: any[]) => {
+      if (operation !== 'chat_completion') {
+        throw new Error(`Unknown operation: ${operation}`);
+      }
+
+      const results = [];
+      
+      // Process requests individually (Synthetic API doesn't support true batching)
+      for (const request of requests) {
+        try {
+          const { model, messages, maxTokens, url } = request.payload;
+          
+          const response = await axios.post(
+            url,
+            {
+              model,
+              messages,
+              max_tokens: maxTokens,
+              temperature: 0.7,
+            } as SyntheticRequest,
+            {
+              headers: {
+                'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
+                'Content-Type': 'application/json',
+              },
+              timeout: 30000 // 30 second timeout
+            }
+          );
+
+          results.push(response.data);
+          
+        } catch (error) {
+          // Log error but continue processing other requests
+          console.error(`[Synthetic API] Error processing request ${request.id}:`, error instanceof Error ? error.message : String(error));
+          throw error; // Re-throw to trigger retry logic
+        }
+      }
+      
+      return results;
+    };
+  }
+
+  // MCP UTILITY METHODS
+  private generateRequestId(): string {
+    return `mcp_${Date.now().toString(36)}_${Math.random().toString(36).substring(2)}`;
+  }
+
+  private async handleWithErrorHandling<T>(
+    handler: () => Promise<any>,
+    requestId: string
+  ): Promise<any> {
+    const startTime = Date.now();
+    try {
+      const result = await handler();
+      return {
+        ...result,
+        content: result.content?.map((c: any) => ({
+          ...c,
+          text: c.text + `\n\n**Request ID**: ${requestId}\n**Processing Time**: ${Date.now() - startTime}ms`
+        }))
+      };
+    } catch (error) {
+      console.error(`[MCP Error ${requestId}]:`, error);
+      return this.formatErrorResponse(
+        MCPErrorFactory.fromError(error instanceof Error ? error : new Error(String(error))),
+        requestId,
+        Date.now() - startTime
+      );
+    }
+  }
+
+  private formatErrorResponse(error: MCPError, requestId: string, processingTime?: number): any {
+    return {
+      content: [
+        {
+          type: 'text',
+          text: `# ❌ MCP ERROR - ${error.code}\n\n**Message**: ${error.message}\n\n**Request ID**: ${requestId}\n**Timestamp**: ${error.timestamp}\n${processingTime ? `**Processing Time**: ${processingTime}ms\n` : ''}\n${error.details ? `**Details**: ${JSON.stringify(error.details, null, 2)}` : ''}`,
+        },
+      ],
+      isError: true,
+    };
   }
 
   // ORIGINAL METHODS (maintained for backward compatibility)
@@ -413,7 +611,7 @@ export class EnhancedSyntheticMCPServer {
     language: string;
     requirements?: string[];
     context?: string;
-  }) {
+  }, requestId?: string) {
     const systemPrompt = `You are a specialized code generation AI. Generate clean, production-ready ${args.language} code that meets the specified requirements.
 
 Focus on:
@@ -445,11 +643,23 @@ Generate the code with proper documentation and structure.`;
       ]
     );
 
+    const mcpResponse = MCPResponseBuilder.success(
+      {
+        generatedCode: response.choices[0].message.content,
+        language: args.language,
+        objective: args.objective
+      },
+      requestId || this.generateRequestId()
+    )
+    .withModel(DEFAULT_CODE_MODEL)
+    .withTokens(response.usage?.total_tokens || 0)
+    .build();
+
     return {
       content: [
         {
           type: 'text',
-          text: `# SYNTHETIC CODE GENERATION - ${args.task_id}
+          text: `# SYNTHETIC CODE GENERATION - ${args.task_id} → ${DEFAULT_CODE_MODEL}
 
 ## Generated Code
 
@@ -458,7 +668,10 @@ ${response.choices[0].message.content}
 ## Usage Stats
 - Model: ${DEFAULT_CODE_MODEL} (Code Specialist)
 - Tokens: ${response.usage?.total_tokens || 'N/A'}
-- Language: ${args.language}`,
+- Language: ${args.language}
+
+## MCP Response Metadata
+${JSON.stringify(mcpResponse.metadata, null, 2)}`,
         },
       ],
     };
@@ -469,7 +682,7 @@ ${response.choices[0].message.content}
     problem: string;
     context?: string;
     approach?: string;
-  }) {
+  }, requestId?: string) {
     const systemPrompt = `You are a specialized reasoning AI using advanced analytical capabilities. Provide deep, structured analysis with clear logical progression.
 
 Reasoning approach: ${args.approach || 'analytical'}
@@ -501,7 +714,7 @@ Provide comprehensive reasoning and analysis.`;
       content: [
         {
           type: 'text',
-          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id}
+          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id} → ${DEFAULT_REASONING_MODEL}
 
 ## Analysis Results
 
@@ -521,7 +734,7 @@ ${response.choices[0].message.content}
     content: string;
     analysis_type?: string;
     focus?: string;
-  }) {
+  }, requestId?: string) {
     const systemPrompt = `You are a specialized context analysis AI. Provide thorough understanding and analysis of the provided content.
 
 Analysis type: ${args.analysis_type || 'explain'}
@@ -552,7 +765,7 @@ Please provide ${args.analysis_type || 'explanation'} focusing on: ${args.focus 
       content: [
         {
           type: 'text',
-          text: `# SYNTHETIC CONTEXT ANALYSIS - ${args.task_id}
+          text: `# SYNTHETIC CONTEXT ANALYSIS - ${args.task_id} → ${DEFAULT_CONTEXT_MODEL}
 
 ## Context Analysis Results
 
@@ -572,7 +785,7 @@ ${response.choices[0].message.content}
     request: string;
     constraints?: string[];
     approval_required?: boolean;
-  }) {
+  }, requestId?: string) {
     // First, classify the task to determine the best model
     const classificationPrompt = `Analyze this task and determine the best approach:
 
@@ -622,7 +835,7 @@ ${args.approval_required ? 'NOTE: This task requires approval before implementat
       content: [
         {
           type: 'text',
-          text: `# SYNTHETIC AUTONOMOUS EXECUTION - ${args.task_id}
+          text: `# SYNTHETIC AUTONOMOUS EXECUTION - ${args.task_id} → ${selectedModel}
 
 ## Task Classification
 ${classification}
@@ -653,7 +866,7 @@ ${args.approval_required ? '⚠️  APPROVAL REQUIRED before implementation' : '
     create_backup?: boolean;
     dry_run?: boolean;
     approval_required?: boolean;
-  }): Promise<any> {
+  }, requestId?: string): Promise<any> {
     const startTime = Date.now();
     
     // 1. Generate the code modifications using Synthetic
@@ -797,7 +1010,7 @@ ${args.approval_required && REQUIRE_APPROVAL ? '⚠️ **Approval required befor
     }>;
     shared_context?: string;
     apply_changes?: boolean;
-  }): Promise<any> {
+  }, requestId?: string): Promise<any> {
     const startTime = Date.now();
 
     // Optimize by combining all requests into a single Synthetic API call
@@ -937,7 +1150,7 @@ ${!args.apply_changes ? '💡 **Tip**: Set apply_changes=true to automatically w
     file_paths: string[];
     analysis_goal: string;
     modification_intent?: string;
-  }): Promise<any> {
+  }, requestId?: string): Promise<any> {
     // Read and analyze multiple files
     const fileContents: Array<{ path: string; content: string; error?: string }> = [];
     

@@ -10,6 +10,11 @@ export * from './memory/contexts.js';
 export * from './memory/search.js';
 export * from './memory/compaction.js';
 
+// CC-Sessions Integration exports
+export * from './memory/discussion-enforcer.js';
+export * from './memory/context-compactor.js';
+export * from './memory/cc-sessions-manager.js';
+
 // Multi-platform coordination exports
 export { MultiPlatformCoordinator, type TaskRequest, type TaskResult } from './coordinator/multi-platform-coordinator.js';
 export { EnhancedTaskRouter, type RoutingDecision } from './routing/enhanced-task-router.js';
