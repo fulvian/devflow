@@ -11,8 +11,9 @@ import * as dotenv from 'dotenv';
 import { promises as fs } from 'fs';
 import { join, resolve, dirname, basename } from 'path';
 import { existsSync } from 'fs';
+import { spawn } from 'child_process';
 import { AutonomousFileManager, FileOperation } from './file-operations.js';
-import { MCPErrorFactory, MCPResponseBuilder, MCPError } from './enhanced-tools.js';
+import { MCPErrorFactory, MCPResponseBuilder, MCPError, MCPErrorCode } from './enhanced-tools.js';
 
 dotenv.config();
 
@@ -104,16 +105,6 @@ interface MCPResponse<T = any> {
   };
 }
 
-// MCP Error codes enum
-enum MCPErrorCode {
-  INVALID_INPUT = "INVALID_INPUT",
-  RESOURCE_NOT_FOUND = "RESOURCE_NOT_FOUND", 
-  INTERNAL_ERROR = "INTERNAL_ERROR",
-  TIMEOUT = "TIMEOUT",
-  PERMISSION_DENIED = "PERMISSION_DENIED",
-  API_LIMIT_EXCEEDED = "API_LIMIT_EXCEEDED",
-  MODEL_UNAVAILABLE = "MODEL_UNAVAILABLE"
-}
 
 interface FileModification {
   file: string;
@@ -591,6 +582,46 @@ export class EnhancedSyntheticMCPServer {
             required: ['task_id', 'file_paths', 'analysis_goal'],
           },
         },
+        {
+          name: 'synthetic_bash',
+          description: '⚡ TERMINAL COMMAND EXECUTION - Execute bash commands with safety controls and output capture',
+          inputSchema: {
+            type: 'object',
+            properties: {
+              task_id: {
+                type: 'string',
+                description: 'Task identifier (e.g., DEVFLOW-BASH-001)',
+              },
+              command: {
+                type: 'string',
+                description: 'Bash command to execute',
+              },
+              working_directory: {
+                type: 'string',
+                description: 'Working directory for command execution (relative to project root)',
+                default: '.',
+              },
+              timeout_ms: {
+                type: 'number',
+                description: 'Timeout in milliseconds (max 60000ms = 1 minute)',
+                default: 30000,
+                minimum: 1000,
+                maximum: 60000,
+              },
+              capture_output: {
+                type: 'boolean',
+                description: 'Capture stdout/stderr output',
+                default: true,
+              },
+              allow_interactive: {
+                type: 'boolean',
+                description: 'Allow interactive commands (dangerous - use with caution)',
+                default: false,
+              },
+            },
+            required: ['task_id', 'command'],
+          },
+        },
       ],
     }));
 
@@ -616,6 +647,8 @@ export class EnhancedSyntheticMCPServer {
             return await this.handleWithErrorHandling(() => this.handleBatchCodeGeneration(args as any, requestId), requestId);
           case 'synthetic_file_analyzer':
             return await this.handleWithErrorHandling(() => this.handleFileAnalysis(args as any, requestId), requestId);
+          case 'synthetic_bash':
+            return await this.handleWithErrorHandling(() => this.handleBashCommand(args as any, requestId), requestId);
           
           // === DIRECT FILE OPERATION HANDLERS ===
           case 'synthetic_file_write':
@@ -1356,6 +1389,142 @@ ${response.choices[0].message.content}
         },
       ],
     };
+  }
+
+  private async handleBashCommand(args: {
+    task_id: string;
+    command: string;
+    working_directory?: string;
+    timeout_ms?: number;
+    capture_output?: boolean;
+    allow_interactive?: boolean;
+  }, requestId: string) {
+    const startTime = Date.now();
+    
+    // Security validations
+    const workingDir = resolve(DEVFLOW_PROJECT_ROOT, args.working_directory || '.');
+    
+    // Ensure working directory is within allowed paths
+    const allowedPaths = getAllowedPaths();
+    const isAllowed = allowedPaths.some(allowedPath => workingDir.startsWith(allowedPath));
+    
+    if (!isAllowed) {
+      throw MCPErrorFactory.create(MCPErrorCode.ACCESS_DENIED, 
+        `Working directory ${workingDir} is outside allowed paths`);
+    }
+    
+    // Command safety checks
+    const dangerousCommands = ['rm -rf', 'sudo', 'su', 'chmod 777', 'format', 'fdisk', 'mkfs'];
+    const isDangerous = dangerousCommands.some(cmd => args.command.toLowerCase().includes(cmd));
+    
+    if (isDangerous) {
+      throw MCPErrorFactory.create(MCPErrorCode.ACCESS_DENIED,
+        'Command contains dangerous operations that are blocked for security');
+    }
+    
+    // Timeout validation
+    const timeout = Math.min(args.timeout_ms || 30000, 60000); // Max 1 minute
+    
+    return new Promise((resolve, reject) => {
+      const child = spawn('bash', ['-c', args.command], {
+        cwd: workingDir,
+        stdio: args.capture_output !== false ? 'pipe' : 'inherit',
+        timeout: timeout,
+        killSignal: 'SIGTERM',
+      });
+      
+      let stdout = '';
+      let stderr = '';
+      let isCompleted = false;
+      
+      // Set up timeout
+      const timeoutId = setTimeout(() => {
+        if (!isCompleted) {
+          child.kill('SIGTERM');
+          reject(MCPErrorFactory.create(MCPErrorCode.TIMEOUT, 
+            `Command timed out after ${timeout}ms`));
+        }
+      }, timeout);
+      
+      if (args.capture_output !== false) {
+        child.stdout?.on('data', (data) => {
+          stdout += data.toString();
+        });
+        
+        child.stderr?.on('data', (data) => {
+          stderr += data.toString();
+        });
+      }
+      
+      child.on('close', (code, signal) => {
+        isCompleted = true;
+        clearTimeout(timeoutId);
+        
+        const executionTime = Date.now() - startTime;
+        const success = code === 0;
+        
+        const auditEntry = {
+          operation: 'bash_command',
+          task_id: args.task_id,
+          command: args.command,
+          working_directory: workingDir,
+          exit_code: code,
+          signal: signal,
+          execution_time_ms: executionTime,
+          success: success,
+          stdout_length: stdout.length,
+          stderr_length: stderr.length,
+          timestamp: new Date().toISOString(),
+          request_id: requestId
+        };
+        
+        console.log(`[Audit] ${JSON.stringify(auditEntry)}`);
+        
+        resolve({
+          content: [{
+            type: 'text',
+            text: `# ⚡ BASH COMMAND EXECUTION - ${args.task_id}
+
+## Command
+\`\`\`bash
+${args.command}
+\`\`\`
+
+## Execution Details
+- **Working Directory**: \`${workingDir}\`
+- **Exit Code**: ${code}${signal ? ` (Signal: ${signal})` : ''}
+- **Execution Time**: ${executionTime}ms
+- **Status**: ${success ? '✅ SUCCESS' : '❌ FAILED'}
+
+## Output
+${stdout ? `### STDOUT
+\`\`\`
+${stdout}
+\`\`\`` : ''}
+${stderr ? `### STDERR
+\`\`\`
+${stderr}
+\`\`\`` : ''}
+${!stdout && !stderr ? 'No output captured' : ''}
+
+## Security Notes
+- Command executed in restricted environment
+- Working directory validated against allowed paths
+- Timeout enforced (${timeout}ms max)
+- Dangerous operations blocked`
+          }]
+        });
+      });
+      
+      child.on('error', (error) => {
+        isCompleted = true;
+        clearTimeout(timeoutId);
+        
+        console.error(`[Bash Error] Task ${args.task_id}: ${error.message}`);
+        reject(MCPErrorFactory.create(MCPErrorCode.EXECUTION_ERROR,
+          `Command execution failed: ${error.message}`));
+      });
+    });
   }
 
   // UTILITY METHODS

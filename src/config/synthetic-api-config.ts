@@ -3,7 +3,7 @@ import { z } from 'zod';
 // Environment validation schema
 const EnvironmentSchema = z.object({
   SYNTHETIC_API_KEY: z.string().min(1, 'API key is required'),
-  SYNTHETIC_API_BASE_URL: z.string().url().default('https://api.synthetic.io/v1'),
+  SYNTHETIC_API_BASE_URL: z.string().url().default('https://api.synthetic.new/v1'),
   NODE_ENV: z.enum(['development', 'staging', 'production']).default('development'),
 });
 
