@@ -19,4 +19,9 @@ pkill -f "synthetic" 2>/dev/null || true
 pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
 
+# Stop Emergency CCR if running
+if command -v npm &> /dev/null; then
+    npm run emergency:stop 2>/dev/null || true
+fi
+
 echo "✅ All DevFlow services stopped"

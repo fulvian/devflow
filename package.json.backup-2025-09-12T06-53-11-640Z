@@ -1,0 +1,39 @@
+{
+  "name": "@devflow/build-fix",
+  "version": "1.0.0",
+  "description": "DevFlow build fix for ARM64 macOS compatibility",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "clean": "rm -rf dist",
+    "prebuild": "npm run clean",
+    "postbuild": "echo 'Build completed successfully'"
+  },
+  "keywords": [
+    "devflow",
+    "build",
+    "arm64",
+    "macos",
+    "typescript"
+  ],
+  "author": "DevFlow Team",
+  "license": "MIT",
+  "dependencies": {
+    "typescript": "^4.9.5"
+  },
+  "devDependencies": {
+    "@types/node": "^18.15.11"
+  },
+  "engines": {
+    "node": ">=16.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/devflow/workspace.git"
+  },
+  "bugs": {
+    "url": "https://github.com/devflow/workspace/issues"
+  },
+  "homepage": "https://github.com/devflow/workspace#readme"
+}

@@ -1,0 +1,327 @@
+/**
+ * DevFlow Orchestrator - Main Module
+ * 
+ * This module serves as the central hub for the DevFlow system, integrating all
+ * core components and managing system initialization.
+ * 
+ * Task ID: DEVFLOW-CTM-ORCHESTRATOR-001
+ */
+
+// Core system components
+import { TaskHierarchyManager } from './task-hierarchy/manager';
+import { CognitiveMapper } from './cognitive-mapping/mapper';
+import { MemoryBridge } from './memory-bridge/bridge';
+import { SemanticMemory } from './semantic-memory/memory';
+import { ActivityRegistry } from './activity-registry/registry';
+import { IntelligentRouter } from './intelligent-routing/router';
+
+// Configuration management
+import { ConfigManager, DevFlowConfig } from './config/manager';
+
+// System initialization and lifecycle
+import { SystemInitializer } from './initialization/initializer';
+import { SystemStatus, ComponentHealth } from './types/system';
+
+// Error handling
+import { DevFlowError, ErrorCode } from './errors/devflow-error';
+
+/**
+ * Main DevFlow Orchestrator class that integrates all system components
+ */
+export class DevFlowOrchestrator {
+  private configManager: ConfigManager;
+  private taskHierarchy: TaskHierarchyManager;
+  private cognitiveMapper: CognitiveMapper;
+  private memoryBridge: MemoryBridge;
+  private semanticMemory: SemanticMemory;
+  private activityRegistry: ActivityRegistry;
+  private router: IntelligentRouter;
+  private initializer: SystemInitializer;
+  private isInitialized: boolean = false;
+
+  /**
+   * Creates a new DevFlow Orchestrator instance
+   * @param config Optional configuration object
+   */
+  constructor(config?: Partial<DevFlowConfig>) {
+    try {
+      this.configManager = new ConfigManager(config);
+      this.initializer = new SystemInitializer(this.configManager);
+    } catch (error) {
+      throw new DevFlowError(
+        'Failed to initialize configuration manager',
+        ErrorCode.INITIALIZATION_ERROR,
+        error
+      );
+    }
+  }
+
+  /**
+   * Initializes all system components
+   * @returns Promise that resolves when initialization is complete
+   */
+  public async initialize(): Promise<void> {
+    if (this.isInitialized) {
+      throw new DevFlowError(
+        'Orchestrator already initialized',
+        ErrorCode.ALREADY_INITIALIZED
+      );
+    }
+
+    try {
+      // Initialize system components in proper order
+      await this.initializer.initializeSystem();
+      
+      // Initialize individual components
+      this.taskHierarchy = new TaskHierarchyManager(this.configManager);
+      this.cognitiveMapper = new CognitiveMapper(this.configManager);
+      this.memoryBridge = new MemoryBridge(this.configManager);
+      this.semanticMemory = new SemanticMemory(this.configManager);
+      this.activityRegistry = new ActivityRegistry(this.configManager);
+      this.router = new IntelligentRouter(this.configManager);
+
+      // Establish component connections
+      await this.establishComponentConnections();
+
+      this.isInitialized = true;
+    } catch (error) {
+      throw new DevFlowError(
+        'Failed to initialize DevFlow Orchestrator',
+        ErrorCode.INITIALIZATION_ERROR,
+        error
+      );
+    }
+  }
+
+  /**
+   * Establishes connections between system components
+   */
+  private async establishComponentConnections(): Promise<void> {
+    try {
+      // Connect task hierarchy to cognitive mapper
+      this.taskHierarchy.setCognitiveMapper(this.cognitiveMapper);
+      
+      // Connect memory systems
+      this.memoryBridge.setSemanticMemory(this.semanticMemory);
+      
+      // Connect activity registry to router
+      this.router.setActivityRegistry(this.activityRegistry);
+      
+      // Connect router to task hierarchy
+      this.taskHierarchy.setRouter(this.router);
+      
+      // Initialize all component connections
+      await Promise.all([
+        this.taskHierarchy.initialize(),
+        this.cognitiveMapper.initialize(),
+        this.memoryBridge.initialize(),
+        this.semanticMemory.initialize(),
+        this.activityRegistry.initialize(),
+        this.router.initialize()
+      ]);
+    } catch (error) {
+      throw new DevFlowError(
+        'Failed to establish component connections',
+        ErrorCode.CONNECTION_ERROR,
+        error
+      );
+    }
+  }
+
+  /**
+   * Gets the current system status
+   * @returns System status information
+   */
+  public getSystemStatus(): SystemStatus {
+    if (!this.isInitialized) {
+      return {
+        status: 'uninitialized',
+        components: []
+      };
+    }
+
+    return {
+      status: 'operational',
+      components: [
+        {
+          name: 'TaskHierarchyManager',
+          status: this.taskHierarchy.isHealthy() ? 'healthy' : 'degraded',
+          version: this.taskHierarchy.getVersion()
+        },
+        {
+          name: 'CognitiveMapper',
+          status: this.cognitiveMapper.isHealthy() ? 'healthy' : 'degraded',
+          version: this.cognitiveMapper.getVersion()
+        },
+        {
+          name: 'MemoryBridge',
+          status: this.memoryBridge.isHealthy() ? 'healthy' : 'degraded',
+          version: this.memoryBridge.getVersion()
+        },
+        {
+          name: 'SemanticMemory',
+          status: this.semanticMemory.isHealthy() ? 'healthy' : 'degraded',
+          version: this.semanticMemory.getVersion()
+        },
+        {
+          name: 'ActivityRegistry',
+          status: this.activityRegistry.isHealthy() ? 'healthy' : 'degraded',
+          version: this.activityRegistry.getVersion()
+        },
+        {
+          name: 'IntelligentRouter',
+          status: this.router.isHealthy() ? 'healthy' : 'degraded',
+          version: this.router.getVersion()
+        }
+      ]
+    };
+  }
+
+  /**
+   * Gets the configuration manager
+   * @returns ConfigManager instance
+   */
+  public getConfigManager(): ConfigManager {
+    return this.configManager;
+  }
+
+  /**
+   * Gets the task hierarchy manager
+   * @returns TaskHierarchyManager instance
+   */
+  public getTaskHierarchy(): TaskHierarchyManager {
+    this.ensureInitialized();
+    return this.taskHierarchy;
+  }
+
+  /**
+   * Gets the cognitive mapper
+   * @returns CognitiveMapper instance
+   */
+  public getCognitiveMapper(): CognitiveMapper {
+    this.ensureInitialized();
+    return this.cognitiveMapper;
+  }
+
+  /**
+   * Gets the memory bridge
+   * @returns MemoryBridge instance
+   */
+  public getMemoryBridge(): MemoryBridge {
+    this.ensureInitialized();
+    return this.memoryBridge;
+  }
+
+  /**
+   * Gets the semantic memory
+   * @returns SemanticMemory instance
+   */
+  public getSemanticMemory(): SemanticMemory {
+    this.ensureInitialized();
+    return this.semanticMemory;
+  }
+
+  /**
+   * Gets the activity registry
+   * @returns ActivityRegistry instance
+   */
+  public getActivityRegistry(): ActivityRegistry {
+    this.ensureInitialized();
+    return this.activityRegistry;
+  }
+
+  /**
+   * Gets the intelligent router
+   * @returns IntelligentRouter instance
+   */
+  public getRouter(): IntelligentRouter {
+    this.ensureInitialized();
+    return this.router;
+  }
+
+  /**
+   * Ensures the system is initialized before accessing components
+   */
+  private ensureInitialized(): void {
+    if (!this.isInitialized) {
+      throw new DevFlowError(
+        'Orchestrator not initialized. Call initialize() first.',
+        ErrorCode.NOT_INITIALIZED
+      );
+    }
+  }
+
+  /**
+   * Shuts down the orchestrator and all components
+   */
+  public async shutdown(): Promise<void> {
+    if (!this.isInitialized) {
+      return;
+    }
+
+    try {
+      // Shutdown components in reverse order
+      await Promise.all([
+        this.router.shutdown(),
+        this.activityRegistry.shutdown(),
+        this.semanticMemory.shutdown(),
+        this.memoryBridge.shutdown(),
+        this.cognitiveMapper.shutdown(),
+        this.taskHierarchy.shutdown()
+      ]);
+
+      this.isInitialized = false;
+    } catch (error) {
+      throw new DevFlowError(
+        'Error during orchestrator shutdown',
+        ErrorCode.SHUTDOWN_ERROR,
+        error
+      );
+    }
+  }
+}
+
+// Export all core components for external use
+export {
+  TaskHierarchyManager,
+  CognitiveMapper,
+  MemoryBridge,
+  SemanticMemory,
+  ActivityRegistry,
+  IntelligentRouter,
+  ConfigManager,
+  DevFlowConfig,
+  SystemStatus,
+  ComponentHealth,
+  DevFlowError,
+  ErrorCode
+};
+
+// Export types
+export * from './types/task';
+export * from './types/cognitive-map';
+export * from './types/memory';
+export * from './types/activity';
+export * from './types/routing';
+export * from './types/system';
+
+// Export configuration types
+export * from './config/types';
+
+/**
+ * Factory function to create and initialize a DevFlow Orchestrator
+ * @param config Optional configuration
+ * @returns Promise resolving to initialized orchestrator
+ */
+export async function createDevFlowOrchestrator(
+  config?: Partial<DevFlowConfig>
+): Promise<DevFlowOrchestrator> {
+  const orchestrator = new DevFlowOrchestrator(config);
+  await orchestrator.initialize();
+  return orchestrator;
+}
+
+/**
+ * Default export for the main orchestrator class
+ */
+export default DevFlowOrchestrator;

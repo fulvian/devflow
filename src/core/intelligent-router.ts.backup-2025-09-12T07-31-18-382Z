@@ -1,0 +1,427 @@
+/**
+ * DevFlow Phase 2 Intelligent Routing System
+ * Cost-optimized platform selection for AI tasks
+ */
+
+// Types and Interfaces
+export interface TaskComplexity {
+  cognitiveLoad: number; // 1-10 scale
+  dataVolume: number;    // 1-10 scale
+  processingTime: number; // estimated seconds
+  modelRequirements: string[]; // required model capabilities
+}
+
+export interface PlatformSpecs {
+  id: string;
+  name: string;
+  costPerToken: number;
+  maxTokens: number;
+  capabilities: string[];
+  performanceRating: number; // 1-10 scale
+  availability: number; // 0-1 scale
+}
+
+export interface CostConstraint {
+  maxBudget: number;
+  currency: string;
+  priority: 'cost' | 'performance' | 'balanced';
+}
+
+export interface RoutingDecision {
+  platform: string;
+  estimatedCost: number;
+  confidence: number; // 0-1 scale
+  reasoning: string[];
+  fallbackChain: string[];
+}
+
+export interface BudgetTracker {
+  totalBudget: number;
+  spent: number;
+  remaining: number;
+  allocations: {
+    taskId: string;
+    platform: string;
+    amount: number;
+    timestamp: Date;
+  }[];
+}
+
+export interface PerformanceMetrics {
+  tasksRouted: number;
+  successfulCompletions: number;
+  avgResponseTime: number;
+  costSavings: number;
+  platformPerformance: Record<string, {
+    tasks: number;
+    successRate: number;
+    avgCost: number;
+  }>;
+}
+
+// Platform Specifications
+const PLATFORM_SPECS: PlatformSpecs[] = [
+  {
+    id: 'openai',
+    name: 'OpenAI',
+    costPerToken: 0.00002,
+    maxTokens: 128000,
+    capabilities: ['text-generation', 'code-generation', 'reasoning'],
+    performanceRating: 9,
+    availability: 0.99
+  },
+  {
+    id: 'gemini',
+    name: 'Gemini',
+    costPerToken: 0.000015,
+    maxTokens: 32000,
+    capabilities: ['text-generation', 'multimodal', 'reasoning'],
+    performanceRating: 8,
+    availability: 0.98
+  },
+  {
+    id: 'ccr',
+    name: 'CCR System',
+    costPerToken: 0.000005,
+    maxTokens: 8000,
+    capabilities: ['text-generation', 'code-generation'],
+    performanceRating: 6,
+    availability: 0.95
+  }
+];
+
+export class IntelligentRouter {
+  private budgetTracker: BudgetTracker;
+  private performanceMetrics: PerformanceMetrics;
+  private platformSpecs: PlatformSpecs[];
+
+  constructor(initialBudget: number, platformSpecs?: PlatformSpecs[]) {
+    this.budgetTracker = {
+      totalBudget: initialBudget,
+      spent: 0,
+      remaining: initialBudget,
+      allocations: []
+    };
+
+    this.performanceMetrics = {
+      tasksRouted: 0,
+      successfulCompletions: 0,
+      avgResponseTime: 0,
+      costSavings: 0,
+      platformPerformance: {}
+    };
+
+    this.platformSpecs = platformSpecs || PLATFORM_SPECS;
+
+    // Initialize platform performance tracking
+    this.platformSpecs.forEach(platform => {
+      this.performanceMetrics.platformPerformance[platform.id] = {
+        tasks: 0,
+        successRate: 1.0,
+        avgCost: 0
+      };
+    });
+  }
+
+  /**
+   * Analyze task complexity to determine routing requirements
+   */
+  analyzeTaskComplexity(task: {
+    description: string;
+    inputData?: any;
+    expectedOutput?: any;
+  }): TaskComplexity {
+    // In a real implementation, this would use NLP and ML models
+    // For now, we'll use heuristic-based analysis
+    
+    const descriptionLength = task.description.length;
+    const dataComplexity = task.inputData ? JSON.stringify(task.inputData).length : 0;
+    
+    return {
+      cognitiveLoad: Math.min(10, Math.ceil(descriptionLength / 200)),
+      dataVolume: Math.min(10, Math.ceil(dataComplexity / 1000)),
+      processingTime: Math.min(300, descriptionLength / 10 + dataComplexity / 100), // seconds
+      modelRequirements: this.extractModelRequirements(task.description)
+    };
+  }
+
+  /**
+   * Extract model requirements from task description
+   */
+  private extractModelRequirements(description: string): string[] {
+    const requirements: string[] = [];
+    
+    if (description.includes('code') || description.includes('programming')) {
+      requirements.push('code-generation');
+    }
+    
+    if (description.includes('reason') || description.includes('logic')) {
+      requirements.push('reasoning');
+    }
+    
+    if (description.includes('image') || description.includes('visual')) {
+      requirements.push('multimodal');
+    }
+    
+    if (requirements.length === 0) {
+      requirements.push('text-generation');
+    }
+    
+    return requirements;
+  }
+
+  /**
+   * Calculate cost for a task on a specific platform
+   */
+  private calculateCost(complexity: TaskComplexity, platform: PlatformSpecs): number {
+    // Estimate tokens needed based on complexity
+    const estimatedTokens = Math.min(
+      platform.maxTokens,
+      complexity.cognitiveLoad * 100 + 
+      complexity.dataVolume * 50 + 
+      complexity.processingTime * 10
+    );
+    
+    return estimatedTokens * platform.costPerToken;
+  }
+
+  /**
+   * Select optimal platform based on complexity and constraints
+   */
+  selectOptimalPlatform(
+    complexity: TaskComplexity,
+    constraints: CostConstraint
+  ): RoutingDecision {
+    const availablePlatforms = this.platformSpecs.filter(platform => 
+      platform.availability > 0.9 && // Only consider highly available platforms
+      complexity.modelRequirements.every(req => platform.capabilities.includes(req))
+    );
+
+    if (availablePlatforms.length === 0) {
+      throw new Error('No suitable platforms available for this task');
+    }
+
+    // Filter platforms by budget
+    const budgetFilteredPlatforms = availablePlatforms.filter(platform => {
+      const cost = this.calculateCost(complexity, platform);
+      return cost <= this.budgetTracker.remaining && cost <= constraints.maxBudget;
+    });
+
+    if (budgetFilteredPlatforms.length === 0) {
+      // If no platforms fit within budget, try the cheapest option
+      const cheapestPlatform = [...availablePlatforms]
+        .sort((a, b) => this.calculateCost(complexity, a) - this.calculateCost(complexity, b))[0];
+      
+      if (this.calculateCost(complexity, cheapestPlatform) <= constraints.maxBudget) {
+        return this.createRoutingDecision(cheapestPlatform, complexity, constraints, true);
+      } else {
+        throw new Error('Task exceeds maximum budget constraints');
+      }
+    }
+
+    // Rank platforms based on priority
+    const rankedPlatforms = [...budgetFilteredPlatforms].sort((a, b) => {
+      const costA = this.calculateCost(complexity, a);
+      const costB = this.calculateCost(complexity, b);
+      
+      switch (constraints.priority) {
+        case 'cost':
+          return costA - costB;
+        case 'performance':
+          return b.performanceRating - a.performanceRating;
+        case 'balanced':
+        default:
+          // Balance between cost and performance
+          const normalizedCostA = costA / constraints.maxBudget;
+          const normalizedCostB = costB / constraints.maxBudget;
+          const performanceScoreA = a.performanceRating / 10;
+          const performanceScoreB = b.performanceRating / 10;
+          
+          // Lower score is better (cost efficiency + performance)
+          const scoreA = normalizedCostA - performanceScoreA * 0.3;
+          const scoreB = normalizedCostB - performanceScoreB * 0.3;
+          
+          return scoreA - scoreB;
+      }
+    });
+
+    const primaryPlatform = rankedPlatforms[0];
+    const fallbackChain = rankedPlatforms.slice(1).map(p => p.id);
+    
+    return this.createRoutingDecision(primaryPlatform, complexity, constraints, false, fallbackChain);
+  }
+
+  /**
+   * Create routing decision object
+   */
+  private createRoutingDecision(
+    platform: PlatformSpecs,
+    complexity: TaskComplexity,
+    constraints: CostConstraint,
+    isFallback: boolean,
+    fallbackChain: string[] = []
+  ): RoutingDecision {
+    const estimatedCost = this.calculateCost(complexity, platform);
+    const reasoning: string[] = [];
+    
+    if (isFallback) {
+      reasoning.push('Primary budget constraints exceeded, using most cost-effective option');
+    }
+    
+    if (constraints.priority === 'cost') {
+      reasoning.push(`Selected for minimal cost: $${estimatedCost.toFixed(6)}`);
+    } else if (constraints.priority === 'performance') {
+      reasoning.push(`Selected for highest performance rating: ${platform.performanceRating}/10`);
+    } else {
+      reasoning.push(`Selected for balanced cost-performance tradeoff`);
+    }
+    
+    // Add capability matching reasoning
+    const matchedCapabilities = complexity.modelRequirements
+      .filter(req => platform.capabilities.includes(req));
+    reasoning.push(`Matches required capabilities: ${matchedCapabilities.join(', ')}`);
+    
+    return {
+      platform: platform.id,
+      estimatedCost,
+      confidence: platform.availability * (isFallback ? 0.7 : 0.9),
+      reasoning,
+      fallbackChain
+    };
+  }
+
+  /**
+   * Execute routing with fallback chain management
+   */
+  async routeTask(
+    taskId: string,
+    task: { description: string; inputData?: any },
+    constraints: CostConstraint
+  ): Promise<RoutingDecision> {
+    try {
+      const complexity = this.analyzeTaskComplexity(task);
+      const decision = this.selectOptimalPlatform(complexity, constraints);
+      
+      // Track budget allocation
+      this.allocateBudget(taskId, decision.platform, decision.estimatedCost);
+      
+      // Update metrics
+      this.performanceMetrics.tasksRouted++;
+      
+      return decision;
+    } catch (error) {
+      throw new Error(`Routing failed: ${(error as Error).message}`);
+    }
+  }
+
+  /**
+   * Allocate budget for a task
+   */
+  private allocateBudget(taskId: string, platform: string, amount: number): void {
+    if (amount > this.budgetTracker.remaining) {
+      throw new Error('Insufficient budget for task allocation');
+    }
+    
+    this.budgetTracker.spent += amount;
+    this.budgetTracker.remaining -= amount;
+    
+    this.budgetTracker.allocations.push({
+      taskId,
+      platform,
+      amount,
+      timestamp: new Date()
+    });
+  }
+
+  /**
+   * Record task completion for performance metrics
+   */
+  recordTaskCompletion(
+    taskId: string,
+    platform: string,
+    actualCost: number,
+    responseTime: number,
+    success: boolean
+  ): void {
+    // Update platform performance
+    const platformMetrics = this.performanceMetrics.platformPerformance[platform];
+    if (platformMetrics) {
+      platformMetrics.tasks++;
+      platformMetrics.successRate = (
+        (platformMetrics.successRate * (platformMetrics.tasks - 1) + (success ? 1 : 0)) / 
+        platformMetrics.tasks
+      );
+      
+      platformMetrics.avgCost = (
+        (platformMetrics.avgCost * (platformMetrics.tasks - 1) + actualCost) / 
+        platformMetrics.tasks
+      );
+    }
+    
+    // Update overall metrics
+    if (success) {
+      this.performanceMetrics.successfulCompletions++;
+      
+      // Update average response time
+      const totalResponseTime = this.performanceMetrics.avgResponseTime * 
+        (this.performanceMetrics.successfulCompletions - 1) + responseTime;
+      this.performanceMetrics.avgResponseTime = 
+        totalResponseTime / this.performanceMetrics.successfulCompletions;
+    }
+    
+    // Find the allocation and potentially calculate savings
+    const allocation = this.budgetTracker.allocations.find(a => a.taskId === taskId);
+    if (allocation) {
+      const savings = allocation.amount - actualCost;
+      this.performanceMetrics.costSavings += Math.max(0, savings);
+    }
+  }
+
+  /**
+   * Get current budget status
+   */
+  getBudgetStatus(): BudgetTracker {
+    return { ...this.budgetTracker };
+  }
+
+  /**
+   * Get performance metrics
+   */
+  getPerformanceMetrics(): PerformanceMetrics {
+    return { ...this.performanceMetrics };
+  }
+
+  /**
+   * Reset metrics (useful for testing)
+   */
+  resetMetrics(): void {
+    this.performanceMetrics = {
+      tasksRouted: 0,
+      successfulCompletions: 0,
+      avgResponseTime: 0,
+      costSavings: 0,
+      platformPerformance: Object.keys(this.performanceMetrics.platformPerformance).reduce(
+        (acc, platformId) => {
+          acc[platformId] = {
+            tasks: 0,
+            successRate: 1.0,
+            avgCost: 0
+          };
+          return acc;
+        },
+        {} as Record<string, { tasks: number; successRate: number; avgCost: number; }>
+      )
+    };
+  }
+}
+
+// Export types for external use
+export { PLATFORM_SPECS };
+export type { 
+  TaskComplexity, 
+  PlatformSpecs, 
+  CostConstraint, 
+  RoutingDecision, 
+  BudgetTracker, 
+  PerformanceMetrics 
+};

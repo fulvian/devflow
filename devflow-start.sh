@@ -41,6 +41,7 @@ echo "✅ Environment configured:"
 echo "   - Project Root: $DEVFLOW_PROJECT_ROOT"
 echo "   - Node Environment: $NODE_ENV"
 echo "   - Synthetic API: $(echo $SYNTHETIC_API_KEY | sed 's/./*/g' | sed 's/\(.*\)\*\*\*\*/\1****/')"
+echo "   - API Mode: Direct calls (No rate limiting)"
 
 # --- 2. Port and Process Cleanup ---
 echo ""
@@ -110,7 +111,7 @@ DEVFLOW_PROJECT_ROOT=$DEVFLOW_PROJECT_ROOT \
 AUTONOMOUS_FILE_OPERATIONS=$AUTONOMOUS_FILE_OPERATIONS \
 CREATE_BACKUPS=$CREATE_BACKUPS \
 SYNTHETIC_DELETE_ENABLED=$SYNTHETIC_DELETE_ENABLED \
-npm start > ../../logs/synthetic-server.log 2>&1 &
+node dist/dual-enhanced-index.js > ../../logs/synthetic-server.log 2>&1 &
 SYNTHETIC_PID=$!
 cd ../..
 sleep 2
@@ -119,13 +120,21 @@ sleep 2
 echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 CORE_PID="N/A"
 
-# Start Claude Code Router (CCR) if available
-echo "   🔀 Starting Claude Code Router (CCR)..."
-if command -v npm run claude:ccr:start &> /dev/null; then
-    npm run claude:ccr:start > logs/ccr-server.log 2>&1 &
-    CCR_PID=$!
+# Start Claude Code Router (CCR) - Emergency Integration
+echo "   🔀 Starting Claude Code Router (CCR) with Emergency System..."
+if command -v npx &> /dev/null && npm list @musistudio/claude-code-router &> /dev/null; then
+    # Check if Emergency CCR is already running
+    if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
+        echo "   ✅ Emergency CCR already running, using existing instance"
+        CCR_PID="EMERGENCY"
+    else
+        # Start Emergency CCR system
+        npm run emergency:start > logs/ccr-server.log 2>&1 &
+        CCR_PID=$!
+        echo "   🚨 Emergency CCR system started (PID: $CCR_PID)"
+    fi
 else
-    echo "⚠️  CCR not configured, skipping..."
+    echo "⚠️  CCR package not found, skipping..."
     CCR_PID="N/A"
 fi
 sleep 2
@@ -150,7 +159,7 @@ echo "⏳ Performing health checks (30s timeout each)..."
 echo "   🔍 Checking Synthetic MCP Server..."
 timeout=30
 counter=0
-until grep -q "DevFlow.*Synthetic.*MCP.*server.*running" logs/synthetic-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
+until grep -q "DevFlow Enhanced Synthetic MCP server running\|Full project access enabled" logs/synthetic-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
     sleep 1
     ((counter++))
 done
@@ -158,34 +167,44 @@ if [ $counter -eq $timeout ]; then
     echo "❌ Synthetic MCP Server failed to start. Check logs/synthetic-server.log"
     cat logs/synthetic-server.log | tail -20
 else
-    echo "✅ Synthetic MCP Server: OPERATIONAL"
+    echo "✅ Synthetic MCP Server: OPERATIONAL (Enhanced with File Operations)"
 fi
 
 # DevFlow Core Server skipped in this phase
 echo "   ⚙️  DevFlow Core Server: SKIPPED (Synthetic delegation phase)"
 
-# Health Check for CCR
+# Health Check for Emergency CCR
 if [ "$CCR_PID" != "N/A" ]; then
-    echo "   🔍 Checking Claude Code Router..."
-    counter=0
-    until grep -q "CCR.*ATTIVO\|router.*running" logs/ccr-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
-        sleep 1
-        ((counter++))
-    done
-    if [ $counter -eq $timeout ]; then
-        echo "⚠️  CCR Server: TIMEOUT (check logs/ccr-server.log)"
+    echo "   🔍 Checking Emergency CCR System..."
+    if [ "$CCR_PID" = "EMERGENCY" ]; then
+        # Check existing Emergency CCR status
+        if npm run emergency:status 2>/dev/null | grep -q "Running: 🟢 Yes"; then
+            echo "✅ Emergency CCR System: OPERATIONAL (existing instance)"
+        else
+            echo "⚠️  Emergency CCR System: Status unclear"
+        fi
     else
-        echo "✅ Claude Code Router: OPERATIONAL"
+        # Check new Emergency CCR instance
+        counter=0
+        until grep -q "CCR Emergency Proxy ACTIVATED\|Emergency CCR ACTIVATED" logs/ccr-server.log 2>/dev/null || [ $counter -eq $timeout ]; do
+            sleep 1
+            ((counter++))
+        done
+        if [ $counter -eq $timeout ]; then
+            echo "⚠️  Emergency CCR System: TIMEOUT (check logs/ccr-server.log)"
+        else
+            echo "✅ Emergency CCR System: OPERATIONAL (PID: $CCR_PID)"
+        fi
     fi
 fi
 
-# --- 7. Rate Limiter Status ---
+# --- 7. API Status ---
 echo ""
-echo "📊 Checking Synthetic API Rate Limiter..."
-if grep -q "Rate limiter initialized.*135.*5h" logs/synthetic-server.log 2>/dev/null; then
-    echo "✅ Rate Limiter: 135 calls/5h limit configured"
+echo "📊 Checking Synthetic API Status..."
+if grep -q "Full project access enabled.*paths" logs/synthetic-server.log 2>/dev/null; then
+    echo "✅ Synthetic API: Direct calls enabled (No rate limiting)"
 else
-    echo "⚠️  Rate Limiter: Status unknown (check logs)"
+    echo "⚠️  Synthetic API: Status unknown (check logs)"
 fi
 
 # --- 8. Final System Status ---
@@ -196,7 +215,11 @@ echo ""
 echo "📊 Active Services:"
 echo "   🤖 MCP Synthetic Server:     PID $SYNTHETIC_PID (Enhanced Delegation)"
 [ "$CORE_PID" != "N/A" ] && echo "   ⚙️  DevFlow Core Server:      PID $CORE_PID"
-[ "$CCR_PID" != "N/A" ] && echo "   🔀 Claude Code Router:        PID $CCR_PID"
+if [ "$CCR_PID" = "EMERGENCY" ]; then
+    echo "   🚨 Emergency CCR System:     ACTIVE (existing instance)"
+elif [ "$CCR_PID" != "N/A" ]; then
+    echo "   🚨 Emergency CCR System:     PID $CCR_PID (session independence)"
+fi
 echo ""
 echo "🧠 Available Synthetic Models:"
 echo "   📝 synthetic_code         → Qwen3-Coder-480B-A35B-Instruct"
@@ -210,28 +233,34 @@ echo "   ⚡ synthetic_batch_code   → Batch processing"
 echo "   🔍 synthetic_file_analyzer → File analysis"
 echo ""
 echo "📈 System Configuration:"
-echo "   🔒 API Rate Limit:         135 calls / 5 hours"
+echo "   🚀 API Mode:               Direct calls (No rate limiting)"
 echo "   💾 File Operations:        $([ "$AUTONOMOUS_FILE_OPERATIONS" = "true" ] && echo "AUTONOMOUS" || echo "MANUAL")"
 echo "   🗃️  Backup Creation:        $([ "$CREATE_BACKUPS" = "true" ] && echo "ENABLED" || echo "DISABLED")"
 echo "   🗑️  Delete Operations:      $([ "$SYNTHETIC_DELETE_ENABLED" = "true" ] && echo "ENABLED" || echo "DISABLED")"
+echo "   🔧 Enhanced Features:      MCPResponseBuilder, File Operations, Error Handling"
 echo ""
 echo "🖥️  HOW TO USE DEVFLOW WITH SYNTHETIC DELEGATION:"
 echo "=========================================================================="
 echo ""
 echo "🟢 Start Claude Code session with full Synthetic integration:"
 echo "   cd /Users/fulvioventura/devflow"
-echo "   claude-code --mcp-config ./.mcp.json"
+echo "   claude-code (MCP auto-configured from ~/.config/claude-desktop/claude_desktop_config.json)"
 echo ""
 echo "🧪 Test Synthetic delegation directly:"
-echo '   mcp__devflow-synthetic-cc-sessions__synthetic_auto({'
+echo '   mcp__devflow-synthetic-cc-sessions__synthetic_code({'
 echo '     task_id: "TEST-001",'
-echo '     request: "Create a TypeScript interface for user management"'
+echo '     objective: "Create a TypeScript interface for user management",'
+echo '     language: "typescript",'
+echo '     requirements: ["Export as ES module", "Include validation methods"]'
 echo '   })'
 echo ""
 echo "📋 Monitor Logs:"
 echo "   - Synthetic Server:  tail -f logs/synthetic-server.log"
 [ "$CORE_PID" != "N/A" ] && echo "   - DevFlow Core:      tail -f logs/devflow-core.log"
-[ "$CCR_PID" != "N/A" ] && echo "   - CCR Server:        tail -f logs/ccr-server.log"
+if [ "$CCR_PID" != "N/A" ]; then
+    echo "   - Emergency CCR:     npm run emergency:status"
+    echo "   - CCR Logs:          tail -f logs/ccr-server.log"
+fi
 echo ""
 echo "🛑 Stop all services:"
 echo "   ./devflow-stop.sh"
@@ -268,6 +297,11 @@ fi
 pkill -f "synthetic" 2>/dev/null || true
 pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
+
+# Stop Emergency CCR if running
+if command -v npm &> /dev/null; then
+    npm run emergency:stop 2>/dev/null || true
+fi
 
 echo "✅ All DevFlow services stopped"
 EOF

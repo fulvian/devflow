@@ -441,12 +441,11 @@ export class MCPResponseBuilder<T = any> {
     data: T,
     requestId: string,
     metadata?: any
-  ): any {
+  ): MCPResponseBuilder<T> {
     const builder = new MCPResponseBuilder<T>(requestId);
     return builder
       .withData(data)
-      .withMetadata(metadata)
-      .build();
+      .withMetadata(metadata);
   }
 
   static error(

@@ -1,216 +1,232 @@
-import { Database } from 'sqlite3';
-import { cosineSimilarity } from '../utils/vectorUtils';
-import { SearchDocument } from '../types/search';
+/**
+ * In-Memory Search Service
+ * 
+ * This module provides search functionality using in-memory data structures
+ * as a replacement for SQLite-based implementations.
+ * 
+ * Task ID: DEVFLOW-BUILD-FIX-005
+ */
 
-interface HybridSearchConfig {
-  keywordWeight: number;
-  semanticWeight: number;
-  similarityThreshold: number;
-  normalizationMethod: 'minmax' | 'zscore' | 'none';
+// Type definitions
+export interface SearchableItem {
+  id: string;
+  title: string;
+  content: string;
+  tags: string[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
-class HybridRankingAlgorithm {
-  private db: Database;
-  private config: HybridSearchConfig;
+export interface SearchOptions {
+  limit?: number;
+  offset?: number;
+  sortBy?: 'title' | 'createdAt' | 'updatedAt';
+  sortOrder?: 'asc' | 'desc';
+  tags?: string[];
+}
 
-  constructor(db: Database, config: Partial<HybridSearchConfig> = {}) {
-    this.db = db;
-    this.config = {
-      keywordWeight: config.keywordWeight ?? 0.3,
-      semanticWeight: config.semanticWeight ?? 0.7,
-      similarityThreshold: config.similarityThreshold ?? 0.5,
-      normalizationMethod: config.normalizationMethod ?? 'minmax'
-    };
+export interface SearchResult {
+  items: SearchableItem[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+/**
+ * In-Memory Search Service
+ * Manages searchable items in memory and provides search functionality
+ */
+export class InMemorySearchService {
+  private items: Map<string, SearchableItem> = new Map();
+  private index: Map<string, Set<string>> = new Map(); // Term -> Item IDs
+
+  /**
+   * Add or update an item in the search index
+   * @param item The item to add or update
+   */
+  public upsertItem(item: SearchableItem): void {
+    // Store the item
+    this.items.set(item.id, item);
+    
+    // Update the search index
+    this.updateIndex(item);
   }
 
   /**
-   * Executes hybrid search combining FTS5 BM25 and vector similarity
-   * @param queryText The search query text
-   * @param queryVector The query embedding vector
-   * @param limit Maximum number of results
-   * @returns Ranked search results
+   * Remove an item from the search index
+   * @param id The ID of the item to remove
    */
-  async search(queryText: string, queryVector: number[], limit: number = 20): Promise<SearchDocument[]> {
-    // Get BM25 scores from FTS5
-    const keywordResults = await this.getKeywordScores(queryText, limit * 2);
-    
-    // Get vector similarity scores
-    const semanticResults = await this.getSemanticScores(queryVector, limit * 2);
-    
-    // Combine and rank results
-    const combinedResults = this.combineScores(keywordResults, semanticResults);
-    
-    // Apply threshold filtering
-    const filteredResults = combinedResults.filter(r => r.combinedScore >= this.config.similarityThreshold);
-    
-    // Sort by combined score
-    return filteredResults
-      .sort((a, b) => b.combinedScore - a.combinedScore)
-      .slice(0, limit);
+  public removeItem(id: string): void {
+    const item = this.items.get(id);
+    if (item) {
+      // Remove from index
+      this.removeFromIndex(item);
+      // Remove from storage
+      this.items.delete(id);
+    }
   }
 
   /**
-   * Fetches BM25 scores using FTS5
+   * Search for items based on query and options
+   * @param query The search query
+   * @param options Search options
+   * @returns Search results
    */
-  private async getKeywordScores(query: string, limit: number): Promise<Array<{id: string, bm25Score: number}>> {
-    return new Promise((resolve, reject) => {
-      const sql = `
-        SELECT id, bm25(search_index) as score
-        FROM search_index
-        WHERE search_index MATCH ?
-        ORDER BY score
-        LIMIT ?
-      `;
-      
-      this.db.all(sql, [query, limit], (err, rows: any[]) => {
-        if (err) reject(err);
-        resolve(rows.map(row => ({
-          id: row.id,
-          bm25Score: row.score
-        })));
-      });
-    });
-  }
+  public search(query: string, options: SearchOptions = {}): SearchResult {
+    const {
+      limit = 10,
+      offset = 0,
+      sortBy = 'createdAt',
+      sortOrder = 'desc',
+      tags = []
+    } = options;
 
-  /**
-   * Fetches vector similarity scores
-   */
-  private async getSemanticScores(queryVector: number[], limit: number): Promise<Array<{id: string, similarity: number}>> {
-    return new Promise((resolve, reject) => {
-      // For performance, we limit semantic search to top candidates
-      const sql = `
-        SELECT id, vector_data
-        FROM document_vectors
-        ORDER BY id
-        LIMIT ?
-      `;
-      
-      this.db.all(sql, [limit], async (err, rows: any[]) => {
-        if (err) reject(err);
-        
-        const similarities = rows.map(row => ({
-          id: row.id,
-          similarity: cosineSimilarity(queryVector, JSON.parse(row.vector_data))
-        }));
-        
-        resolve(similarities);
-      });
-    });
-  }
-
-  /**
-   * Combines keyword and semantic scores with configurable weighting
-   */
-  private combineScores(
-    keywordScores: Array<{id: string, bm25Score: number}>,
-    semanticScores: Array<{id: string, similarity: number}>
-  ): SearchDocument[] {
-    // Normalize scores
-    const normalizedKeywords = this.normalizeScores(
-      keywordScores.map(s => ({id: s.id, score: -s.bm25Score})) // Invert BM25 (lower is better)
-    );
+    // Tokenize the query
+    const queryTerms = this.tokenize(query.toLowerCase());
     
-    const normalizedSemantics = this.normalizeScores(
-      semanticScores.map(s => ({id: s.id, score: s.similarity}))
-    );
+    // Find matching item IDs
+    let matchingIds: string[] = [];
     
-    // Create maps for efficient lookup
-    const keywordMap = new Map(normalizedKeywords.map(s => [s.id, s.score]));
-    const semanticMap = new Map(normalizedSemantics.map(s => [s.id, s.score]));
-    
-    // Combine scores
-    const allIds = new Set([...keywordMap.keys(), ...semanticMap.keys()]);
-    const combined: SearchDocument[] = [];
-    
-    for (const id of allIds) {
-      const keywordScore = keywordMap.get(id) || 0;
-      const semanticScore = semanticMap.get(id) || 0;
-      
-      const combinedScore = (
-        this.config.keywordWeight * keywordScore +
-        this.config.semanticWeight * semanticScore
+    if (queryTerms.length > 0) {
+      // Find items that match all query terms
+      const termMatches: Set<string>[] = queryTerms.map(term => 
+        this.index.get(term) || new Set()
       );
       
-      combined.push({
-        id,
-        keywordScore,
-        semanticScore,
-        combinedScore
+      // Find intersection of all term matches
+      matchingIds = termMatches.length > 0 
+        ? [...termMatches.reduce((a, b) => 
+            new Set([...a].filter(id => b.has(id)))
+          )]
+        : [];
+    } else {
+      // If no query terms, return all items
+      matchingIds = [...this.items.keys()];
+    }
+    
+    // Filter by tags if specified
+    if (tags.length > 0) {
+      matchingIds = matchingIds.filter(id => {
+        const item = this.items.get(id);
+        return item && tags.some(tag => item.tags.includes(tag));
       });
     }
     
-    return combined;
-  }
-
-  /**
-   * Normalizes scores using configured method
-   */
-  private normalizeScores(scores: Array<{id: string, score: number}>): Array<{id: string, score: number}> {
-    if (this.config.normalizationMethod === 'none') return scores;
+    // Get the actual items
+    let results = matchingIds
+      .map(id => this.items.get(id)!)
+      .filter(item => item !== undefined);
     
-    if (this.config.normalizationMethod === 'minmax') {
-      const min = Math.min(...scores.map(s => s.score));
-      const max = Math.max(...scores.map(s => s.score));
-      const range = max - min || 1; // Avoid division by zero
+    // Sort results
+    results.sort((a, b) => {
+      let comparison = 0;
       
-      return scores.map(s => ({
-        id: s.id,
-        score: (s.score - min) / range
-      }));
-    }
+      switch (sortBy) {
+        case 'title':
+          comparison = a.title.localeCompare(b.title);
+          break;
+        case 'createdAt':
+          comparison = a.createdAt.getTime() - b.createdAt.getTime();
+          break;
+        case 'updatedAt':
+          comparison = a.updatedAt.getTime() - b.updatedAt.getTime();
+          break;
+      }
+      
+      return sortOrder === 'asc' ? comparison : -comparison;
+    });
     
-    // Z-score normalization
-    const mean = scores.reduce((sum, s) => sum + s.score, 0) / scores.length;
-    const std = Math.sqrt(
-      scores.reduce((sum, s) => sum + Math.pow(s.score - mean, 2), 0) / scores.length
-    ) || 1; // Avoid division by zero
-    
-    return scores.map(s => ({
-      id: s.id,
-      score: (s.score - mean) / std
-    }));
-  }
-
-  /**
-   * Updates configuration parameters
-   */
-  updateConfig(newConfig: Partial<HybridSearchConfig>): void {
-    this.config = { ...this.config, ...newConfig };
-  }
-
-  /**
-   * Performs validation of ranking quality
-   */
-  async validateRanking(testQueries: Array<{text: string, vector: number[], relevantIds: string[]}>): Promise<{ndcg: number, precision: number}> {
-    let totalNDCG = 0;
-    let totalPrecision = 0;
-    
-    for (const query of testQueries) {
-      const results = await this.search(query.text, query.vector, 10);
-      const resultIds = results.map(r => r.id);
-      
-      // Calculate NDCG@10
-      const dcg = resultIds.reduce((sum, id, idx) => 
-        sum + (query.relevantIds.includes(id) ? 1 / Math.log2(idx + 2) : 0), 0
-      );
-      
-      const idealResultIds = [...query.relevantIds];
-      const idcg = idealResultIds.slice(0, 10).reduce((sum, _, idx) => 
-        sum + 1 / Math.log2(idx + 2), 0
-      ) || 1;
-      
-      totalNDCG += dcg / idcg;
-      
-      // Calculate Precision@10
-      const relevantRetrieved = resultIds.filter(id => query.relevantIds.includes(id)).length;
-      totalPrecision += relevantRetrieved / Math.min(10, resultIds.length);
-    }
+    // Apply pagination
+    const total = results.length;
+    results = results.slice(offset, offset + limit);
     
     return {
-      ndcg: totalNDCG / testQueries.length,
-      precision: totalPrecision / testQueries.length
+      items: results,
+      total,
+      limit,
+      offset
     };
+  }
+
+  /**
+   * Get an item by ID
+   * @param id The item ID
+   * @returns The item or undefined if not found
+   */
+  public getItem(id: string): SearchableItem | undefined {
+    return this.items.get(id);
+  }
+
+  /**
+   * Get all items
+   * @returns Array of all items
+   */
+  public getAllItems(): SearchableItem[] {
+    return Array.from(this.items.values());
+  }
+
+  /**
+   * Clear all items and index
+   */
+  public clear(): void {
+    this.items.clear();
+    this.index.clear();
+  }
+
+  /**
+   * Update the search index for an item
+   * @param item The item to index
+   */
+  private updateIndex(item: SearchableItem): void {
+    // Remove old index entries for this item
+    this.removeFromIndex(item);
+    
+    // Add new index entries
+    const text = `${item.title} ${item.content} ${item.tags.join(' ')}`.toLowerCase();
+    const terms = this.tokenize(text);
+    
+    terms.forEach(term => {
+      if (!this.index.has(term)) {
+        this.index.set(term, new Set());
+      }
+      this.index.get(term)!.add(item.id);
+    });
+  }
+
+  /**
+   * Remove an item from the search index
+   * @param item The item to remove from index
+   */
+  private removeFromIndex(item: SearchableItem): void {
+    // Remove this item from all term indexes
+    for (const [term, ids] of this.index.entries()) {
+      ids.delete(item.id);
+      // Clean up empty term entries
+      if (ids.size === 0) {
+        this.index.delete(term);
+      }
+    }
+  }
+
+  /**
+   * Tokenize text into search terms
+   * @param text The text to tokenize
+   * @returns Array of terms
+   */
+  private tokenize(text: string): string[] {
+    // Simple tokenization - split by whitespace and remove punctuation
+    return text
+      .split(/\s+/)
+      .map(term => term.replace(/[^\w]/g, ''))
+      .filter(term => term.length > 0);
   }
 }
 
-export { HybridRankingAlgorithm, HybridSearchConfig };
+// Export a singleton instance for convenience
+export const searchService = new InMemorySearchService();
+
+// Export types for external use
+export default {
+  InMemorySearchService,
+  searchService
+};

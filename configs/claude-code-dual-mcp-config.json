@@ -18,7 +18,7 @@
     },
     "devflow-synthetic-cc-sessions": {
       "command": "node",
-      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/simple-batch-index.js"],
       "env": {
         "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
         "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
