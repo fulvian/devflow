@@ -19,6 +19,11 @@ pkill -f "synthetic" 2>/dev/null || true
 pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
 
+# Stop CCR Services
+if [ -f "scripts/ccr-services.sh" ]; then
+    ./scripts/ccr-services.sh stop 2>/dev/null || true
+fi
+
 # Stop Emergency CCR if running
 node emergency-ccr-cli.mjs stop 2>/dev/null || true
 

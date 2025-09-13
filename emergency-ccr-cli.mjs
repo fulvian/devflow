@@ -207,9 +207,37 @@ class CCRAutoStarter {
           this.startHealthMonitoring();
           return true;
         } else {
-          this.log(`Port ${this.CCR_PORT} is occupied but not responding as CCR. Cannot start.`);
-          this.isStarting = false;
-          return false;
+          this.log(`Port ${this.CCR_PORT} is occupied but not responding as CCR.`);
+          // Optional forced takeover
+          if ((process.env.CCR_FORCE_TAKEOVER || 'true').toLowerCase() === 'true') {
+            this.log('Attempting forced takeover of port...');
+            try {
+              const { spawnSync } = await import('child_process');
+              const res = spawnSync('lsof', ['-ti', `:${this.CCR_PORT}`], { encoding: 'utf8' });
+              if (res.status === 0 && res.stdout.trim()) {
+                const pids = res.stdout.trim().split(/\s+/);
+                for (const pid of pids) {
+                  this.log(`Killing process on port ${this.CCR_PORT}: PID ${pid}`);
+                  process.kill(parseInt(pid, 10), 'SIGKILL');
+                }
+                // Small delay for OS to release the socket
+                await new Promise(r => setTimeout(r, 1000));
+                // proceed to spawn below
+              } else {
+                this.log('No PID found via lsof; cannot takeover.');
+                this.isStarting = false;
+                return false;
+              }
+            } catch (e) {
+              this.log(`Forced takeover failed: ${e?.message || e}`);
+              this.isStarting = false;
+              return false;
+            }
+          } else {
+            this.log(`CCR_FORCE_TAKEOVER is disabled. Cannot start.`);
+            this.isStarting = false;
+            return false;
+          }
         }
       }
 
