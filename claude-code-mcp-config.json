@@ -1,0 +1,19 @@
+{
+  "mcpServers": {
+    "devflow-orchestrator": {
+      "command": "node",
+      "args": ["mcp-servers/orchestrator/dist/index.js"],
+      "env": {
+        "PORT": "3001",
+        "REDIS_URL": "redis://localhost:6379"
+      }
+    },
+    "devflow-synthetic": {
+      "command": "node",
+      "args": ["mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "syn-iJ7rPT7b6jNvUNy4M1Gr2YNSXEFgCa"
+      }
+    }
+  }
+}
