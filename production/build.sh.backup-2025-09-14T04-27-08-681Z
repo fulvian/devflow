@@ -1,0 +1,23 @@
+#!/bin/bash
+# TypeScript Build Script for Enforcement System
+set -euo pipefail
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+}
+
+log "Starting TypeScript build process..."
+
+# Install dependencies
+log "Installing dependencies..."
+npm ci --production
+
+# TypeScript compilation
+log "Compiling TypeScript..."
+npx tsc --project tsconfig.production.json
+
+# Bundle dependencies if needed
+log "Bundling for production..."
+npx esbuild src/claude-code-bootstrap.ts --bundle --platform=node --outfile=dist/bootstrap.js --external:winston
+
+log "Build completed successfully"

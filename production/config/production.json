@@ -1,0 +1,41 @@
+{
+  "system": {
+    "name": "Claude Code Enforcement System",
+    "version": "1.0.0",
+    "environment": "production"
+  },
+  "server": {
+    "port": 8080,
+    "host": "0.0.0.0",
+    "maxConnections": 1000
+  },
+  "database": {
+    "host": "localhost",
+    "port": 5432,
+    "name": "claude_enforcement",
+    "user": "claude_user",
+    "password": "${DB_PASSWORD}",
+    "pool": {
+      "min": 2,
+      "max": 20
+    }
+  },
+  "security": {
+    "jwtSecret": "${JWT_SECRET}",
+    "encryptionKey": "${ENCRYPTION_KEY}",
+    "rateLimit": {
+      "windowMs": 900000,
+      "max": 100
+    }
+  },
+  "logging": {
+    "level": "info",
+    "file": "/opt/claude-code/dist/logs/enforcement.log",
+    "maxSize": "100m",
+    "maxFiles": "10"
+  },
+  "monitoring": {
+    "enabled": true,
+    "endpoint": "/metrics"
+  }
+}

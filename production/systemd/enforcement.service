@@ -1,0 +1,29 @@
+[Unit]
+Description=DevFlow Enforcement System
+After=network.target
+Requires=network.target
+
+[Service]
+Type=simple
+User=enforcement
+Group=enforcement
+WorkingDirectory=/opt/enforcement-system/current
+ExecStart=/usr/bin/node /opt/enforcement-system/current/bin/bootstrap.js
+Restart=always
+RestartSec=10
+Environment=NODE_ENV=production
+Environment=ENABLE_ENFORCEMENT=true
+
+# Logging
+StandardOutput=append:/var/log/enforcement/app.log
+StandardError=append:/var/log/enforcement/error.log
+
+# Security
+NoNewPrivileges=yes
+PrivateTmp=yes
+ProtectSystem=strict
+ProtectHome=yes
+ReadWritePaths=/var/log/enforcement
+
+[Install]
+WantedBy=multi-user.target

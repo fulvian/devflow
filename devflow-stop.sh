@@ -1,30 +1,91 @@
 #!/bin/bash
-echo "🛑 Stopping DevFlow services..."
 
+# DevFlow Stop Script v2.1.0 Production
+# This script stops all DevFlow services using individual PID files (aligned with devflow-start.sh)
+
+set -e  # Exit on any error
+
+# Get the directory where this script is located
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$SCRIPT_DIR"
+
+# Colors for output
+RED='\033[0;31m'
+GREEN='\033[0;32m'
+YELLOW='\033[1;33m'
+NC='\033[0m' # No Color
+
+# Function to print colored output
+print_status() {
+  echo -e "${GREEN}[STATUS]${NC} $1"
+}
+
+print_warning() {
+  echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+print_error() {
+  echo -e "${RED}[ERROR]${NC} $1"
+}
+
+# Function to check if a process is running
+is_process_running() {
+  if [ -f "$1" ]; then
+    local pid=$(cat "$1")
+    if kill -0 "$pid" 2>/dev/null; then
+      return 0
+    else
+      rm -f "$1"
+      return 1
+    fi
+  else
+    return 1
+  fi
+}
+
+print_status "🛑 Stopping DevFlow v2.1.0 services..."
+
+# Stop all DevFlow services (including enforcement) - aligned with devflow-start.sh
+local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
+
+for service_pid in "${services[@]}"; do
+  if is_process_running "$PROJECT_ROOT/$service_pid"; then
+    local pid=$(cat "$PROJECT_ROOT/$service_pid")
+    local service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
+    print_status "Stopping $service_name (PID: $pid)..."
+    kill -TERM "$pid" 2>/dev/null || true
+    sleep 2
+    if kill -0 "$pid" 2>/dev/null; then
+      print_warning "Force killing $service_name (PID: $pid)..."
+      kill -KILL "$pid" 2>/dev/null || true
+    fi
+    rm -f "$PROJECT_ROOT/$service_pid"
+  fi
+done
+
+# Legacy cleanup - remove old devflow_pids file if it exists
 if [ -f .devflow_pids ]; then
-    PIDS=$(cat .devflow_pids)
-    for pid in $PIDS; do
-        if kill -0 $pid 2>/dev/null; then
-            echo "   Stopping PID $pid..."
-            kill -TERM $pid 2>/dev/null
-            sleep 2
-            kill -9 $pid 2>/dev/null || true
-        fi
-    done
+    print_warning "Removing legacy .devflow_pids file..."
     rm .devflow_pids
 fi
 
-# Kill by process name as backup
+# Kill by process name as backup (robustness)
+print_status "Running backup cleanup..."
+pkill -f "claude-code-bootstrap" 2>/dev/null || true
 pkill -f "synthetic" 2>/dev/null || true
 pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
 
 # Stop CCR Services
 if [ -f "scripts/ccr-services.sh" ]; then
+    print_status "Stopping CCR services script..."
     ./scripts/ccr-services.sh stop 2>/dev/null || true
 fi
 
 # Stop Emergency CCR if running
-node emergency-ccr-cli.mjs stop 2>/dev/null || true
+if [ -f "emergency-ccr-cli.mjs" ]; then
+    print_status "Stopping emergency CCR..."
+    node emergency-ccr-cli.mjs stop 2>/dev/null || true
+fi
 
-echo "✅ All DevFlow services stopped"
+print_status "✅ All DevFlow services stopped"
