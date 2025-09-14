@@ -13,11 +13,18 @@ export interface SessionMetrics {
   sessionId: string;
   taskId: string;
   platform: string;
+  // Overall utilization used to derive warningLevel (max of dimensions)
   utilization: number;
+  // Context/tokens utilization basis
   contextSize: number;
   maxContextSize: number;
   tokensUsed: number;
   estimatedTokensRemaining: number;
+  // Time-based session limit (e.g., Sonnet 5h)
+  sessionStart: Date;
+  timeElapsedMs: number;
+  timeRemainingMs: number;
+  timeUtilization: number;
   lastActivity: Date;
   warningLevel: 'normal' | 'warning' | 'critical' | 'emergency';
 }
@@ -35,6 +42,7 @@ export interface DetectionConfig {
     [platform: string]: {
       maxContextSize: number;
       maxTokens: number;
+      maxSessionDurationMs?: number; // Time limit per session, if applicable
     };
   };
 }
@@ -125,32 +133,71 @@ export class SessionLimitDetector extends EventEmitter {
    * Calculate comprehensive session metrics
    */
   private async calculateSessionMetrics(session: CoordinationSession): Promise<SessionMetrics> {
-    const platformConfig = this.config.platforms[session.platform];
+    const platform = (session as any).platform || (session as any).platform_name || 'unknown';
+    const platformConfig = this.config.platforms[platform];
     if (!platformConfig) {
-      throw new Error(`Unknown platform: ${session.platform}`);
+      throw new Error(`Unknown platform: ${platform}`);
     }
 
-    // Calculate context utilization
-    const contextSize = session.contextSizeEnd || session.contextSizeStart || 0;
-    const utilization = contextSize / platformConfig.maxContextSize;
+    // Pull values from DB row (snake_case) or object (camelCase)
+    const contextSize =
+      (session as any).context_size_end ??
+      (session as any).contextSizeEnd ??
+      (session as any).context_size_start ??
+      (session as any).contextSizeStart ??
+      0;
 
-    // Calculate token utilization
-    const tokensUsed = session.tokensUsed || 0;
+    const tokensUsed =
+      (session as any).tokens_used ??
+      (session as any).final_tokens_used ??
+      (session as any).tokensUsed ??
+      0;
+
+    const sessionStart = new Date(
+      (session as any).start_time ?? (session as any).startTime ?? new Date().toISOString()
+    );
+
+    // Calculate context utilization
+    const contextUtilization = platformConfig.maxContextSize > 0
+      ? Math.min(contextSize / platformConfig.maxContextSize, 1)
+      : 0;
+
+    // Calculate token utilization (if a max is defined)
+    const tokenUtilization = platformConfig.maxTokens > 0
+      ? Math.min(tokensUsed / platformConfig.maxTokens, 1)
+      : 0;
+
+    // Time-based utilization (e.g., Sonnet 5h)
+    const maxDurationMs = platformConfig.maxSessionDurationMs ?? 0;
+    const now = Date.now();
+    const timeElapsedMs = Math.max(0, now - sessionStart.getTime());
+    const timeUtilization = maxDurationMs > 0
+      ? Math.min(timeElapsedMs / maxDurationMs, 1)
+      : 0;
+    const timeRemainingMs = maxDurationMs > 0 ? Math.max(0, maxDurationMs - timeElapsedMs) : 0;
+
+    // Overall utilization uses the highest pressure dimension
+    const utilization = Math.max(contextUtilization, tokenUtilization, timeUtilization);
+
     const estimatedTokensRemaining = Math.max(0, platformConfig.maxTokens - tokensUsed);
 
-    // Determine warning level
+    // Determine warning level based on overall utilization
     const warningLevel = this.determineWarningLevel(utilization);
 
     const metrics: SessionMetrics = {
-      sessionId: session.id,
-      taskId: session.taskId,
-      platform: session.platform,
+      sessionId: (session as any).id,
+      taskId: (session as any).task_id ?? (session as any).taskId,
+      platform,
       utilization,
       contextSize,
       maxContextSize: platformConfig.maxContextSize,
       tokensUsed,
       estimatedTokensRemaining,
-      lastActivity: new Date(session.startTime),
+      sessionStart,
+      timeElapsedMs,
+      timeRemainingMs,
+      timeUtilization,
+      lastActivity: sessionStart,
       warningLevel
     };
 
@@ -295,9 +342,11 @@ export class SessionLimitDetector extends EventEmitter {
         emergency: 0.95   // 95%
       },
       platforms: {
+        // Claude Code / Sonnet: enforce 5h limit
         claude_code: {
           maxContextSize: 200000,  // 200k tokens
-          maxTokens: 200000
+          maxTokens: 200000,
+          maxSessionDurationMs: 5 * 60 * 60 * 1000
         },
         openai_codex: {
           maxContextSize: 128000,  // 128k tokens

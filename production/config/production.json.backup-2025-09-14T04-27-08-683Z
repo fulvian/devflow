@@ -1,0 +1,23 @@
+{
+  "enforcement": {
+    "enabled": true,
+    "autoDelegation": true,
+    "violationReporting": true,
+    "daicModeDetection": true,
+    "strictMode": true
+  },
+  "logging": {
+    "level": "info",
+    "file": "/var/log/enforcement/app.log",
+    "maxFiles": 5,
+    "maxSize": "10m"
+  },
+  "devflow": {
+    "services": {
+      "database": "http://localhost:8082",
+      "vectorMemory": "http://localhost:8084",
+      "tokenOptimizer": "http://localhost:8081",
+      "modelRegistry": "http://localhost:8083"
+    }
+  }
+}

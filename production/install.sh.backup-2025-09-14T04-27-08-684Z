@@ -1,0 +1,41 @@
+#!/bin/bash
+# Production Installation Script
+set -euo pipefail
+
+log() {
+    echo "[$(date '+%Y-%m-%d %H:%M:%S')] $*"
+}
+
+log "Starting production installation..."
+
+# Create user and group
+if ! id enforcement &>/dev/null; then
+    log "Creating enforcement user..."
+    useradd -r -s /bin/false -d /opt/enforcement-system enforcement
+fi
+
+# Create directories
+log "Creating directories..."
+mkdir -p /opt/enforcement-system/{versions,config,logs}
+mkdir -p /var/log/enforcement
+mkdir -p /opt/backups/enforcement
+
+# Set permissions
+chown -R enforcement:enforcement /opt/enforcement-system
+chown -R enforcement:enforcement /var/log/enforcement
+chown -R root:root /opt/backups/enforcement
+chmod 755 /opt/enforcement-system
+chmod 755 /var/log/enforcement
+chmod 750 /opt/backups/enforcement
+
+# Install systemd service
+log "Installing systemd service..."
+cp production/systemd/enforcement.service /etc/systemd/system/
+systemctl daemon-reload
+systemctl enable enforcement
+
+# Install logrotate configuration
+log "Installing logrotate configuration..."
+cp production/config/logrotate /etc/logrotate.d/enforcement
+
+log "Installation completed successfully"

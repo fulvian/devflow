@@ -1,0 +1,474 @@
+/**
+ * CCR Integration Module
+ * Bridges Emergency CCR system with Fallback Orchestrator
+ * Handles Claude usage limit detection, automatic CCR activation, and fallback chain integration
+ */
+
+import { EventEmitter } from 'events';
+import { ChildProcess, spawn } from 'child_process';
+import { Logger } from './logger';
+import { ClaudeUsageLimitDetector } from './claude-usage-limit-detector';
+import { FallbackOrchestrator } from './fallback-orchestrator';
+
+// Type definitions
+interface CCRConfig {
+  enabled: boolean;
+  autoActivation: boolean;
+  serverPath: string;
+  port: number;
+  host: string;
+  healthCheckInterval: number;
+  maxRetries: number;
+  timeout: number;
+}
+
+interface CCRStatus {
+  active: boolean;
+  healthy: boolean;
+  lastHealthCheck: Date;
+  error?: string;
+}
+
+interface CCREvent {
+  type: 'activated' | 'deactivated' | 'healthCheck' | 'error';
+  timestamp: Date;
+  data?: any;
+}
+
+// Event types for the module
+interface CCREvents {
+  'ccr.activated': (status: CCRStatus) => void;
+  'ccr.deactivated': (status: CCRStatus) => void;
+  'ccr.healthCheck': (status: CCRStatus) => void;
+  'ccr.error': (error: Error) => void;
+  'fallback.triggered': (data: any) => void;
+}
+
+declare interface CCRIntegration {
+  on<U extends keyof CCREvents>(event: U, listener: CCREvents[U]): this;
+  emit<U extends keyof CCREvents>(event: U, ...args: Parameters<CCREvents[U]>): boolean;
+}
+
+/**
+ * CCR Integration Module
+ * Manages the Emergency CCR system integration with Fallback Orchestrator
+ */
+class CCRIntegration extends EventEmitter {
+  private config: CCRConfig;
+  private status: CCRStatus;
+  private ccrProcess: ChildProcess | null;
+  private healthCheckInterval: NodeJS.Timeout | null;
+  private retryCount: number;
+  private usageDetector: ClaudeUsageLimitDetector;
+  private fallbackOrchestrator: FallbackOrchestrator;
+  private logger: Logger;
+
+  constructor(
+    config: CCRConfig,
+    usageDetector: ClaudeUsageLimitDetector,
+    fallbackOrchestrator: FallbackOrchestrator,
+    logger: Logger
+  ) {
+    super();
+    this.config = config;
+    this.status = {
+      active: false,
+      healthy: false,
+      lastHealthCheck: new Date(0)
+    };
+    this.ccrProcess = null;
+    this.healthCheckInterval = null;
+    this.retryCount = 0;
+    this.usageDetector = usageDetector;
+    this.fallbackOrchestrator = fallbackOrchestrator;
+    this.logger = logger;
+
+    // Bind event handlers
+    this.handleUsageLimitExceeded = this.handleUsageLimitExceeded.bind(this);
+    this.handleFallbackTrigger = this.handleFallbackTrigger.bind(this);
+
+    // Initialize event listeners
+    this.initializeEventListeners();
+  }
+
+  /**
+   * Initialize event listeners for usage detection and fallback orchestration
+   */
+  private initializeEventListeners(): void {
+    this.usageDetector.on('usageLimitExceeded', this.handleUsageLimitExceeded);
+    this.fallbackOrchestrator.on('triggerFallback', this.handleFallbackTrigger);
+  }
+
+  /**
+   * Handle Claude usage limit exceeded event
+   */
+  private async handleUsageLimitExceeded(): Promise<void> {
+    this.logger.info('Claude usage limit detected, activating CCR if configured');
+    
+    if (this.config.autoActivation) {
+      try {
+        await this.activateCCR();
+        this.logger.info('CCR automatically activated due to usage limit');
+      } catch (error) {
+        this.logger.error('Failed to auto-activate CCR:', error);
+        this.emit('ccr.error', error instanceof Error ? error : new Error(String(error)));
+      }
+    } else {
+      this.logger.info('Auto-activation disabled, CCR not activated');
+    }
+  }
+
+  /**
+   * Handle fallback trigger from orchestrator
+   */
+  private handleFallbackTrigger(data: any): void {
+    this.logger.info('Fallback triggered by orchestrator', { data });
+    this.emit('fallback.triggered', data);
+  }
+
+  /**
+   * Activate the CCR system
+   */
+  public async activateCCR(): Promise<CCRStatus> {
+    this.logger.info('Activating CCR system');
+
+    try {
+      // If already active, return current status
+      if (this.status.active) {
+        this.logger.warn('CCR is already active');
+        return this.status;
+      }
+
+      // Start the CCR process
+      await this.startCCRServer();
+      
+      // Wait for server to be ready
+      await this.waitForServerReady();
+      
+      // Start health monitoring
+      this.startHealthMonitoring();
+      
+      // Update status
+      this.status.active = true;
+      this.status.healthy = true;
+      this.status.lastHealthCheck = new Date();
+      this.retryCount = 0;
+      
+      this.logger.info('CCR system activated successfully');
+      this.emit('ccr.activated', this.status);
+      
+      return this.status;
+    } catch (error) {
+      this.status.active = false;
+      this.status.healthy = false;
+      this.status.error = error instanceof Error ? error.message : String(error);
+      
+      this.logger.error('Failed to activate CCR system:', error);
+      this.emit('ccr.error', error instanceof Error ? error : new Error(String(error)));
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Deactivate the CCR system
+   */
+  public async deactivateCCR(): Promise<CCRStatus> {
+    this.logger.info('Deactivating CCR system');
+
+    try {
+      // Stop health monitoring
+      this.stopHealthMonitoring();
+      
+      // Stop the CCR process
+      await this.stopCCRServer();
+      
+      // Update status
+      this.status.active = false;
+      this.status.healthy = false;
+      this.status.lastHealthCheck = new Date();
+      this.status.error = undefined;
+      
+      this.logger.info('CCR system deactivated successfully');
+      this.emit('ccr.deactivated', this.status);
+      
+      return this.status;
+    } catch (error) {
+      this.status.error = error instanceof Error ? error.message : String(error);
+      
+      this.logger.error('Error during CCR deactivation:', error);
+      this.emit('ccr.error', error instanceof Error ? error : new Error(String(error)));
+      
+      throw error;
+    }
+  }
+
+  /**
+   * Start the CCR server process
+   */
+  private startCCRServer(): Promise<void> {
+    return new Promise((resolve, reject) => {
+      this.logger.info('Starting CCR server process', { 
+        path: this.config.serverPath,
+        host: this.config.host,
+        port: this.config.port
+      });
+
+      // Spawn the CCR CLI process
+      this.ccrProcess = spawn(
+        'node',
+        [
+          this.config.serverPath,
+          '--host', this.config.host,
+          '--port', this.config.port.toString()
+        ],
+        {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          env: { ...process.env }
+        }
+      );
+
+      // Handle process events
+      this.ccrProcess.on('error', (error) => {
+        this.logger.error('CCR process error:', error);
+        reject(error);
+      });
+
+      this.ccrProcess.on('exit', (code, signal) => {
+        this.logger.info('CCR process exited', { code, signal });
+        if (this.status.active) {
+          this.handleUnexpectedExit(code, signal);
+        }
+      });
+
+      // Log process output
+      this.ccrProcess.stdout?.on('data', (data) => {
+        this.logger.debug('CCR stdout:', data.toString().trim());
+      });
+
+      this.ccrProcess.stderr?.on('data', (data) => {
+        this.logger.warn('CCR stderr:', data.toString().trim());
+      });
+
+      resolve();
+    });
+  }
+
+  /**
+   * Stop the CCR server process
+   */
+  private stopCCRServer(): Promise<void> {
+    return new Promise((resolve) => {
+      if (!this.ccrProcess || this.ccrProcess.exitCode !== null) {
+        this.ccrProcess = null;
+        return resolve();
+      }
+
+      // Attempt graceful shutdown
+      this.ccrProcess.kill('SIGTERM');
+      
+      // Force kill if not exited after timeout
+      const forceKillTimeout = setTimeout(() => {
+        if (this.ccrProcess && this.ccrProcess.exitCode === null) {
+          this.ccrProcess.kill('SIGKILL');
+        }
+      }, this.config.timeout);
+
+      this.ccrProcess.on('exit', () => {
+        clearTimeout(forceKillTimeout);
+        this.ccrProcess = null;
+        resolve();
+      });
+    });
+  }
+
+  /**
+   * Wait for server to be ready
+   */
+  private async waitForServerReady(): Promise<void> {
+    const maxWaitTime = this.config.timeout;
+    const checkInterval = 1000;
+    const startTime = Date.now();
+
+    while (Date.now() - startTime < maxWaitTime) {
+      try {
+        const isReady = await this.checkServerHealth();
+        if (isReady) {
+          this.logger.info('CCR server is ready');
+          return;
+        }
+      } catch (error) {
+        this.logger.debug('Server not ready yet:', error);
+      }
+      
+      await new Promise(resolve => setTimeout(resolve, checkInterval));
+    }
+
+    throw new Error('CCR server failed to start within timeout period');
+  }
+
+  /**
+   * Check server health status
+   */
+  private async checkServerHealth(): Promise<boolean> {
+    try {
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 5000);
+
+      const response = await fetch(
+        `http://${this.config.host}:${this.config.port}/health`,
+        { signal: controller.signal }
+      );
+      
+      clearTimeout(timeoutId);
+      
+      const isHealthy = response.ok;
+      this.status.lastHealthCheck = new Date();
+      
+      return isHealthy;
+    } catch (error) {
+      if (error instanceof Error && error.name === 'AbortError') {
+        throw new Error('Health check timeout');
+      }
+      throw error;
+    }
+  }
+
+  /**
+   * Start health monitoring interval
+   */
+  private startHealthMonitoring(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+    }
+
+    this.healthCheckInterval = setInterval(async () => {
+      try {
+        const isHealthy = await this.checkServerHealth();
+        this.status.healthy = isHealthy;
+        this.status.lastHealthCheck = new Date();
+        
+        this.emit('ccr.healthCheck', this.status);
+        
+        if (!isHealthy) {
+          this.logger.warn('CCR health check failed');
+          await this.handleHealthCheckFailure();
+        }
+      } catch (error) {
+        this.logger.error('Health check error:', error);
+        this.status.healthy = false;
+        this.status.lastHealthCheck = new Date();
+        this.status.error = error instanceof Error ? error.message : String(error);
+        
+        this.emit('ccr.healthCheck', this.status);
+        this.emit('ccr.error', error instanceof Error ? error : new Error(String(error)));
+      }
+    }, this.config.healthCheckInterval);
+  }
+
+  /**
+   * Stop health monitoring
+   */
+  private stopHealthMonitoring(): void {
+    if (this.healthCheckInterval) {
+      clearInterval(this.healthCheckInterval);
+      this.healthCheckInterval = null;
+    }
+  }
+
+  /**
+   * Handle health check failure
+   */
+  private async handleHealthCheckFailure(): Promise<void> {
+    this.retryCount++;
+    
+    if (this.retryCount > this.config.maxRetries) {
+      this.logger.error('Max retries exceeded, deactivating CCR');
+      await this.deactivateCCR();
+      return;
+    }
+    
+    this.logger.warn(`Health check failed, retry ${this.retryCount}/${this.config.maxRetries}`);
+    
+    try {
+      await this.restartCCRServer();
+    } catch (error) {
+      this.logger.error('Failed to restart CCR server:', error);
+    }
+  }
+
+  /**
+   * Restart the CCR server
+   */
+  private async restartCCRServer(): Promise<void> {
+    this.logger.info('Restarting CCR server');
+    
+    await this.stopCCRServer();
+    await this.startCCRServer();
+    await this.waitForServerReady();
+    
+    this.retryCount = 0;
+    this.logger.info('CCR server restarted successfully');
+  }
+
+  /**
+   * Handle unexpected process exit
+   */
+  private async handleUnexpectedExit(code: number | null, signal: string | null): Promise<void> {
+    this.logger.warn('Unexpected CCR process exit', { code, signal });
+    
+    this.status.active = false;
+    this.status.healthy = false;
+    this.status.error = `Process exited with code: ${code}, signal: ${signal}`;
+    
+    this.stopHealthMonitoring();
+    
+    // If configured for auto-restart, attempt to restart
+    if (this.config.autoActivation) {
+      this.logger.info('Attempting automatic restart');
+      try {
+        await this.activateCCR();
+      } catch (error) {
+        this.logger.error('Failed to restart CCR after unexpected exit:', error);
+      }
+    }
+  }
+
+  /**
+   * Get current CCR status
+   */
+  public getStatus(): CCRStatus {
+    return { ...this.status };
+  }
+
+  /**
+   * Update configuration
+   */
+  public updateConfig(newConfig: Partial<CCRConfig>): void {
+    this.config = { ...this.config, ...newConfig };
+    this.logger.info('CCR configuration updated', { config: this.config });
+  }
+
+  /**
+   * Cleanup resources
+   */
+  public async destroy(): Promise<void> {
+    this.logger.info('Destroying CCR integration module');
+    
+    // Remove event listeners
+    this.usageDetector.off('usageLimitExceeded', this.handleUsageLimitExceeded);
+    this.fallbackOrchestrator.off('triggerFallback', this.handleFallbackTrigger);
+    
+    // Stop monitoring
+    this.stopHealthMonitoring();
+    
+    // Deactivate CCR if active
+    if (this.status.active) {
+      await this.deactivateCCR();
+    }
+    
+    this.logger.info('CCR integration module destroyed');
+  }
+}
+
+export { CCRIntegration, CCRConfig, CCRStatus, CCREvent };

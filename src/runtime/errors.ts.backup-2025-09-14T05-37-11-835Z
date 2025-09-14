@@ -1,0 +1,219 @@
+/**
+ * Runtime errors module for the enforcement system
+ * Provides comprehensive error types and handling for enforcement-specific operations
+ */
+
+/**
+ * Base error class for all enforcement system runtime errors
+ */
+export class EnforcementError extends Error {
+  public readonly name: string;
+  public readonly code: string;
+  public readonly timestamp: Date;
+  public readonly details?: Record<string, unknown>;
+
+  constructor(
+    message: string,
+    code: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message);
+    this.name = 'EnforcementError';
+    this.code = code;
+    this.timestamp = new Date();
+    this.details = details;
+
+    // Maintains proper stack trace for where the error was thrown
+    if (Error.captureStackTrace) {
+      Error.captureStackTrace(this, EnforcementError);
+    }
+  }
+}
+
+/**
+ * Error thrown when enforcement rules fail validation
+ */
+export class EnforcementRuleError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'ENFORCEMENT_RULE_ERROR', details);
+    this.name = 'EnforcementRuleError';
+  }
+}
+
+/**
+ * Error thrown when tool configuration is invalid
+ */
+export class ToolValidationError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'TOOL_VALIDATION_ERROR', details);
+    this.name = 'ToolValidationError';
+  }
+}
+
+/**
+ * Error thrown when tool execution fails
+ */
+export class ToolExecutionError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'TOOL_EXECUTION_ERROR', details);
+    this.name = 'ToolExecutionError';
+  }
+}
+
+/**
+ * Error thrown when policy evaluation fails
+ */
+export class PolicyEvaluationError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'POLICY_EVALUATION_ERROR', details);
+    this.name = 'PolicyEvaluationError';
+  }
+}
+
+/**
+ * Error thrown when runtime configuration is invalid
+ */
+export class RuntimeConfigurationError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'RUNTIME_CONFIGURATION_ERROR', details);
+    this.name = 'RuntimeConfigurationError';
+  }
+}
+
+/**
+ * Error thrown when a required resource is not found
+ */
+export class ResourceNotFoundError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'RESOURCE_NOT_FOUND_ERROR', details);
+    this.name = 'ResourceNotFoundError';
+  }
+}
+
+/**
+ * Error thrown when there's an authorization issue
+ */
+export class AuthorizationError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'AUTHORIZATION_ERROR', details);
+    this.name = 'AuthorizationError';
+  }
+}
+
+/**
+ * Error thrown when there's a data integrity issue
+ */
+export class DataIntegrityError extends EnforcementError {
+  constructor(
+    message: string,
+    details?: Record<string, unknown>
+  ) {
+    super(message, 'DATA_INTEGRITY_ERROR', details);
+    this.name = 'DataIntegrityError';
+  }
+}
+
+/**
+ * Error categorization enum for grouping related errors
+ */
+export enum ErrorCategory {
+  VALIDATION = 'VALIDATION',
+  EXECUTION = 'EXECUTION',
+  CONFIGURATION = 'CONFIGURATION',
+  AUTHORIZATION = 'AUTHORIZATION',
+  DATA = 'DATA',
+  POLICY = 'POLICY',
+  RESOURCE = 'RESOURCE'
+}
+
+/**
+ * Maps error classes to their respective categories
+ */
+export const ErrorCategoryMap: Record<string, ErrorCategory> = {
+  EnforcementRuleError: ErrorCategory.POLICY,
+  ToolValidationError: ErrorCategory.VALIDATION,
+  ToolExecutionError: ErrorCategory.EXECUTION,
+  PolicyEvaluationError: ErrorCategory.POLICY,
+  RuntimeConfigurationError: ErrorCategory.CONFIGURATION,
+  ResourceNotFoundError: ErrorCategory.RESOURCE,
+  AuthorizationError: ErrorCategory.AUTHORIZATION,
+  DataIntegrityError: ErrorCategory.DATA
+};
+
+/**
+ * Gets the category for a given error instance
+ * @param error The error instance to categorize
+ * @returns The error category or undefined if not mapped
+ */
+export function getErrorCategory(error: Error): ErrorCategory | undefined {
+  return ErrorCategoryMap[error.constructor.name];
+}
+
+/**
+ * Type guard to check if an error is an EnforcementError
+ * @param error The error to check
+ * @returns True if the error is an EnforcementError
+ */
+export function isEnforcementError(error: unknown): error is EnforcementError {
+  return error instanceof EnforcementError;
+}
+
+/**
+ * Type guard to check if an error is a ToolValidationError
+ * @param error The error to check
+ * @returns True if the error is a ToolValidationError
+ */
+export function isToolValidationError(error: unknown): error is ToolValidationError {
+  return error instanceof ToolValidationError;
+}
+
+/**
+ * Type guard to check if an error is a ToolExecutionError
+ * @param error The error to check
+ * @returns True if the error is a ToolExecutionError
+ */
+export function isToolExecutionError(error: unknown): error is ToolExecutionError {
+  return error instanceof ToolExecutionError;
+}
+
+/**
+ * Creates a standardized error response object
+ * @param error The error to format
+ * @returns A formatted error response
+ */
+export function formatErrorResponse(error: EnforcementError): {
+  message: string;
+  code: string;
+  category?: ErrorCategory;
+  timestamp: string;
+  details?: Record<string, unknown>;
+} {
+  return {
+    message: error.message,
+    code: error.code,
+    category: getErrorCategory(error),
+    timestamp: error.timestamp.toISOString(),
+    details: error.details
+  };
+}
