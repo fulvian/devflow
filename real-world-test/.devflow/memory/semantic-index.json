@@ -1,0 +1,76 @@
+{
+  "index": {
+    "entities": [
+      {
+        "id": "task-hierarchy",
+        "type": "concept",
+        "references": [
+          "src/components/TaskManager.js",
+          "src/services/taskService.js",
+          ".devflow/tasks/task-hierarchy.json"
+        ],
+        "related": ["dependency-management", "task-structure", "parent-child-relationships"],
+        "embeddings": [0.1, 0.2, 0.3, 0.4, 0.5],
+        "lastUpdated": "2024-01-15T00:00:00Z"
+      },
+      {
+        "id": "semantic-memory",
+        "type": "concept",
+        "references": [
+          "src/components/MemoryInterface.js",
+          "src/services/memoryService.js",
+          ".devflow/memory/semantic-index.json"
+        ],
+        "related": ["natural-language-processing", "context-awareness", "vector-embeddings"],
+        "embeddings": [0.6, 0.7, 0.8, 0.9, 1.0],
+        "lastUpdated": "2024-01-15T00:00:00Z"
+      },
+      {
+        "id": "devflow-integration",
+        "type": "system",
+        "references": [
+          "test-devflow-integration.js",
+          ".devflow/config.json",
+          "package.json"
+        ],
+        "related": ["testing", "validation", "real-world-scenarios"],
+        "embeddings": [0.2, 0.4, 0.6, 0.8, 0.3],
+        "lastUpdated": "2024-01-15T00:00:00Z"
+      }
+    ],
+    "relationships": [
+      {
+        "id": "R1",
+        "source": "task-hierarchy",
+        "target": "semantic-memory",
+        "type": "integrates_with",
+        "strength": 0.85,
+        "description": "Task hierarchy system integrates with semantic memory for contextual understanding"
+      },
+      {
+        "id": "R2",
+        "source": "devflow-integration",
+        "target": "task-hierarchy",
+        "type": "tests",
+        "strength": 0.90,
+        "description": "DevFlow integration tests validate task hierarchy functionality"
+      },
+      {
+        "id": "R3",
+        "source": "devflow-integration",
+        "target": "semantic-memory",
+        "type": "validates",
+        "strength": 0.80,
+        "description": "Integration tests validate semantic memory operations"
+      }
+    ]
+  },
+  "metadata": {
+    "version": "1.0.0",
+    "lastIndexed": "2024-01-15T00:00:00Z",
+    "totalEntities": 3,
+    "totalRelationships": 3,
+    "vectorDimensions": 5,
+    "indexingAlgorithm": "semantic-embedding-v2"
+  }
+}
