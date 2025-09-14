@@ -39,7 +39,16 @@ command_exists() {
 is_process_running() {
   if [ -f "$1" ]; then
     local pid=$(cat "$1")
-    if kill -0 "$pid" 2>/dev/null; then
+    # Special case for MCP servers that don't run as daemons
+    if [ "$pid" = "MCP_READY" ]; then
+      # Check if MCP server is still available by testing file exists
+      if [ "$1" = "$PROJECT_ROOT/.synthetic.pid" ] && [ -f "$PROJECT_ROOT/mcp-servers/synthetic/dist/dual-enhanced-index.js" ]; then
+        return 0
+      else
+        rm -f "$1"
+        return 1
+      fi
+    elif kill -0 "$pid" 2>/dev/null; then
       return 0
     else
       rm -f "$1"
@@ -61,14 +70,20 @@ stop_services() {
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
       local pid=$(cat "$PROJECT_ROOT/$service_pid")
       local service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
-      print_status "Stopping $service_name (PID: $pid)..."
-      kill -TERM "$pid" 2>/dev/null || true
-      sleep 2
-      if kill -0 "$pid" 2>/dev/null; then
-        print_warning "Force killing $service_name (PID: $pid)..."
-        kill -KILL "$pid" 2>/dev/null || true
+
+      if [ "$pid" = "MCP_READY" ]; then
+        print_status "Stopping $service_name (MCP Server)..."
+        rm -f "$PROJECT_ROOT/$service_pid"
+      else
+        print_status "Stopping $service_name (PID: $pid)..."
+        kill -TERM "$pid" 2>/dev/null || true
+        sleep 2
+        if kill -0 "$pid" 2>/dev/null; then
+          print_warning "Force killing $service_name (PID: $pid)..."
+          kill -KILL "$pid" 2>/dev/null || true
+        fi
+        rm -f "$PROJECT_ROOT/$service_pid"
       fi
-      rm -f "$PROJECT_ROOT/$service_pid"
     fi
   done
 
@@ -111,36 +126,42 @@ start_ccr() {
 
 # Function to start Synthetic MCP Server (real system)
 start_synthetic() {
-  print_status "Starting Synthetic MCP Server..."
-  
-  # Check if Synthetic MCP is already running
-  if pgrep -f "synthetic.*dist.*index.js" > /dev/null; then
-    print_status "Synthetic MCP Server already running"
-    return 0
-  fi
-  
-  # Check if Synthetic MCP exists
+  print_status "Checking Synthetic MCP Server availability..."
+
+  # Check if Synthetic MCP exists and is compiled
   if [ ! -f "$PROJECT_ROOT/mcp-servers/synthetic/dist/dual-enhanced-index.js" ]; then
-    print_error "Synthetic MCP Server not found"
+    print_error "Synthetic MCP Server not found - run build first"
     return 1
   fi
-  
-  # Start Synthetic MCP Server
+
+  # Check if MCP configuration exists
+  if [ ! -f "$PROJECT_ROOT/.mcp.json" ]; then
+    print_error "MCP configuration (.mcp.json) not found"
+    return 1
+  fi
+
+  # Test that the server can load without errors
   cd "$PROJECT_ROOT/mcp-servers/synthetic"
-  nohup node dist/dual-enhanced-index.js > ../../logs/synthetic-server.log 2>&1 &
-  local synthetic_pid=$!
-  cd "$PROJECT_ROOT"
-  
-  # Give it a moment to start
-  sleep 2
-  
-  # Check if it's still running
-  if kill -0 $synthetic_pid 2>/dev/null; then
-    echo $synthetic_pid > "$PROJECT_ROOT/.synthetic.pid"
-    print_status "Synthetic MCP Server started successfully (PID: $synthetic_pid)"
+  # Use a simple node test without timeout (server loads instantly anyway)
+  if node -e "
+    try {
+      console.log('Testing MCP server...');
+      require('./dist/dual-enhanced-index.js');
+      console.log('MCP server validation successful');
+      process.exit(0);
+    } catch(e) {
+      console.error('Server load error:', e.message);
+      process.exit(1);
+    }
+  " > /dev/null 2>&1; then
+    cd "$PROJECT_ROOT"
+    print_status "Synthetic MCP Server ready for Claude Code integration"
+    # Create a dummy PID file for status checking
+    echo "MCP_READY" > "$PROJECT_ROOT/.synthetic.pid"
     return 0
   else
-    print_error "Failed to start Synthetic MCP Server"
+    cd "$PROJECT_ROOT"
+    print_error "Synthetic MCP Server failed validation"
     return 1
   fi
 }
@@ -370,7 +391,12 @@ main() {
       for service in "${services[@]}"; do
         IFS=':' read -r pid_file name <<< "$service"
         if is_process_running "$PROJECT_ROOT/$pid_file"; then
-          print_status "$name: Running (PID: $(cat "$PROJECT_ROOT/$pid_file"))"
+          local pid=$(cat "$PROJECT_ROOT/$pid_file")
+          if [ "$pid" = "MCP_READY" ]; then
+            print_status "$name: Ready (MCP Server)"
+          else
+            print_status "$name: Running (PID: $pid)"
+          fi
         else
           print_status "$name: Stopped"
         fi

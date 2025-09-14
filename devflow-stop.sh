@@ -32,7 +32,16 @@ print_error() {
 is_process_running() {
   if [ -f "$1" ]; then
     local pid=$(cat "$1")
-    if kill -0 "$pid" 2>/dev/null; then
+    # Special case for MCP servers that don't run as daemons
+    if [ "$pid" = "MCP_READY" ]; then
+      # Check if MCP server is still available by testing file exists
+      if [ "$1" = "$PROJECT_ROOT/.synthetic.pid" ] && [ -f "$PROJECT_ROOT/mcp-servers/synthetic/dist/dual-enhanced-index.js" ]; then
+        return 0
+      else
+        rm -f "$1"
+        return 1
+      fi
+    elif kill -0 "$pid" 2>/dev/null; then
       return 0
     else
       rm -f "$1"
@@ -52,14 +61,20 @@ for service_pid in "${services[@]}"; do
   if is_process_running "$PROJECT_ROOT/$service_pid"; then
     local pid=$(cat "$PROJECT_ROOT/$service_pid")
     local service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
-    print_status "Stopping $service_name (PID: $pid)..."
-    kill -TERM "$pid" 2>/dev/null || true
-    sleep 2
-    if kill -0 "$pid" 2>/dev/null; then
-      print_warning "Force killing $service_name (PID: $pid)..."
-      kill -KILL "$pid" 2>/dev/null || true
+
+    if [ "$pid" = "MCP_READY" ]; then
+      print_status "Stopping $service_name (MCP Server)..."
+      rm -f "$PROJECT_ROOT/$service_pid"
+    else
+      print_status "Stopping $service_name (PID: $pid)..."
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 2
+      if kill -0 "$pid" 2>/dev/null; then
+        print_warning "Force killing $service_name (PID: $pid)..."
+        kill -KILL "$pid" 2>/dev/null || true
+      fi
+      rm -f "$PROJECT_ROOT/$service_pid"
     fi
-    rm -f "$PROJECT_ROOT/$service_pid"
   fi
 done
 
