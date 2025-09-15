@@ -1,0 +1,116 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DevFlow Footer State Schema",
+  "description": "JSON schema for DevFlow v3.1 footer status information compatible with cc-sessions pattern",
+  "type": "object",
+  "properties": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time",
+      "description": "ISO timestamp of last state update"
+    },
+    "version": {
+      "type": "string",
+      "description": "DevFlow version",
+      "pattern": "^\\d+\\.\\d+$"
+    },
+    "progress": {
+      "type": "object",
+      "description": "Task progress information",
+      "properties": {
+        "percentage": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 100,
+          "description": "Progress percentage for display bar"
+        },
+        "current_task": {
+          "type": "string",
+          "description": "Current task name or identifier",
+          "maxLength": 50
+        }
+      },
+      "required": ["percentage", "current_task"]
+    },
+    "system": {
+      "type": "object",
+      "description": "System health and status",
+      "properties": {
+        "status": {
+          "type": "string",
+          "enum": ["PRODUCTION", "PARTIAL", "DEGRADED", "OFFLINE"],
+          "description": "Overall system status"
+        },
+        "services_active": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Number of active DevFlow services"
+        },
+        "services_total": {
+          "type": "integer",
+          "minimum": 1,
+          "description": "Total number of DevFlow services"
+        }
+      },
+      "required": ["status", "services_active", "services_total"]
+    },
+    "mode": {
+      "type": "string",
+      "enum": ["PRODUCTION", "DEVELOPMENT", "TESTING", "MAINTENANCE"],
+      "description": "Current operational mode"
+    },
+    "last_tool": {
+      "type": "string",
+      "description": "Last tool used (from PostToolUse hook)",
+      "maxLength": 30
+    },
+    "services": {
+      "type": "array",
+      "description": "Detailed service status array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Service name"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "error", "starting"],
+            "description": "Individual service status"
+          },
+          "pid": {
+            "type": ["string", "number", "null"],
+            "description": "Process ID or special identifier like MCP_READY"
+          }
+        },
+        "required": ["name", "status"]
+      }
+    },
+    "context": {
+      "type": "object",
+      "description": "Optional context information",
+      "properties": {
+        "session_id": {
+          "type": "string",
+          "description": "Current session identifier"
+        },
+        "api_usage": {
+          "type": "object",
+          "properties": {
+            "synthetic_calls": {
+              "type": "integer",
+              "minimum": 0
+            },
+            "synthetic_limit": {
+              "type": "integer",
+              "minimum": 1
+            }
+          }
+        }
+      }
+    }
+  },
+  "required": ["timestamp", "version", "progress", "system", "mode"],
+  "additionalProperties": false
+}
