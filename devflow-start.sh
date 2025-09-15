@@ -63,8 +63,8 @@ is_process_running() {
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
-  # Stop all DevFlow services (including enforcement)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid")
+  # Stop all DevFlow services (including enforcement and session retry)
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -382,6 +382,46 @@ start_enforcement() {
   fi
 }
 
+# Function to start Smart Session Retry System (real system)
+start_session_retry() {
+  print_status "Starting Smart Session Retry System..."
+
+  if pgrep -f "session-retry-service" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "session-retry-service" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.session-retry.pid"
+      print_status "Smart Session Retry System already running (PID: $pid)"
+    else
+      print_status "Smart Session Retry System already running"
+    fi
+    return 0
+  fi
+
+  # Check if session retry service exists
+  if [ ! -f "$PROJECT_ROOT/src/core/session/session-retry-service.js" ]; then
+    print_error "session-retry-service.js not found in src/core/session/"
+    return 1
+  fi
+
+  # Start Smart Session Retry System in background
+  nohup node "$PROJECT_ROOT/src/core/session/session-retry-service.js" > logs/session-retry.log 2>&1 &
+  local retry_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $retry_pid 2>/dev/null; then
+    echo $retry_pid > "$PROJECT_ROOT/.session-retry.pid"
+    print_status "Smart Session Retry System started successfully (PID: $retry_pid)"
+    return 0
+  else
+    print_error "Failed to start Smart Session Retry System"
+    return 1
+  fi
+}
+
 # Function to start DevFlow Orchestrator
 start_orchestrator() {
   print_status "Starting DevFlow Orchestrator..."
@@ -482,6 +522,7 @@ main() {
         ".optimizer.pid:Token Optimizer"
         ".synthetic.pid:Synthetic MCP"
         ".ccr.pid:Auto CCR Runner"
+        ".session-retry.pid:Smart Session Retry"
         ".enforcement.pid:Claude Code Enforcement"
         ".orchestrator.pid:DevFlow Orchestrator"
       )
@@ -552,6 +593,11 @@ main() {
     exit 1
   fi
 
+  # Start smart session retry system (optional - graceful degradation)
+  if ! start_session_retry; then
+    print_warning "Smart Session Retry System failed to start - CONTINUING WITHOUT SESSION RETRY"
+  fi
+
   # Start enforcement system (optional - graceful degradation)
   if ! start_enforcement; then
     print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
@@ -569,6 +615,11 @@ main() {
   print_status "✅ Token Optimizer: Running (Real algorithms)"
   print_status "✅ Synthetic MCP: Running"
   print_status "✅ Auto CCR Runner: Running"
+  if is_process_running "$PROJECT_ROOT/.session-retry.pid"; then
+    print_status "✅ Smart Session Retry: Running"
+  else
+    print_warning "⚠️  Smart Session Retry: Not Running"
+  fi
   if is_process_running "$PROJECT_ROOT/.enforcement.pid"; then
     print_status "✅ Claude Code Enforcement: Running"
   else

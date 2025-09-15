@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "devflow-synthetic-cc-sessions": {
+      "command": "node",
+      "args": ["/path/to/your/devflow/mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "DEVFLOW_STORAGE_MODE": "cc-sessions",
+        "DEVFLOW_PROJECT_ROOT": "/path/to/your/devflow",
+        "DEVFLOW_MCP_MODE": "synthetic",
+        "NODE_ENV": "production",
+        "SYNTHETIC_API_KEY": "your-synthetic-api-key-here",
+        "SYNTHETIC_API_BASE_URL": "https://api.synthetic.new/v1"
+      }
+    }
+  }
+}

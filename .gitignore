@@ -24,7 +24,44 @@ test-results/
 
 # TypeScript
 *.tsbuildinfo
+
+# Environment files and secrets (SECURITY CRITICAL)
 .env
-.env
-.env
+.env.*
+!.env.example
+!.env.*.example
 .env.backup-*
+.env.local
+.env.development
+.env.production
+.env.test
+
+# API Keys and sensitive configurations
+.mcp.json
+**/settings.local.json
+tools/**/synthetic-rate-monitor.js
+configs/**/ccr-config*.json
+
+# Claude Code session states (may contain API keys)
+.claude/state/
+.claude/settings.local.json
+.claude/hooks/*.py
+.devflow/sessions/
+
+# Backup directories (may contain sensitive data)
+backups/
+.backups/
+*.backup-*
+
+# Log files (may contain sensitive info)
+logs/
+*.log
+
+# PID files
+*.pid
+
+# Test files with hardcoded keys
+test**/synthetic*.ts
+test**/openai*.ts
+**/test/**/*key*.ts
+**/test/**/*secret*.ts
