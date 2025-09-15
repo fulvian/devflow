@@ -63,8 +63,8 @@ is_process_running() {
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
-  # Stop all DevFlow services (including enforcement)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
+  # Stop all DevFlow services (including enforcement, orchestrator and MCP servers)
+  local services=(".enforcement.pid" ".orchestrator.pid" ".ccr.pid" ".synthetic.pid" ".codex.pid" ".gemini.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -262,6 +262,115 @@ start_registry() {
   fi
 }
 
+# Function to start DevFlow Orchestrator (API for external clients)
+start_orchestrator() {
+  print_status "Starting DevFlow Orchestrator..."
+
+  if pgrep -f "devflow-orchestrator" > /dev/null; then
+    print_status "DevFlow Orchestrator already running"
+    return 0
+  fi
+
+  # Check if orchestrator exists and is built
+  if [ ! -f "$PROJECT_ROOT/services/devflow-orchestrator/dist/app.js" ]; then
+    print_status "Building DevFlow Orchestrator..."
+    cd "$PROJECT_ROOT/services/devflow-orchestrator"
+    npm install --silent
+    npm run build --silent
+    cd "$PROJECT_ROOT"
+  fi
+
+  # Start Orchestrator API
+  nohup node "$PROJECT_ROOT/services/devflow-orchestrator/dist/app.js" > logs/orchestrator.log 2>&1 &
+  local orch_pid=$!
+  sleep 3
+
+  if kill -0 $orch_pid 2>/dev/null; then
+    echo $orch_pid > "$PROJECT_ROOT/.orchestrator.pid"
+    print_status "DevFlow Orchestrator started (PID: $orch_pid)"
+    return 0
+  else
+    print_error "Failed to start DevFlow Orchestrator"
+    return 1
+  fi
+}
+
+# Function to check Codex integration status
+check_codex_integration() {
+  print_status "Checking Codex integration..."
+
+  if command_exists codex; then
+    print_status "Codex CLI: Available"
+    if [ -f "$PROJECT_ROOT/AGENTS.md" ]; then
+      print_status "Codex integration: Configured (AGENTS.md present)"
+    else
+      print_warning "Codex integration: AGENTS.md missing"
+    fi
+  else
+    print_warning "Codex CLI: Not installed"
+  fi
+}
+
+# Function to check Gemini CLI integration status
+check_gemini_integration() {
+  print_status "Checking Gemini CLI integration..."
+
+  if command_exists gemini; then
+    local gemini_version=$(gemini --version 2>/dev/null || echo "unknown")
+    print_status "Gemini CLI: Available (v$gemini_version)"
+
+    # Check MCP configuration
+    if [ -f "/Users/fulvioventura/.config/gemini-cli/mcp.json" ]; then
+      print_status "Gemini MCP: Configured"
+    elif [ -f "/Users/fulvioventura/.gemini/mcp_servers.json" ]; then
+      print_status "Gemini MCP: Legacy config found"
+    else
+      print_warning "Gemini MCP: Not configured"
+    fi
+
+    # Check DevFlow Bridge
+    if [ -f "$PROJECT_ROOT/mcp-servers/devflow-bridge/dist/index.js" ]; then
+      print_status "DevFlow Bridge MCP: Ready"
+    else
+      print_warning "DevFlow Bridge MCP: Not built"
+    fi
+  else
+    print_warning "Gemini CLI: Not installed"
+  fi
+}
+
+# Function to start Codex MCP Server (user account authentication)
+start_codex_mcp() {
+  print_status "Starting Codex MCP Server..."
+
+  # Check if MCP server exists and is configured
+  if [ ! -f "$PROJECT_ROOT/mcp-servers/codex/dist/index.js" ]; then
+    print_warning "Codex MCP Server not found - skipping"
+    return 0
+  fi
+
+  # Mark as ready since MCP servers are managed by Claude Code
+  echo "MCP_READY" > "$PROJECT_ROOT/.codex.pid"
+  print_status "Codex MCP Server ready (User Account Auth)"
+  return 0
+}
+
+# Function to start Gemini MCP Server (user account authentication)
+start_gemini_mcp() {
+  print_status "Starting Gemini MCP Server..."
+
+  # Check if MCP server exists and is configured
+  if [ ! -f "$PROJECT_ROOT/mcp-servers/gemini/dist/index.js" ]; then
+    print_warning "Gemini MCP Server not found - skipping"
+    return 0
+  fi
+
+  # Mark as ready since MCP servers are managed by Claude Code
+  echo "MCP_READY" > "$PROJECT_ROOT/.gemini.pid"
+  print_status "Gemini MCP Server ready (User Account Auth)"
+  return 0
+}
+
 # Function to start Claude Code Enforcement System (daemon-based production system)
 start_enforcement() {
   print_status "Starting Claude Code Enforcement Daemon..."
@@ -383,7 +492,10 @@ main() {
         ".registry.pid:Model Registry"
         ".vector.pid:Vector Memory"
         ".optimizer.pid:Token Optimizer"
+        ".orchestrator.pid:DevFlow Orchestrator"
         ".synthetic.pid:Synthetic MCP"
+        ".codex.pid:Codex MCP"
+        ".gemini.pid:Gemini MCP"
         ".ccr.pid:Auto CCR Runner"
         ".enforcement.pid:Claude Code Enforcement"
       )
@@ -401,6 +513,13 @@ main() {
           print_status "$name: Stopped"
         fi
       done
+
+      # Check external integrations
+      echo ""
+      check_codex_integration
+      echo ""
+      check_gemini_integration
+
       exit 0
       ;;
     help)
@@ -418,6 +537,11 @@ main() {
   
   # Check prerequisites
   check_prerequisites
+  
+  # Enforce single, shared DevFlow SQLite path across all services
+  export DEVFLOW_DB_PATH="$PROJECT_ROOT/data/devflow.sqlite"
+  mkdir -p "$(dirname "$DEVFLOW_DB_PATH")"
+  print_status "Using shared DB: $DEVFLOW_DB_PATH"
   
   # Start services in order (v2.1.0 production architecture)
   print_status "Starting DevFlow v2.1.0 Production Services..."
@@ -444,10 +568,19 @@ main() {
   fi
 
   # Integration services (REQUIRED)
+  if ! start_orchestrator; then
+    print_error "DevFlow Orchestrator failed to start - CRITICAL ERROR"
+    exit 1
+  fi
+
   if ! start_synthetic; then
     print_error "Synthetic MCP service failed to start - CRITICAL ERROR"
     exit 1
   fi
+
+  # Start MCP servers for agent fallback (user account auth)
+  start_codex_mcp
+  start_gemini_mcp
 
   if ! start_ccr; then
     print_error "Auto CCR Runner failed to start - CRITICAL ERROR"
@@ -459,11 +592,12 @@ main() {
     print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
   fi
 
-  print_status "🎉 DevFlow v2.1.0 Production System Started Successfully!"
+  print_status "🎉 DevFlow v3.1 Production System Started Successfully!"
   print_status "✅ Database Manager: Running"
   print_status "✅ Model Registry: Running"
   print_status "✅ Vector Memory: Running (EmbeddingGemma)"
   print_status "✅ Token Optimizer: Running (Real algorithms)"
+  print_status "✅ DevFlow Orchestrator: Running (Port 3005)"
   print_status "✅ Synthetic MCP: Running"
   print_status "✅ Auto CCR Runner: Running"
   if is_process_running "$PROJECT_ROOT/.enforcement.pid"; then
@@ -471,9 +605,30 @@ main() {
   else
     print_warning "⚠️  Claude Code Enforcement: Not Running"
   fi
+
+  # External integrations status
   print_status ""
-  print_status "🚀 System Status: PRODUCTION READY"
+  print_status "🔗 External Integrations:"
+  if command_exists codex; then
+    print_status "✅ Codex CLI: Available"
+  else
+    print_warning "⚠️  Codex CLI: Not installed"
+  fi
+
+  if command_exists gemini; then
+    if [ -f "/Users/fulvioventura/.config/gemini-cli/mcp.json" ]; then
+      print_status "✅ Gemini CLI: Available with DevFlow MCP"
+    else
+      print_warning "⚠️  Gemini CLI: Available but MCP not configured"
+    fi
+  else
+    print_warning "⚠️  Gemini CLI: Not installed"
+  fi
+
+  print_status ""
+  print_status "🚀 System Status: PRODUCTION READY (Reverse Integration Architecture)"
   print_status "🔄 Auto CCR monitoring active for fallback orchestration"
+  print_status "🌐 DevFlow Orchestrator API ready for external agent clients"
 }
 
 # Trap SIGINT and SIGTERM to stop services gracefully

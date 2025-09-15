@@ -52,15 +52,15 @@ is_process_running() {
   fi
 }
 
-print_status "🛑 Stopping DevFlow v2.1.0 services..."
+print_status "🛑 Stopping DevFlow v3.1 services..."
 
-# Stop all DevFlow services (including enforcement) - aligned with devflow-start.sh
-local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
+# Stop all DevFlow services (including orchestrator) - aligned with devflow-start.sh v3.1
+services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".orchestrator.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
 
 for service_pid in "${services[@]}"; do
   if is_process_running "$PROJECT_ROOT/$service_pid"; then
-    local pid=$(cat "$PROJECT_ROOT/$service_pid")
-    local service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
+    pid=$(cat "$PROJECT_ROOT/$service_pid")
+    service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
 
     if [ "$pid" = "MCP_READY" ]; then
       print_status "Stopping $service_name (MCP Server)..."

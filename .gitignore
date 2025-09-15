@@ -28,3 +28,22 @@ test-results/
 .env
 .env
 .env.backup-*
+
+# DevFlow specific
+*.pid
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+logs/
+data/
+backups/
+config/
+.claude/state/
+sessions/tasks/
+prova/
+test-output/
+
+# Temporary files
+ciao
+ciao.ts
+synthetic-ciao.ts

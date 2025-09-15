@@ -6,6 +6,47 @@
 **Agent Roles:**
 - **Claude Code**: Team Leader & Software Architect (system design, coordination, quality assurance)
 - **Codex**: Senior Implementation Specialist (mass coding, pattern implementation, technical execution)
+- **DevFlow Orchestrator**: Central API hub for external AI agents at `http://localhost:3005`
+
+## 🔗 DevFlow Integration for External Agents
+
+### Available Services via Orchestrator API
+- **Synthetic Agents**: Code generation, reasoning, context analysis
+- **Semantic Memory**: Vector search and knowledge persistence
+- **Task Management**: Hierarchical task creation and tracking
+- **Session Management**: Context persistence across interactions
+
+### Authentication
+All API endpoints require Bearer token:
+```
+Authorization: Bearer devflow-orchestrator-token
+```
+
+### Integration Commands for Codex/Gemini
+
+#### Code Generation via DevFlow
+```bash
+curl -X POST http://localhost:3005/api/synthetic/code \
+  -H "Authorization: Bearer devflow-orchestrator-token" \
+  -H "Content-Type: application/json" \
+  -d '{"prompt": "Create TypeScript function", "context": {...}}'
+```
+
+#### Semantic Memory Access
+```bash
+curl -X POST http://localhost:3005/api/memory/query \
+  -H "Authorization: Bearer devflow-orchestrator-token" \
+  -H "Content-Type: application/json" \
+  -d '{"query": "patterns", "limit": 5}'
+```
+
+#### Task Creation
+```bash
+curl -X POST http://localhost:3005/api/tasks \
+  -H "Authorization: Bearer devflow-orchestrator-token" \
+  -H "Content-Type: application/json" \
+  -d '{"title": "Feature X", "priority": "high"}'
+```
 
 ## 🏗️ Project Structure & Module Organization
 
