@@ -1,44 +1,48 @@
 {
-  "timestamp": "2025-09-15T12:14:17.553570",
+  "timestamp": "2025-09-15T21:54:39.496686",
   "version": "3.1",
   "progress": {
     "percentage": 100,
     "current_task": "devflow-v3_1-deployment"
   },
   "system": {
-    "status": "PRODUCTION",
-    "services_active": 6,
-    "services_total": 7
+    "status": "DEGRADED",
+    "services_active": 0,
+    "services_total": 8
   },
-  "mode": "PRODUCTION",
-  "last_tool": "unknown",
+  "mode": "DEV",
+  "last_tool": "devflow-test",
   "services": [
     {
       "name": "Database",
-      "status": "active"
+      "status": "inactive"
     },
     {
       "name": "Registry",
-      "status": "active"
+      "status": "inactive"
     },
     {
       "name": "Vector",
-      "status": "active"
+      "status": "inactive"
     },
     {
       "name": "Optimizer",
-      "status": "active"
-    },
-    {
-      "name": "Synthetic",
-      "status": "active"
+      "status": "inactive"
     },
     {
       "name": "CCR",
-      "status": "active"
+      "status": "inactive"
     },
     {
       "name": "Enforcement",
+      "status": "inactive"
+    },
+    {
+      "name": "Orchestrator",
+      "status": "inactive"
+    },
+    {
+      "name": "Synthetic",
       "status": "inactive"
     }
   ]

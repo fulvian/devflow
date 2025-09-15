@@ -63,9 +63,9 @@ export class SyntheticEmbeddingModel implements EmbeddingModel {
       }
 
       return results;
-    } catch (error) {
+    } catch (error: any) {
       logger.error('Failed to generate embeddings', { error, texts });
-      throw new EmbeddingError(`Embedding generation failed: ${error.message}`);
+      throw new EmbeddingError(`Embedding generation failed: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
@@ -112,7 +112,7 @@ export class SyntheticEmbeddingModel implements EmbeddingModel {
           const delay = Math.pow(2, attempt) * 1000; // Exponential backoff
           logger.warn(`Embedding request failed, retrying in ${delay}ms`, { 
             attempt: attempt + 1, 
-            error: error.message 
+            error: error instanceof Error ? error.message : String(error)
           });
           await this.sleep(delay);
         }
@@ -160,7 +160,7 @@ export class SyntheticEmbeddingModel implements EmbeddingModel {
         throw new EmbeddingError('Invalid response format from embedding API');
       }
 
-      return data.data.map(item => item.embedding);
+      return data.data.map((item: any) => item.embedding);
     } catch (error) {
       clearTimeout(timeout);
       
@@ -168,7 +168,7 @@ export class SyntheticEmbeddingModel implements EmbeddingModel {
         throw new EmbeddingError('Request timeout exceeded');
       }
       
-      throw error;
+      throw error as any;
     }
   }
 

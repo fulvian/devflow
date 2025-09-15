@@ -212,7 +212,7 @@ export class ClaudeCodeBootstrap {
                     id: rule.id || ruleKey,
                     name: rule.name || ruleKey,
                     description: rule.description || `Rule from ${file}`,
-                    validate: rule.validate,
+                    severity: 'medium',
                     enabled: rule.enabled !== false
                   });
                   registeredRules++;

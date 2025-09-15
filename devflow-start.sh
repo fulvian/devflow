@@ -64,7 +64,7 @@ stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
   # Stop all DevFlow services (including enforcement)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -96,7 +96,15 @@ start_ccr() {
   
   # Check if Auto CCR Runner is already running
   if pgrep -f "auto-ccr-runner.js" > /dev/null; then
-    print_status "Auto CCR Runner already running"
+    # Ensure PID file exists/updated
+    local pid
+    pid=$(pgrep -f -n "tools/auto-ccr-runner.js" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.ccr.pid"
+      print_status "Auto CCR Runner already running (PID: $pid)"
+    else
+      print_status "Auto CCR Runner already running"
+    fi
     return 0
   fi
   
@@ -171,7 +179,15 @@ start_database() {
   print_status "Starting Database Manager..."
 
   if pgrep -f "database-manager" > /dev/null; then
-    print_status "Database Manager already running"
+    # Ensure PID file exists/updated
+    local pid
+    pid=$(pgrep -f -n "packages/core/dist/services/database-manager.cjs" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.database.pid"
+      print_status "Database Manager already running (PID: $pid)"
+    else
+      print_status "Database Manager already running"
+    fi
     return 0
   fi
 
@@ -195,7 +211,14 @@ start_vector() {
   print_status "Starting Vector Memory Service..."
 
   if pgrep -f "vector-memory-service" > /dev/null; then
-    print_status "Vector Memory Service already running"
+    local pid
+    pid=$(pgrep -f -n "packages/core/dist/services/vector-memory-service.cjs" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.vector.pid"
+      print_status "Vector Memory Service already running (PID: $pid)"
+    else
+      print_status "Vector Memory Service already running"
+    fi
     return 0
   fi
 
@@ -219,7 +242,14 @@ start_optimizer() {
   print_status "Starting Token Optimizer..."
 
   if pgrep -f "token-optimizer-service" > /dev/null; then
-    print_status "Token Optimizer already running"
+    local pid
+    pid=$(pgrep -f -n "packages/core/dist/services/token-optimizer-service.cjs" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.optimizer.pid"
+      print_status "Token Optimizer already running (PID: $pid)"
+    else
+      print_status "Token Optimizer already running"
+    fi
     return 0
   fi
 
@@ -243,7 +273,14 @@ start_registry() {
   print_status "Starting Model Registry..."
 
   if pgrep -f "model-registry-service" > /dev/null; then
-    print_status "Model Registry already running"
+    local pid
+    pid=$(pgrep -f -n "packages/core/dist/services/model-registry-service.cjs" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.registry.pid"
+      print_status "Model Registry already running (PID: $pid)"
+    else
+      print_status "Model Registry already running"
+    fi
     return 0
   fi
 
@@ -275,7 +312,19 @@ start_enforcement() {
 
   # Check if already running via health check
   if curl -sf --max-time 2 "http://localhost:8787/health" >/dev/null 2>&1; then
-    print_status "Claude Code Enforcement Daemon already running"
+    # Ensure PID file exists by mirroring daemon PID file
+    local pid_file_actual="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
+    if [ -f "$pid_file_actual" ]; then
+      local actual_pid=$(cat "$pid_file_actual")
+      if kill -0 $actual_pid 2>/dev/null; then
+        echo $actual_pid > "$PROJECT_ROOT/.enforcement.pid"
+        print_status "Claude Code Enforcement Daemon already running (PID: $actual_pid)"
+      else
+        print_status "Claude Code Enforcement Daemon already running"
+      fi
+    else
+      print_status "Claude Code Enforcement Daemon already running"
+    fi
     return 0
   fi
 
@@ -333,6 +382,54 @@ start_enforcement() {
   fi
 }
 
+# Function to start DevFlow Orchestrator
+start_orchestrator() {
+  print_status "Starting DevFlow Orchestrator..."
+
+  # Check if orchestrator is already running
+  if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+    print_status "DevFlow Orchestrator already running"
+    return 0
+  fi
+
+  # Check if orchestrator app exists
+  if [ ! -f "$PROJECT_ROOT/services/devflow-orchestrator/dist/main.js" ]; then
+    print_error "Orchestrator app not found at services/devflow-orchestrator/dist/main.js"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start orchestrator in background
+  nohup node "$PROJECT_ROOT/services/devflow-orchestrator/dist/main.js" > logs/orchestrator.log 2>&1 &
+  local orchestrator_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $orchestrator_pid 2>/dev/null; then
+    # Validate with health check
+    local health_attempts=0
+    while [ $health_attempts -lt 5 ]; do
+      if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+        echo $orchestrator_pid > "$PROJECT_ROOT/.orchestrator.pid"
+        print_status "DevFlow Orchestrator started successfully (PID: $orchestrator_pid)"
+        return 0
+      fi
+      sleep 2
+      health_attempts=$((health_attempts + 1))
+    done
+
+    print_error "Orchestrator started but health check failed"
+    return 1
+  else
+    print_error "Failed to start DevFlow Orchestrator"
+    return 1
+  fi
+}
+
 # Function to check prerequisites
 check_prerequisites() {
   print_status "Checking prerequisites..."
@@ -386,6 +483,7 @@ main() {
         ".synthetic.pid:Synthetic MCP"
         ".ccr.pid:Auto CCR Runner"
         ".enforcement.pid:Claude Code Enforcement"
+        ".orchestrator.pid:DevFlow Orchestrator"
       )
 
       for service in "${services[@]}"; do
@@ -457,6 +555,11 @@ main() {
   # Start enforcement system (optional - graceful degradation)
   if ! start_enforcement; then
     print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
+  fi
+
+  if ! start_orchestrator; then
+    print_error "DevFlow Orchestrator failed to start - CRITICAL ERROR"
+    exit 1
   fi
 
   print_status "🎉 DevFlow v2.1.0 Production System Started Successfully!"

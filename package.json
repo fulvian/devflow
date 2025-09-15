@@ -11,9 +11,11 @@
     "test:scenarios": "jest src/test/scenarios",
     "setup:test-env": "ts-node src/test/setup/test-environment.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "smoke:test": "node scripts/smoke-runner.js"
   },
   "dependencies": {
+    "@anthropic-ai/sdk": "^0.62.0",
     "@types/winston": "^2.4.4",
     "axios": "^1.12.1",
     "better-sqlite3": "^12.2.0",
@@ -26,6 +28,7 @@
     "zod": "^3.22.4"
   },
   "devDependencies": {
+    "@types/better-sqlite3": "^7.6.13",
     "@types/jest": "^29.5.3",
     "@types/node": "^20.19.14",
     "@types/sqlite3": "^3.1.8",

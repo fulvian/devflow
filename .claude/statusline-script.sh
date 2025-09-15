@@ -116,28 +116,50 @@ except:
     echo -e "$progress_bar"
 }
 
-# Get current task with color
+# Get current task with DevFlow v3.1 enhancement
 get_current_task() {
     cyan="\033[38;5;111m"    # 59C2FF entity blue
+    green="\033[38;5;114m"   # AAD94C string green
     reset="\033[0m"
     if [[ -f "$cwd/.claude/state/current_task.json" ]]; then
-        task_name=$(python3 -c "
+        task_info=$(python3 -c "
 import sys, json
 try:
     with open('$cwd/.claude/state/current_task.json', 'r') as f:
         data = json.load(f)
-        print(data.get('task', 'None'))
+        task_name = data.get('task', 'None')
+        progress = data.get('progress_percentage', 0)
+        services = data.get('services', [])
+        system = data.get('system', '')
+
+        # DevFlow v3.1 enhanced display
+        service_count = len(services) if services else 0
+        if system == 'cometa-devflow':
+            prefix = '🧠 DevFlow→v3.1'
+        else:
+            prefix = 'Task'
+
+        if progress > 0:
+            print(f'{prefix}: {task_name} ({progress}% | {service_count} services)')
+        else:
+            print(f'{prefix}: {task_name}')
 except:
-    print('None')
+    print('Task: None')
 " 2>/dev/null)
-        echo -e "${cyan}Task: $task_name${reset}"
+        echo -e "${green}$task_info${reset}"
     else
         echo -e "${cyan}Task: None${reset}"
     fi
 }
 
-# Get DAIC mode with color
+# Get DAIC mode with DevFlow services info
 get_daic_mode() {
+    purple="\033[38;5;183m"  # D2A6FF constant purple
+    green="\033[38;5;114m"   # AAD94C string green
+    orange="\033[38;5;215m"  # FFB454 func orange
+    reset="\033[0m"
+
+    # Get DAIC mode
     if [[ -f "$cwd/.claude/state/daic-mode.json" ]]; then
         mode=$(python3 -c "
 import sys, json
@@ -148,19 +170,53 @@ try:
 except:
     print('discussion')
 " 2>/dev/null)
-        if [[ "$mode" == "discussion" ]]; then
-            purple="\033[38;5;183m"  # D2A6FF constant purple
-            reset="\033[0m"
-            echo -e "${purple}DAIC: Discussion${reset}"
-        else
-            green="\033[38;5;114m"   # AAD94C string green
-            reset="\033[0m"
-            echo -e "${green}DAIC: Implementation${reset}"
-        fi
     else
-        purple="\033[38;5;183m"      # D2A6FF constant purple
-        reset="\033[0m"
-        echo -e "${purple}DAIC: Discussion${reset}"
+        mode="discussion"
+    fi
+
+    # Check DevFlow services status
+    services_info=$(python3 -c "
+import os
+import json
+
+try:
+    # Check for active service PIDs - All 8 DevFlow services
+    active_services = []
+    if os.path.exists('.database.pid'):
+        active_services.append('DB')
+    if os.path.exists('.registry.pid'):
+        active_services.append('Registry')
+    if os.path.exists('.vector.pid'):
+        active_services.append('Vector')
+    if os.path.exists('.optimizer.pid'):
+        active_services.append('Optimizer')
+    if os.path.exists('.ccr.pid'):
+        active_services.append('CCR')
+    if os.path.exists('.enforcement.pid'):
+        active_services.append('Enforcement')
+    if os.path.exists('.orchestrator.pid'):
+        active_services.append('Orchestrator')
+
+    # Check Synthetic MCP Server
+    try:
+        import urllib.request
+        urllib.request.urlopen('http://localhost:3000/health', timeout=1)
+        active_services.append('Synthetic')
+    except:
+        pass
+
+    if active_services:
+        print(f' | 🔥 {len(active_services)}/8 services')
+    else:
+        print(' | 🔥 0/8 services')
+except:
+    print('')
+" 2>/dev/null)
+
+    if [[ "$mode" == "discussion" ]]; then
+        echo -e "${purple}DAIC: Discussion${reset}${orange}$services_info${reset}"
+    else
+        echo -e "${green}DAIC: Implementation${reset}${orange}$services_info${reset}"
     fi
 }
 

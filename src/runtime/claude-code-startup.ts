@@ -104,7 +104,7 @@ export class ClaudeCodeRuntime {
         { cause: error }
       );
       
-      this.logger.error(startupError.message, { error });
+      this.logger.error(startupError.message, { error: error instanceof Error ? error.message : String(error) });
       
       if (this.config.failOnStartupError) {
         throw startupError;
@@ -128,7 +128,7 @@ export class ClaudeCodeRuntime {
         description: 'Prevents writing secrets or sensitive information in code',
         priority: 100,
         enabled: true,
-        evaluate: (context) => {
+        evaluate: (context: any) => {
           // Implementation would check for patterns like API keys, passwords, etc.
           return Promise.resolve({ passed: true });
         }
@@ -141,7 +141,7 @@ export class ClaudeCodeRuntime {
         description: 'Prevents writing TODO comments in production code',
         priority: 50,
         enabled: true,
-        evaluate: (context) => {
+        evaluate: (context: any) => {
           // Implementation would check for TODO comments
           return Promise.resolve({ passed: true });
         }
@@ -154,14 +154,14 @@ export class ClaudeCodeRuntime {
         description: 'Enforces consistent code formatting',
         priority: 25,
         enabled: true,
-        evaluate: (context) => {
+        evaluate: (context: any) => {
           // Implementation would check code formatting
           return Promise.resolve({ passed: true });
         }
       });
 
       this.logger.info('Default rules registered successfully');
-    } catch (error) {
+    } catch (error: any) {
       throw new ClaudeCodeError('Failed to register default rules', { cause: error });
     }
   }
@@ -174,28 +174,28 @@ export class ClaudeCodeRuntime {
     
     try {
       // Wrap file write operations
-      this.toolWrapper.wrap('file.write', async (originalFn, ...args) => {
+      this.toolWrapper.wrap('file.write', async (originalFn: any, ...args: any[]) => {
         const [filePath, content] = args;
         await this.enforcementEngine.enforce({ operation: 'write', filePath, content });
         return originalFn(...args);
       });
 
       // Wrap file edit operations
-      this.toolWrapper.wrap('file.edit', async (originalFn, ...args) => {
+      this.toolWrapper.wrap('file.edit', async (originalFn: any, ...args: any[]) => {
         const [filePath, changes] = args;
         await this.enforcementEngine.enforce({ operation: 'edit', filePath, changes });
         return originalFn(...args);
       });
 
       // Wrap code generation operations
-      this.toolWrapper.wrap('code.generate', async (originalFn, ...args) => {
+      this.toolWrapper.wrap('code.generate', async (originalFn: any, ...args: any[]) => {
         const [spec] = args;
         await this.enforcementEngine.enforce({ operation: 'generate', spec });
         return originalFn(...args);
       });
 
       this.logger.info('Tool wrappers setup successfully');
-    } catch (error) {
+    } catch (error: any) {
       throw new ClaudeCodeError('Failed to setup tool wrappers', { cause: error });
     }
   }
