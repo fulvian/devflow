@@ -11,6 +11,11 @@
         "SYNTHETIC_API_KEY": "your-synthetic-api-key-here",
         "SYNTHETIC_API_BASE_URL": "https://api.synthetic.new/v1"
       }
+    },
+    "codex-cli": {
+      "command": "codex",
+      "args": ["mcp"],
+      "env": {}
     }
   }
 }
