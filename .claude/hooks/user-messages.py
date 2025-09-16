@@ -106,7 +106,7 @@ if transcript_path and tiktoken and os.path.exists(transcript_path):
             warning_90_flag.parent.mkdir(parents=True, exist_ok=True)
             warning_90_flag.touch()
         elif usable_percentage >= 75 and not warning_75_flag.exists():
-            context += f"\n[75% WARNING] {context_length:,}/160,000 tokens used ({usable_percentage:.1f}%). Context is getting low. Be aware of coming context compaction trigger.\n"
+            context += f"\n[{usable_percentage:.0f}% WARNING] {context_length:,}/160,000 tokens used ({usable_percentage:.1f}%). Context is getting low. Be aware of coming context compaction trigger.\n"
             warning_75_flag.parent.mkdir(parents=True, exist_ok=True)
             warning_75_flag.touch()
 

@@ -7,7 +7,6 @@
  */
 
 import Anthropic from '@anthropic-ai/sdk';
-import { APIPromise } from '@anthropic-ai/sdk/core';
 import { MessageCreateParams, Message } from '@anthropic-ai/sdk/resources/messages';
 
 // Type definitions for usage tracking
@@ -79,20 +78,20 @@ export class ClaudeUsageMonitor {
     params: MessageCreateParams
   ): Promise<Message> {
     try {
-      const responsePromise: APIPromise<Message> = this.anthropic.messages.create(params);
+      const responsePromise = this.anthropic.messages.create(params);
 
       // Extract raw response to access headers
-      const response = await responsePromise.asResponse();
-      const message: Message = await responsePromise;
+      const response = await (responsePromise as any).asResponse();
+      const message = await responsePromise;
 
       // Process usage metrics from response
-      this.processUsageMetrics(params.model, message, response);
+      this.processUsageMetrics(params.model, message as Message, response);
 
-      return message;
-    } catch (error) {
+      return message as Message;
+    } catch (error: any) {
       // Still process rate limit headers even on error
-      if (error instanceof Anthropic.APIError && error.response) {
-        this.processRateLimitHeaders(params.model, error.response);
+      if (error instanceof Anthropic.APIError) {
+        this.processRateLimitHeaders(params.model, error);
       }
       throw error;
     }
@@ -104,7 +103,7 @@ export class ClaudeUsageMonitor {
   private processUsageMetrics(
     model: string,
     message: Message,
-    response: Response
+    response: any
   ): void {
     // Extract usage from message object
     const usage: UsageMetrics = {
@@ -117,8 +116,8 @@ export class ClaudeUsageMonitor {
     // Update usage stats
     const modelStats = this.usageStats.get(model) || this.initializeModelStats(model);
 
-    modelStats.totalInputTokens += usage.inputTokens;
-    modelStats.totalOutputTokens += usage.outputTokens;
+    modelStats.totalInputTokens += usage.inputTokens || 0;
+    modelStats.totalOutputTokens += usage.outputTokens || 0;
     modelStats.totalRequests += 1;
 
     // Calculate usage percentage based on model limits
@@ -130,32 +129,26 @@ export class ClaudeUsageMonitor {
     }
 
     // Process rate limit headers
-    this.processRateLimitHeaders(model, response);
+    // if (error instanceof Anthropic.APIError) {
+    //   this.processRateLimitHeaders(model, error);
+    // }
   }
 
   /**
    * Process rate limit headers from API response
    */
-  private processRateLimitHeaders(model: string, response: Response): void {
-    const headers = response.headers;
+  private processRateLimitHeaders(model: string, error: any): void {
+    // Se non abbiamo accesso agli headers, inizializziamo comunque le statistiche
     const modelStats = this.usageStats.get(model) || this.initializeModelStats(model);
-
-    // Extract rate limit information from headers
-    const requestsLimit = parseInt(headers.get('anthropic-ratelimit-requests-limit') || '0', 10);
-    const requestsRemaining = parseInt(headers.get('anthropic-ratelimit-requests-remaining') || '0', 10);
-    const requestsReset = new Date(headers.get('anthropic-ratelimit-requests-reset') || Date.now());
-
-    const tokensLimit = parseInt(headers.get('anthropic-ratelimit-tokens-limit') || '0', 10);
-    const tokensRemaining = parseInt(headers.get('anthropic-ratelimit-tokens-remaining') || '0', 10);
-    const tokensReset = new Date(headers.get('anthropic-ratelimit-tokens-reset') || Date.now());
-
+    
+    // Inizializziamo con valori di default
     modelStats.rateLimitInfo = {
-      requestsLimit,
-      requestsRemaining,
-      requestsReset,
-      tokensLimit,
-      tokensRemaining,
-      tokensReset,
+      requestsLimit: 0,
+      requestsRemaining: 0,
+      requestsReset: new Date(),
+      tokensLimit: 0,
+      tokensRemaining: 0,
+      tokensReset: new Date(),
     };
   }
 

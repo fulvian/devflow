@@ -279,3 +279,55 @@ After implementing the Enhanced MCP Server:
 ---
 
 *The Enhanced MCP Server transforms DevFlow from a generate-then-implement workflow to a generate-and-implement-directly system, eliminating the token waste bottleneck while maintaining full control and safety.*
+
+## 🔗 Codex MCP Integration (Native)
+
+### Overview
+
+Oltre ai server Synthetic, DevFlow può integrare direttamente il Codex CLI di OpenAI come MCP server nativo. Questo elimina wrapper legacy e semplifica la configurazione in Claude Code.
+
+### Prerequisiti
+
+- Codex CLI installato e nel PATH:
+  - `npm i -g @openai/codex` oppure `brew install codex`
+
+### Configurazione (project-level)
+
+Aggiungi/assicurati del seguente blocco in `.mcp.json` del progetto:
+
+```json
+{
+  "mcpServers": {
+    "codex-cli": {
+      "command": "codex",
+      "args": ["mcp"],
+      "env": {}
+    }
+  }
+}
+```
+
+Questo avvia il server MCP nativo di Codex (`codex mcp`), pienamente compatibile con Claude Code via stdio.
+
+### Rimozione implementazione legacy (facoltativa ma consigliata)
+
+Se in passato era presente un server “openai-codex” basato su Python/HTTP:
+
+- Rimuovilo dall’elenco MCP di Claude: `claude mcp remove openai-codex`.
+- Non è più necessario il wrapper `~/openai-codex-mcp` a meno che non serva come tool HTTP separato.
+
+### Verifica
+
+- In Claude Code esegui `/mcp`: dovresti vedere `codex-cli` con stato “Connected”.
+- Se non appare, verifica che `codex` sia nel PATH e riavvia Claude Code.
+
+### Utilizzo
+
+- Il server espone strumenti MCP nativi di Codex (ad es. `codex`, `codex-reply`).
+- Claude Code potrà usarli per attività di generazione/spiegazione/debug del codice come tool MCP.
+- Per prove manuali avanzate, usa l’MCP Inspector con `npx @modelcontextprotocol/inspector codex mcp` (vedi documentazione Codex).
+
+### Riferimenti Ufficiali
+
+- Repository Codex CLI: https://github.com/openai/codex
+- Sezione “Model Context Protocol (MCP)”: docs/advanced.md nel repository Codex

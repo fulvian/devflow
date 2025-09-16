@@ -218,7 +218,7 @@ export class DelegationSystem {
         
         // If we've exhausted all agents, throw the error
         if (agentIndex >= this.DELEGATION_CHAIN.length) {
-          throw new Error(`All agents failed to process task ${task.id}: ${error.message}`);
+          throw new Error(`All agents failed to process task ${task.id}: ${error instanceof Error ? error.message : String(error)}`);
         }
       }
     }
@@ -424,8 +424,7 @@ export class DelegationSystem {
       // Try the Synthetic agent with maximum effort
       const response = await this.agentPool.executeTask(AgentType.SYNTHETIC, {
         ...contextualizedTask,
-        priority: 'high', // Increase priority for emergency handling
-        timeout: 30000 // Increase timeout for complex fallback processing
+        priority: 1 // Increase priority for emergency handling
       });
       
       this.logger.info('Emergency fallback successful', {

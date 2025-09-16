@@ -14,6 +14,8 @@ import { existsSync } from 'fs';
 import { spawn } from 'child_process';
 import { AutonomousFileManager, FileOperation } from './file-operations.js';
 import { MCPErrorFactory, MCPResponseBuilder, MCPError, MCPErrorCode } from './enhanced-tools.js';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
 
 dotenv.config();
 
@@ -130,6 +132,7 @@ export class EnhancedSyntheticMCPServer {
   private allowedPaths: string[];
   private fileManager: AutonomousFileManager;
   private requestIdCounter: number = 0;
+  private db: any;
 
   constructor() {
     // Initialize expanded allowed paths for full project control
@@ -158,8 +161,22 @@ export class EnhancedSyntheticMCPServer {
     );
 
     this.allowedPaths = [DEVFLOW_PROJECT_ROOT];
+    this.initDatabase();
     this.setupToolHandlers();
     this.setupErrorHandling();
+  }
+
+  private async initDatabase(): Promise<void> {
+    try {
+      const dbPath = resolve(DEVFLOW_PROJECT_ROOT, 'data/devflow.sqlite');
+      this.db = await open({
+        filename: dbPath,
+        driver: sqlite3.Database
+      });
+      console.log('[Synthetic MCP] Connected to DevFlow database');
+    } catch (error) {
+      console.error('[Synthetic MCP] Error connecting to database:', error);
+    }
   }
 
   private setupErrorHandling(): void {
@@ -832,6 +849,25 @@ ${JSON.stringify(mcpResponse.metadata, null, 2)}`,
     context?: string;
     approach?: string;
   }, requestId?: string) {
+    if (this.db) {
+      try {
+        const tasks = await this.db.all('SELECT * FROM tasks WHERE description LIKE ?', `%${args.problem}%`);
+        if (tasks && tasks.length > 0) {
+          const taskDetails = tasks.map(t => `- **${t.title}**: ${t.status} - ${t.description}`).join('\n');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `# COMETA MEMORY ANALYSIS - ${args.task_id}\n\n## Analysis Results\n\n${taskDetails}\n\n## Usage Stats\n- Datasource: Cometa (SQLite)\n- Tasks Found: ${tasks.length}`
+              },
+            ],
+          };
+        }
+      } catch (error) {
+        console.error('[Synthetic MCP] Error querying database:', error);
+      }
+    }
+
     const systemPrompt = `You are a specialized reasoning AI using advanced analytical capabilities. Provide deep, structured analysis with clear logical progression.
 
 Reasoning approach: ${args.approach || 'analytical'}
@@ -863,16 +899,7 @@ Provide comprehensive reasoning and analysis.`;
       content: [
         {
           type: 'text',
-          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id} → ${DEFAULT_REASONING_MODEL}
-
-## Analysis Results
-
-${response.choices[0].message.content}
-
-## Usage Stats
-- Model: ${DEFAULT_REASONING_MODEL} (Reasoning Specialist)  
-- Tokens: ${response.usage?.total_tokens || 'N/A'}
-- Approach: ${args.approach || 'analytical'}`,
+          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id} → ${DEFAULT_REASONING_MODEL}\n\n## Analysis Results\n\n${response.choices[0].message.content}\n\n## Usage Stats\n- Model: ${DEFAULT_REASONING_MODEL} (Reasoning Specialist)  \n- Tokens: ${response.usage?.total_tokens || 'N/A'}\n- Approach: ${args.approach || 'analytical'}`,
         },
       ],
     };

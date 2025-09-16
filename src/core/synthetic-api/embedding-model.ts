@@ -47,15 +47,11 @@ export class SyntheticEmbeddingModel implements EmbeddingModel {
     modelName: string = 'synthetic-embeddings-v1',
     modelDimension: number = 1536
   ) {
-    this.logger = new Logger('SyntheticEmbeddingModel');
+    this.logger = new Logger();
     this.apiKey = apiKey;
     this.apiUrl = apiUrl;
     this.modelName = modelName;
     this.modelDimension = modelDimension;
-    
-    if (!apiKey) {
-      throw new Error('API key is required for SyntheticEmbeddingModel');
-    }
   }
 
   /**

@@ -2,6 +2,7 @@
  * DevFlow Orchestration System Startup
  * Starts the intelligent orchestration without disrupting existing processes
  */
+require('dotenv').config();
 
 const { spawn } = require('child_process');
 const path = require('path');

@@ -208,3 +208,7 @@ The system provides full integration with Claude Code sessions through:
 5. Open a pull request
 
 The project follows standard TypeScript development practices with comprehensive testing and type safety.
+
+## Qwen Added Memories
+- Il progetto DevFlow è un sistema cognitivo per la gestione di task e memoria, con focus su TypeScript e Node.js. Utilizza un database SQLite per la persistenza e implementa un sistema di orchestrazione multi-piattaforma con Claude Code, OpenAI Codex, Google Gemini e agenti Synthetic. Il sistema è in fase di refoundation per risolvere problemi di degradazione architetturale.
+- L'obiettivo principale del lavoro corrente è risolvere gli errori di compilazione TypeScript nel progetto DevFlow, completare l'implementazione dei moduli mancanti, eseguire test per verificare la funzionalità dei componenti e aggiornare le dipendenze mancanti. Il focus è su un approccio graduale e controllato per far funzionare il sistema senza modificarne la funzionalità.

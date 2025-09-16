@@ -20,7 +20,7 @@
 
 **✅ Confermato Funzionante:**
 - 2 processi MCP attivi (PIDs 38368, 45426)
-- API key verificata: `syn_4f04a1a3108cfbb64ac973367542d361`
+- API key verificata: `<YOUR_SYNTHETIC_API_KEY>`
 - Tutti i modelli target disponibili (Qwen3-Coder, DeepSeek-V3, Qwen2.5-Coder)
 - 13+ tools MCP implementati
 - Error handling robusto

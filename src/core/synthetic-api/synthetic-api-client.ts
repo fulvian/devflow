@@ -196,14 +196,14 @@ export class SyntheticApiClient extends EventEmitter {
         );
       }
 
-      this.token = await response.json();
-      this.tokenExpiry = Date.now() + (this.token.expires_in * 1000);
+      this.token = (await response.json()) as any;
+      this.tokenExpiry = Date.now() + ((this.token as any).expires_in * 1000);
       
       this.logger.info('Authentication successful', {
-        expiresIn: this.token.expires_in,
-        tokenType: this.token.token_type
+        expiresIn: (this.token as any).expires_in,
+        tokenType: (this.token as any).token_type
       });
-    } catch (error) {
+    } catch (error: any) {
       if (error instanceof DevFlowApiError) {
         throw error;
       }
@@ -273,7 +273,7 @@ export class SyntheticApiClient extends EventEmitter {
         });
         return response;
       } catch (error) {
-        lastError = error;
+        lastError = error as any;
         
         // If it's not retryable or we've exhausted retries, throw the error
         if (!(error instanceof DevFlowApiError) || 
@@ -282,7 +282,7 @@ export class SyntheticApiClient extends EventEmitter {
           this.logger.error('API request failed', {
             requestId: request.id,
             endpoint: request.endpoint,
-            error: error.message,
+            error: error instanceof Error ? error.message : String(error),
             attempt
           });
           throw error;
@@ -358,7 +358,7 @@ export class SyntheticApiClient extends EventEmitter {
         throw new NetworkError('Request timeout', request.id);
       }
       
-      throw new NetworkError(`Network error: ${error.message}`, request.id);
+      throw new NetworkError(`Network error: ${error instanceof Error ? error.message : String(error)}`, request.id);
     }
   }
 
