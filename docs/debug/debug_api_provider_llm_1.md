@@ -24,7 +24,7 @@
   sqlite3 devflow.sqlite <<EOF
   UPDATE service_configs
   SET api_endpoint='https://api.synthetic.new/v1',
-      api_key_hash='$(echo -n "syn_4f04a1a3108cfbb64ac973367542d361" | sha256sum)'
+      api_key_hash='$(echo -n "<YOUR_SYNTHETIC_API_KEY>" | sha256sum)'
   WHERE service_name='SyntheticAPI';
   EOF
 

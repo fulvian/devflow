@@ -194,7 +194,7 @@ export class EmergencyCCRActivator {
         {
           "name": "synthetic_provider",
           "api_base_url": "https://api.synthetic.new/v1/chat/completions",
-          "api_key": process.env.SYNTHETIC_API_KEY || "syn_4f04a1a3108cfbb64ac973367542d361",
+          "api_key": process.env.SYNTHETIC_API_KEY,
           "models": [
             "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
             "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
