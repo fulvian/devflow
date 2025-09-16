@@ -1,0 +1,37 @@
+{
+  "version": "3.1.0",
+  "database": {
+    "path": "./data/devflow.sqlite",
+    "unified": true,
+    "context7_compliant": true
+  },
+  "memory": {
+    "vector_store": "./data/vector.sqlite",
+    "embedding_model": "gemma2-embeddings"
+  },
+  "integrations": {
+    "claude_code": {
+      "mode": "devflow_native",
+      "legacy_sessions": false
+    },
+    "external_agents": {
+      "codex": {
+        "enabled": true,
+        "mode": "api_direct"
+      },
+      "gemini": {
+        "enabled": true,
+        "mode": "mcp_bridge"
+      },
+      "qwen": {
+        "enabled": false,
+        "mode": "mcp_bridge"
+      }
+    }
+  },
+  "migration": {
+    "completed": true,
+    "date": "2025-09-15T00:40:08.622Z",
+    "source": "cc-sessions"
+  }
+}

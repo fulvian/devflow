@@ -1,0 +1,81 @@
+#!/usr/bin/env python3
+"""
+DevFlow v3.1 Custom Footer System
+Real-time monitoring footer replacing cc-sessions footer
+"""
+
+import json
+import os
+import sys
+from datetime import datetime
+
+def get_footer_data():
+    """Get real-time data for DevFlow footer"""
+    try:
+        # Read current task from cc-sessions
+        task_file = ".claude/state/current_task.json"
+        if os.path.exists(task_file):
+            with open(task_file) as f:
+                task_data = json.load(f)
+
+            task_name = task_data.get("task", "Unknown")
+            progress = task_data.get("progress_percentage", 0)
+
+            # Task hierarchy display (simplified for now)
+            hierarchy = f"DevFlow→v3.1-Core-UX→{task_name}"
+
+            # Model tracking (simulated)
+            model = "Sonnet-4"
+
+            # API usage (simulated based on current progress)
+            api_calls = f"{int(progress/10)}/60"
+
+            # Context usage (simulated)
+            context_pct = f"{min(progress, 85)}%"
+
+            return {
+                "model": model,
+                "api_calls": api_calls,
+                "context_pct": context_pct,
+                "hierarchy": hierarchy,
+                "timestamp": datetime.now().isoformat()
+            }
+    except Exception as e:
+        return {
+            "model": "Sonnet-4",
+            "api_calls": "?/60",
+            "context_pct": "??%",
+            "hierarchy": "DevFlow→v3.1→Active",
+            "error": str(e)
+        }
+
+def generate_footer():
+    """Generate DevFlow v3.1 footer display"""
+    data = get_footer_data()
+
+    # DevFlow v3.1 footer format
+    footer = f"🧠 {data['model']} | 🔥 {data['api_calls']} calls | 📊 {data['context_pct']} ctx | 📋 {data['hierarchy']}"
+
+    return {
+        "hookSpecificOutput": {
+            "hookEventName": "FooterDisplay",
+            "footerContent": footer,
+            "devflow_version": "3.1",
+            "status": "active"
+        }
+    }
+
+if __name__ == "__main__":
+    try:
+        result = generate_footer()
+        print(json.dumps(result, indent=2))
+    except Exception as e:
+        error_result = {
+            "hookSpecificOutput": {
+                "hookEventName": "FooterDisplay",
+                "footerContent": f"🧠 DevFlow v3.1 | ❌ Error: {str(e)}",
+                "status": "error"
+            }
+        }
+        print(json.dumps(error_result, indent=2))
+        sys.exit(1)

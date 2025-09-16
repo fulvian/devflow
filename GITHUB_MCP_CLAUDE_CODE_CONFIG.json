@@ -1,0 +1,13 @@
+{
+  "mcpServers": {
+    "github": {
+      "command": "/Users/fulvioventura/devflow/scripts/github-mcp-wrapper.sh",
+      "args": ["stdio"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "timeout": 600000,
+      "trust": false
+    }
+  }
+}

@@ -1,0 +1,37 @@
+Patch for scripts/github-mcp-wrapper.sh:
+
+The current script has an issue with how the CONTAINER_ID is being assigned. The docker run command with the -i flag for stdio integration should not capture the container ID in a variable because it will block the stdio communication.
+
+Replace this section:
+
+main() {
+    check_requirements
+
+    # Pull latest image silently
+    docker pull "$IMAGE" &> /dev/null
+
+    # Generate unique container name for this session
+    TIMESTAMP=$(date +%s%3N)
+    CONTAINER_NAME="${CONTAINER_NAME_PREFIX}-${TIMESTAMP}"
+
+    # Run container with stdio and pass through all arguments
+    CONTAINER_ID=$(docker run --rm -i \
+        --name "$CONTAINER_NAME" \
+        -e GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_PERSONAL_ACCESS_TOKEN" \
+        "$IMAGE" "$@")
+}
+
+With this corrected version:
+
+main() {
+    check_requirements
+
+    # Pull latest image silently
+    docker pull "$IMAGE" &> /dev/null
+
+    # Run container with stdio and pass through all arguments
+    # Note: We don't capture CONTAINER_ID because -i flag requires direct stdio connection
+    docker run --rm -i \
+        -e GITHUB_PERSONAL_ACCESS_TOKEN="$GITHUB_PERSONAL_ACCESS_TOKEN" \
+        "$IMAGE" "$@"
+}

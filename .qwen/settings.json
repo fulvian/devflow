@@ -1,0 +1,31 @@
+{
+  "mcpServers": {
+    "qwen-code": {
+      "command": "npx",
+      "args": ["-y", "qwen-mcp-tool"],
+      "env": {},
+      "timeout": 600000,
+      "trust": false
+    },
+    "devflow-ops": {
+      "command": "node",
+      "args": ["mcp-servers/devflow-ops/dist/index.js"],
+      "env": { "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow" },
+      "timeout": 600000,
+      "trust": false
+    },
+    "github-mcp-server": {
+      "command": "docker",
+      "args": [
+        "run", "-i", "--rm",
+        "-e", "GITHUB_PERSONAL_ACCESS_TOKEN",
+        "ghcr.io/github/github-mcp-server"
+      ],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      },
+      "timeout": 600000,
+      "trust": false
+    }
+  }
+}

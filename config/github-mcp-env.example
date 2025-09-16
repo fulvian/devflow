@@ -1,0 +1,13 @@
+# GitHub MCP Server Environment Configuration
+# Copy this file to config/github-mcp-env and fill in your values
+
+# GitHub Personal Access Token
+# Create at: https://github.com/settings/tokens
+# Required scopes: repo, read:org, read:user, read:project
+GITHUB_PERSONAL_ACCESS_TOKEN=your_github_token_here
+
+# Optional: GitHub API Base URL (for GitHub Enterprise)
+# GITHUB_API_URL=https://api.github.com
+
+# Optional: GitHub Enterprise Server URL  
+# GITHUB_BASE_URL=https://github.com
