@@ -142,10 +142,13 @@ start_synthetic() {
     return 1
   fi
 
-  # Check if MCP configuration exists
-  if [ ! -f "$PROJECT_ROOT/.mcp.json" ]; then
-    print_error "MCP configuration (.mcp.json) not found"
-    return 1
+  # Check if Claude Code configuration exists (global config)
+  if [ ! -f "$HOME/.config/claude-desktop/claude_desktop_config.json" ]; then
+    # Fallback to local config if global config doesn't exist
+    if [ ! -f "$PROJECT_ROOT/.mcp.json" ]; then
+      print_error "MCP configuration not found in global Claude Code config or local .mcp.json"
+      return 1
+    fi
   fi
 
   # Test that the server can load without errors
@@ -310,18 +313,26 @@ start_enforcement() {
     return 0
   fi
 
+  # Always clean up stale PID files at the start
+  rm -f "$PROJECT_ROOT/.enforcement.pid"
+  local pid_file_actual="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
+  if [ -f "$pid_file_actual" ]; then
+    local actual_pid=$(cat "$pid_file_actual")
+    # Check if the process is actually running
+    if ! kill -0 $actual_pid 2>/dev/null; then
+      # Process is not running, remove stale PID file
+      print_warning "Removing stale daemon PID file..."
+      rm -f "$pid_file_actual"
+    fi
+  fi
+
   # Check if already running via health check
   if curl -sf --max-time 2 "http://localhost:8787/health" >/dev/null 2>&1; then
-    # Ensure PID file exists by mirroring daemon PID file
-    local pid_file_actual="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
+    # Health check passed, ensure PID file exists
     if [ -f "$pid_file_actual" ]; then
       local actual_pid=$(cat "$pid_file_actual")
-      if kill -0 $actual_pid 2>/dev/null; then
-        echo $actual_pid > "$PROJECT_ROOT/.enforcement.pid"
-        print_status "Claude Code Enforcement Daemon already running (PID: $actual_pid)"
-      else
-        print_status "Claude Code Enforcement Daemon already running"
-      fi
+      echo $actual_pid > "$PROJECT_ROOT/.enforcement.pid"
+      print_status "Claude Code Enforcement Daemon already running (PID: $actual_pid)"
     else
       print_status "Claude Code Enforcement Daemon already running"
     fi
