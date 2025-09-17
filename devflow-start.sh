@@ -63,8 +63,8 @@ is_process_running() {
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
-  # Stop all DevFlow services (including enforcement and session retry)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid")
+  # Stop all DevFlow services (including enforcement, session retry, and fallback monitoring)
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".fallback.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -151,10 +151,10 @@ start_synthetic() {
     fi
   fi
 
-  # Test that the server can load without errors
+  # Test that the server can load without errors and API key is properly configured
   cd "$PROJECT_ROOT/mcp-servers/synthetic"
-  # Use a simple node test without timeout (server loads instantly anyway)
-  if node -e "
+  # Enhanced test that verifies both server load and API key configuration
+  if SERVER_OUTPUT=$(SYNTHETIC_API_BASE_URL="$SYNTHETIC_API_BASE_URL" node -e "
     try {
       console.log('Testing MCP server...');
       require('./dist/dual-enhanced-index.js');
@@ -164,7 +164,7 @@ start_synthetic() {
       console.error('Server load error:', e.message);
       process.exit(1);
     }
-  " > /dev/null 2>&1; then
+  " 2>&1) && echo "$SERVER_OUTPUT" | grep -q -- "- API Key: syn_" && ! echo "$SERVER_OUTPUT" | grep -q -- "NOT LOADED"; then
     cd "$PROJECT_ROOT"
     print_status "Synthetic MCP Server ready for Claude Code integration"
     # Create a dummy PID file for status checking
@@ -433,6 +433,51 @@ start_session_retry() {
   fi
 }
 
+# Function to start Fallback Monitoring System (Dream Team monitoring)
+start_fallback_monitoring() {
+  print_status "Starting Dream Team Fallback Monitoring System..."
+
+  # Check if fallback monitoring is already running
+  if pgrep -f "fallback-monitoring-bootstrap.js" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "fallback-monitoring-bootstrap.js" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.fallback.pid"
+      print_status "Fallback Monitoring already running (PID: $pid)"
+    else
+      print_status "Fallback Monitoring already running"
+    fi
+    return 0
+  fi
+
+  # Check if fallback monitoring bootstrap exists
+  if [ ! -f "$PROJECT_ROOT/src/core/orchestration/fallback/fallback-monitoring-bootstrap.js" ]; then
+    print_error "fallback-monitoring-bootstrap.js not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start fallback monitoring in background
+  cd "$PROJECT_ROOT"
+  nohup node src/core/orchestration/fallback/fallback-monitoring-bootstrap.js > logs/fallback-monitoring.log 2>&1 &
+  local fallback_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $fallback_pid 2>/dev/null; then
+    echo $fallback_pid > "$PROJECT_ROOT/.fallback.pid"
+    print_status "Dream Team Fallback Monitoring started successfully (PID: $fallback_pid)"
+    return 0
+  else
+    print_error "Failed to start Fallback Monitoring System"
+    return 1
+  fi
+}
+
 # Function to start DevFlow Orchestrator
 start_orchestrator() {
   print_status "Starting DevFlow Orchestrator..."
@@ -511,6 +556,21 @@ check_prerequisites() {
   print_status "All prerequisites met."
 }
 
+# Load environment variables from .env file
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    while IFS= read -r line; do
+        if [[ ! "$line" =~ ^# ]] && [[ -n "$line" ]]; then
+            export "$line"
+        fi
+    done < "$PROJECT_ROOT/.env"
+    echo "[STATUS] Loaded environment variables from .env"
+fi
+
+# Ensure correct Synthetic API URL is used (override any system-level environment variable)
+if [ -f "$PROJECT_ROOT/.env" ]; then
+    export SYNTHETIC_API_BASE_URL=$(grep "^SYNTHETIC_API_BASE_URL=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
+fi
+
 # Main execution
 main() {
   # Handle script arguments
@@ -535,6 +595,7 @@ main() {
         ".ccr.pid:Auto CCR Runner"
         ".session-retry.pid:Smart Session Retry"
         ".enforcement.pid:Claude Code Enforcement"
+        ".fallback.pid:Dream Team Fallback Monitor"
         ".orchestrator.pid:DevFlow Orchestrator"
       )
 
@@ -612,6 +673,12 @@ main() {
   # Start enforcement system (optional - graceful degradation)
   if ! start_enforcement; then
     print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
+  fi
+
+  # Start Dream Team fallback monitoring system (CRITICAL for agent coordination)
+  if ! start_fallback_monitoring; then
+    print_error "Dream Team Fallback Monitoring failed to start - CRITICAL ERROR"
+    exit 1
   fi
 
   if ! start_orchestrator; then

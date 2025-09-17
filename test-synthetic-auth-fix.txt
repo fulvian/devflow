@@ -1,0 +1,10 @@
+TEST: Verifica SYNTHETIC_API_KEY dopo fix configurazione MCP
+
+Timestamp: 2025-09-17 
+Fix applicato: Aggiunto blocco env con SYNTHETIC_API_KEY al server devflow-synthetic-cc-sessions
+
+Se stai leggendo questo contenuto, significa che:
+✅ Il server MCP synthetic è stato avviato correttamente
+✅ La SYNTHETIC_API_KEY è stata caricata dall'ambiente  
+✅ L'autenticazione con Synthetic.new API funziona
+✅ Il problema di propagazione delle variabili d'ambiente è risolto
