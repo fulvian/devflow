@@ -30,13 +30,13 @@ CREATE TABLE IF NOT EXISTS memory_block_embeddings (
 CREATE INDEX IF NOT EXISTS idx_memory_blocks_type ON memory_blocks(type);
 CREATE INDEX IF NOT EXISTS idx_embeddings_model ON memory_block_embeddings(model_id);
 
-      INSERT OR IGNORE INTO memory_blocks (id, content, type, timestamp) VALUES ('mem_001', 'DevFlow production system initia'/*+18 bytes*/, 'system_event', '2025-09-15T16:44:20.235Z')
+      INSERT OR IGNORE INTO memory_blocks (id, content, type, timestamp) VALUES ('mem_001', 'DevFlow production system initia'/*+18 bytes*/, 'system_event', '2025-09-17T09:01:54.230Z')
     
 
-      INSERT OR IGNORE INTO memory_blocks (id, content, type, timestamp) VALUES ('mem_002', 'Database Manager v2.1.0 started '/*+19 bytes*/, 'system_event', '2025-09-15T16:44:20.236Z')
+      INSERT OR IGNORE INTO memory_blocks (id, content, type, timestamp) VALUES ('mem_002', 'Database Manager v2.1.0 started '/*+19 bytes*/, 'system_event', '2025-09-17T09:01:54.230Z')
     
 
-      INSERT OR IGNORE INTO memory_blocks (id, content, type, timestamp) VALUES ('mem_003', 'Production schema created with r'/*+8 bytes*/, 'deployment', '2025-09-15T16:44:20.236Z')
+      INSERT OR IGNORE INTO memory_blocks (id, content, type, timestamp) VALUES ('mem_003', 'Production schema created with r'/*+8 bytes*/, 'deployment', '2025-09-17T09:01:54.230Z')
     
 [DatabaseManager] Sample production data inserted
 [DatabaseManager] Database initialized successfully

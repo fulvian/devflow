@@ -5,7 +5,7 @@
     {
       "name": "synthetic_provider",
       "api_base_url": "https://api.synthetic.new/v1/chat/completions",
-      "api_key": "syn_4f04a1a3108cfbb64ac973367542d361",
+      "api_key": "${SYNTHETIC_API_KEY}",
       "models": [
         "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
         "hf:deepseek-ai/DeepSeek-V3",

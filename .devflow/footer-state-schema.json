@@ -28,6 +28,11 @@
           "type": "string",
           "description": "Current task name or identifier",
           "maxLength": 50
+        },
+        "token_count": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Current token count in the context"
         }
       },
       "required": ["percentage", "current_task"]

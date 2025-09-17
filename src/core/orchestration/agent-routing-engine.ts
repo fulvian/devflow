@@ -14,6 +14,27 @@
 // Import required modules
 import { Agent, Task, TaskType, AgentCapability, ClassificationResult } from './devflow-types';
 import { DevFlowCognitiveSystem } from './devflow-core';
+import { TaskIDStandardizationService } from './task-id-standardization';
+import { QCHoldQueue, TaskStatus, ImplementationStatus } from './phase3/qc-hold-queue';
+import { AgentHealthMonitor, AgentType } from './fallback/agent-health-monitor';
+import { FallbackEngine, FallbackResult } from './fallback/fallback-engine';
+import { CircuitBreakerManager } from './fallback/circuit-breaker';
+import { syntheticRateLimiter, SyntheticRateLimiter } from './fallback/synthetic-rate-limiter';
+
+/**
+ * MANDATORY MCP Tools whitelist - only these tools are authorized
+ */
+const WHITELISTED_MCP_TOOLS = [
+  'synthetic_code',
+  'synthetic_reasoning',
+  'synthetic_context',
+  'synthetic_auto',
+  'synthetic_file_read',
+  'synthetic_file_write',
+  'synthetic_batch_operations'
+] as const;
+
+type WhitelistedMCPTool = typeof WHITELISTED_MCP_TOOLS[number];
 
 /**
  * Configuration for the Agent Classification Engine
@@ -60,9 +81,20 @@ export class AgentClassificationEngine {
   private usageStats: AgentUsageStats;
   private cognitiveSystem: DevFlowCognitiveSystem;
   private agents: Map<Agent, AgentCapability[]>;
+  private qcHoldQueue: QCHoldQueue;
+  private healthMonitor: AgentHealthMonitor;
+  private fallbackEngine: FallbackEngine;
+  private circuitBreakerManager: CircuitBreakerManager;
 
   constructor(cognitiveSystem: DevFlowCognitiveSystem) {
     this.cognitiveSystem = cognitiveSystem;
+    this.qcHoldQueue = new QCHoldQueue(); // Initialize QC Hold Queue for Phase 3
+
+    // Initialize fallback system components
+    this.healthMonitor = new AgentHealthMonitor();
+    this.fallbackEngine = new FallbackEngine(this.healthMonitor);
+    this.circuitBreakerManager = new CircuitBreakerManager();
+
     this.config = {
       sonnetUsageThreshold: 90,
       maxSessionDuration: 18000000, // 5 hours in milliseconds
@@ -75,6 +107,8 @@ export class AgentClassificationEngine {
       currentSessionStart: null,
       totalTokensUsed: 0
     };
+
+    console.log('[AGENT-ENGINE] Fallback system initialized and operational');
 
     // Initialize agent capabilities
     this.agents = new Map([
@@ -107,11 +141,20 @@ export class AgentClassificationEngine {
 
   /**
    * Classify a task and determine the optimal agent assignment
-   * 
+   *
    * @param task The task to classify
    * @returns Classification result with recommended agent and confidence
    */
   public async classifyTask(task: Task): Promise<ClassificationResult> {
+    // MANDATORY: Validate Task ID format first
+    TaskIDStandardizationService.enforceTaskIdCompliance(task.id);
+
+    // MANDATORY: Validate MCP tools
+    this.validateMCPTools(task);
+
+    // MANDATORY: Check for CCR violations
+    this.preventCCRViolations(task);
+
     // Update usage statistics
     this.updateUsageStats();
 
@@ -122,20 +165,152 @@ export class AgentClassificationEngine {
 
     // Classify the task
     const classification = await this.performTaskClassification(task);
-    
-    // Apply delegation rules
-    const finalAgent = this.applyDelegationHierarchy(
+
+    // FALLBACK SYSTEM: Apply fallback resolution with health monitoring
+    const fallbackResult = await this.resolveFallbackAndRoute(
       classification.primaryAgent,
       task,
       classification.confidence
     );
 
     return {
-      agent: finalAgent,
-      confidence: classification.confidence,
-      reasoning: classification.reasoning,
-      alternativeAgents: classification.alternativeAgents
+      agent: fallbackResult.selectedAgent,
+      confidence: classification.confidence * (fallbackResult.degradedMode ? 0.8 : 1.0),
+      reasoning: `${classification.reasoning} | Fallback: ${fallbackResult.reason}`,
+      alternativeAgents: classification.alternativeAgents,
+      fallbackLevel: fallbackResult.fallbackLevel,
+      degradedMode: fallbackResult.degradedMode
     };
+  }
+
+  /** 
+   * Resolve fallback routing with health monitoring and circuit breaker protection
+   * Maps Agent enum to AgentType for fallback engine
+   * 
+   * @param primaryAgent The primary recommended agent
+   * @param task The task being classified
+   * @param confidence Classification confidence level
+   * @returns Fallback result with selected agent and metadata
+   */
+  private async resolveFallbackAndRoute(
+    primaryAgent: Agent,
+    task: Task,
+    confidence: number
+  ): Promise<FallbackResult> {
+    // Map Agent enum to AgentType string
+    const agentTypeMap: Record<Agent, AgentType> = {
+      [Agent.Sonnet]: 'claude',
+      [Agent.Codex]: 'codex',
+      [Agent.Gemini]: 'gemini',
+      [Agent.Synthetic]: 'synthetic',
+      [Agent.Qwen]: 'qwen'
+    };
+
+    const primaryAgentType = agentTypeMap[primaryAgent];
+
+    // Create fallback task object
+    const fallbackTask: any = {
+      id: task.id,
+      type: this.mapTaskTypeToAgentType(task.type),
+      priority: this.mapPriority(task.priority),
+      complexity: task.complexity || 0.5,
+      estimatedTokens: task.estimatedTokens || 1000,
+      dependencies: task.dependencies || [],
+      context: task.context || {}
+    };
+
+    try {
+      // Check Synthetic rate limiting before proceeding
+      if (primaryAgentType === 'synthetic' || task.type === TaskType.CODE_GENERATION) {
+        const rateLimitCheck = await syntheticRateLimiter.requestCall();
+
+        if (!rateLimitCheck.allowed) {
+          console.log(`[AGENT-ROUTING] Synthetic rate limited: ${rateLimitCheck.reason}`);
+
+          // Force fallback to alternative agent (Qwen)
+          return {
+            selectedAgent: 'qwen',
+            fallbackLevel: 1,
+            reason: `Synthetic rate limited: ${rateLimitCheck.reason}. Fallback to Qwen CLI`,
+            strategy: 'compatible_substitution',
+            degradedMode: false,
+            estimatedImpact: 'No impact - intelligent fallback to Qwen CLI'
+          };
+        }
+
+        // If throttled but allowed, add delay
+        if (rateLimitCheck.delay && rateLimitCheck.delay > 0) {
+          console.log(`[AGENT-ROUTING] Synthetic throttled, adding delay: ${rateLimitCheck.delay}ms`);
+          await new Promise(resolve => setTimeout(resolve, rateLimitCheck.delay));
+        }
+      }
+
+      // Execute with circuit breaker protection
+      const fallbackResult = await this.circuitBreakerManager.executeWithProtection(
+        primaryAgentType,
+        async () => {
+          // Use fallback engine to resolve routing
+          return await this.fallbackEngine.resolveFallback(fallbackTask, primaryAgentType);
+        }
+      );
+
+      // Record health monitoring
+      this.healthMonitor.recordSuccess(primaryAgentType, 200); // Simulate response time
+
+      return fallbackResult;
+    } catch (error) {
+      // Record failure in health monitoring
+      this.healthMonitor.recordFailure(primaryAgentType, error instanceof Error ? error.message : String(error));
+
+      // Fallback to emergency mode
+      return {
+        selectedAgent: 'claude',
+        fallbackLevel: 999,
+        reason: `Circuit breaker protection triggered: ${error instanceof Error ? error.message : String(error)}`,
+        strategy: 'emergency_mode',
+        degradedMode: true,
+        estimatedImpact: 'Significant impact - manual processing required'
+      };
+    }
+  }
+
+  /**
+   * Map TaskType enum to fallback engine TaskType
+   * 
+   * @param taskType The task type to map
+   * @returns Mapped task type for fallback engine
+   */
+  private mapTaskTypeToAgentType(taskType: TaskType): any {
+    const taskTypeMap: Partial<Record<TaskType, any>> = {
+      [TaskType.ARCHITECTURE]: 'architecture',
+      [TaskType.TECH_LEAD]: 'analysis',
+      [TaskType.SYSTEM_DESIGN]: 'architecture',
+      [TaskType.CODE_GENERATION]: 'implementation',
+      [TaskType.CODE_REVIEW]: 'implementation',
+      [TaskType.DEBUG]: 'testing',
+      [TaskType.TEST]: 'testing',
+      [TaskType.BASH]: 'implementation',
+      [TaskType.DOCUMENTATION]: 'documentation'
+    };
+
+    return taskTypeMap[taskType] || 'analysis';
+  }
+
+  /**
+   * Map task priority to fallback engine priority
+   * 
+   * @param priority The task priority to map
+   * @returns Mapped priority for fallback engine
+   */
+  private mapPriority(priority: any): any {
+    const priorityMap: Record<string, any> = {
+      'critical': 'critical',
+      'high': 'high',
+      'medium': 'medium',
+      'low': 'low'
+    };
+
+    return priorityMap[priority] || 'medium';
   }
 
   /**
@@ -225,9 +400,10 @@ export class AgentClassificationEngine {
       
       case TaskType.CODE_GENERATION:
       case TaskType.CODE_REVIEW:
-        primaryAgent = Agent.Codex;
-        confidence = 0.85;
-        reasoning = "Coding task best handled by specialized coding agent";
+        // MANDATORY RULE: Only Synthetic agents for coding tasks
+        primaryAgent = Agent.Synthetic;
+        confidence = 1.0;
+        reasoning = "MANDATORY: Coding tasks must be handled exclusively by Synthetic agents";
         break;
       
       default:
@@ -423,10 +599,167 @@ export class AgentClassificationEngine {
 
   /**
    * Update configuration
-   * 
+   *
    * @param newConfig Partial configuration updates
    */
   public updateConfig(newConfig: Partial<AgentClassificationConfig>): void {
     this.config = { ...this.config, ...newConfig };
+  }
+
+  /**
+   * MANDATORY: Validates that all tools in a task are authorized MCP tools
+   *
+   * @param task - The task to validate
+   * @throws {Error} If any tool is not in the whitelist
+   */
+  private validateMCPTools(task: Task): void {
+    console.log(`[VALIDATION] Checking MCP tools for task ${task.id}`);
+
+    if (!task.requiredTools || task.requiredTools.length === 0) {
+      console.log(`[VALIDATION] No tools found in task ${task.id}, validation passed`);
+      return;
+    }
+
+    const unauthorizedTools: string[] = [];
+
+    for (const tool of task.requiredTools) {
+      if (!WHITELISTED_MCP_TOOLS.includes(tool as any)) {
+        unauthorizedTools.push(tool);
+      }
+    }
+
+    if (unauthorizedTools.length > 0) {
+      const errorMessage = `MANDATORY VIOLATION: Unauthorized MCP tools detected in task ${task.id}: ${unauthorizedTools.join(', ')}. Only these tools are permitted: ${WHITELISTED_MCP_TOOLS.join(', ')}`;
+      console.error(`[VALIDATION ERROR] ${errorMessage}`);
+
+      throw new Error(errorMessage);
+    }
+
+    console.log(`[VALIDATION] MCP tools validation passed for task ${task.id}: ${task.requiredTools.join(', ')}`);
+  }
+
+  /**
+   * MANDATORY: Prevents CCR (Cross-Context Reasoning) violations
+   *
+   * @param task - The task to check for CCR violations
+   * @throws {Error} If CCR violations are detected
+   */
+  private preventCCRViolations(task: Task): void {
+    console.log(`[CCR-CHECK] Checking CCR violations for task ${task.id}`);
+
+    // Check for explicit CCR requests
+    if (task.content?.toLowerCase().includes('cross-context') ||
+        task.content?.toLowerCase().includes('ccr')) {
+      const errorMessage = `MANDATORY VIOLATION: CCR (Cross-Context Reasoning) explicitly requested in task ${task.id}`;
+      console.error(`[CCR VIOLATION] ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+
+    // Check for system prompt manipulation attempts
+    if (task.content?.toLowerCase().includes('system prompt') ||
+        task.content?.toLowerCase().includes('override') ||
+        task.content?.toLowerCase().includes('bypass')) {
+      const errorMessage = `MANDATORY VIOLATION: System manipulation attempt detected in task ${task.id}`;
+      console.error(`[CCR VIOLATION] ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+
+    // Check for unauthorized agent requests
+    if (task.preferredAgent && ['SONNET', 'CODEX', 'GEMINI'].includes(task.preferredAgent) &&
+        [TaskType.CODE_GENERATION, TaskType.CODE_REVIEW].includes(task.type)) {
+      const errorMessage = `MANDATORY VIOLATION: Coding task cannot use ${task.preferredAgent}. Only Synthetic agents are permitted for coding tasks.`;
+      console.error(`[CCR VIOLATION] ${errorMessage}`);
+      throw new Error(errorMessage);
+    }
+
+    console.log(`[CCR-CHECK] CCR validation passed for task ${task.id}`);
+  }
+
+  /**
+   * PHASE 3: Trigger automatic implementation flow for coding tasks
+   * Integrates with QC Hold Queue for architect review
+   *
+   * @param task - The task that was successfully processed
+   * @param response - The agent response containing generated code
+   */
+  private async triggerAutomaticImplementation(task: Task, response: any): Promise<void> {
+    try {
+      console.log(`[AUTO-IMPLEMENTATION] Triggering automatic implementation for task ${task.id}`);
+
+      // Convert to QC Hold Queue task format
+      const qcTask = {
+        id: task.id,
+        title: task.type === TaskType.CODE_GENERATION ? 'Code Generation Task' : 'Code Review Task',
+        description: task.content || 'Synthetic agent task',
+        status: TaskStatus.READY_FOR_IMPLEMENTATION,
+        implementationStatus: ImplementationStatus.CODE_GENERATED,
+        generatedCode: response.content || 'Generated synthetic content',
+        domain: this.classifyTaskDomain(task),
+        complexity: this.assessTaskComplexity(task),
+        createdBy: 'synthetic-agent',
+        assignedTo: 'synthetic-agent'
+      };
+
+      // Enqueue for QC review
+      await this.qcHoldQueue.enqueueTask(qcTask);
+
+      console.log(`[AUTO-IMPLEMENTATION] Task ${task.id} enqueued for architect review`);
+    } catch (error) {
+      console.error(`[AUTO-IMPLEMENTATION] Failed to trigger implementation for task ${task.id}:`, error);
+      // Don't throw - this is a post-processing step that shouldn't fail the main task
+    }
+  }
+
+  /**
+   * Classify task domain for architect assignment
+   *
+   * @param task - The task to classify
+   * @returns Domain classification
+   */
+  private classifyTaskDomain(task: Task): string {
+    if (task.content?.toLowerCase().includes('security') ||
+        task.content?.toLowerCase().includes('auth')) {
+      return 'security';
+    }
+
+    if (task.content?.toLowerCase().includes('critical') ||
+        task.content?.toLowerCase().includes('production')) {
+      return 'critical';
+    }
+
+    if (task.type === TaskType.CODE_GENERATION) {
+      return 'development';
+    }
+
+    return 'general';
+  }
+
+  /**
+   * Assess task complexity for architect assignment
+   *
+   * @param task - The task to assess
+   * @returns Complexity level
+   */
+  private assessTaskComplexity(task: Task): string {
+    const contentLength = task.content?.length || 0;
+
+    if (contentLength > 1000 || task.content?.toLowerCase().includes('complex')) {
+      return 'high';
+    }
+
+    if (contentLength > 500 || task.content?.toLowerCase().includes('medium')) {
+      return 'medium';
+    }
+
+    return 'low';
+  }
+
+  /**
+   * Get QC Hold Queue instance for external access
+   *
+   * @returns QC Hold Queue instance
+   */
+  public getQCHoldQueue(): QCHoldQueue {
+    return this.qcHoldQueue;
   }
 }

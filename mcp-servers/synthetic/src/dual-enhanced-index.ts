@@ -17,11 +17,21 @@ import { MCPErrorFactory, MCPResponseBuilder, MCPError, MCPErrorCode } from './e
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 
-dotenv.config();
+// Load .env from project root (2 levels up from mcp-servers/synthetic/)
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Force-load project .env and override any pre-set values from parent process
+dotenv.config({ path: resolve(__dirname, '../../../.env'), override: true });
 
 // Synthetic.new API configuration
-const SYNTHETIC_API_URL = 'https://api.synthetic.new/v1';
+const SYNTHETIC_API_URL = process.env.SYNTHETIC_API_BASE_URL || 'https://api.synthetic.new/v1';
 const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
+
+// Debug: Log API configuration (without exposing full key)
+console.log(`[Synthetic MCP] API Configuration:
+- Base URL: ${SYNTHETIC_API_URL}
+- API Key: ${SYNTHETIC_API_KEY ? `${SYNTHETIC_API_KEY.substring(0, 15)}...` : 'NOT LOADED'}`);
 
 // Enhanced configuration
 const DEVFLOW_PROJECT_ROOT = process.env.DEVFLOW_PROJECT_ROOT || process.cwd();
@@ -853,7 +863,7 @@ ${JSON.stringify(mcpResponse.metadata, null, 2)}`,
       try {
         const tasks = await this.db.all('SELECT * FROM tasks WHERE description LIKE ?', `%${args.problem}%`);
         if (tasks && tasks.length > 0) {
-          const taskDetails = tasks.map(t => `- **${t.title}**: ${t.status} - ${t.description}`).join('\n');
+          const taskDetails = tasks.map((t: any) => `- **${t.title}**: ${t.status} - ${t.description}`).join('\n');
           return {
             content: [
               {

@@ -3,6 +3,8 @@ import { PlatformHandoffEngine } from './handoff-engine.js';
 import { ContextManager } from './context/manager.js';
 import { MCPService } from './mcp-server.js';
 import { SQLiteMemoryManager } from '@devflow/core';
+import { ProgressTracker } from '../../core/monitoring/progress-tracker.js';
+import { ClaudeCodeUsageMonitor } from '../../core/monitoring/claude-usage-monitor.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -12,6 +14,8 @@ export class ClaudeCodeAdapter {
   private handoffEngine: PlatformHandoffEngine | null = null;
   private contextManager: ContextManager | null = null;
   private mcpService: MCPService | null = null;
+  private progressTracker: ProgressTracker | null = null;
+  private usageMonitor: ClaudeCodeUsageMonitor | null = null;
 
   private readonly stateDir = path.resolve(process.cwd(), '.claude/state');
   private readonly sessionsDir = path.resolve(process.cwd(), 'sessions');
@@ -19,6 +23,10 @@ export class ClaudeCodeAdapter {
   constructor(config: ClaudeAdapterConfig) {
     this.config = config;
     // no local memory/embedding in questa configurazione
+    
+    // Initialize usage monitor and progress tracker
+    this.usageMonitor = new ClaudeCodeUsageMonitor();
+    this.progressTracker = new ProgressTracker(this.usageMonitor);
     
     if ((config as any).enableHandoff) {
       this.handoffEngine = new PlatformHandoffEngine();
@@ -83,11 +91,18 @@ export class ClaudeCodeAdapter {
       task: e.taskId || 'unknown',
       branch,
       services: ['claude-code'],
+      progress_percentage: 0,
+      token_count: 0,
       updated: now
     });
     // Mode: discussion di default
     await this.writeJSON(daicPath, { mode: 'discussion', updated: now });
     await this.appendAudit({ type: 'session_start', ...e, ts: now });
+    
+    // Reset progress tracker for new session
+    if (this.progressTracker && e.taskId) {
+      await this.progressTracker.resetTaskProgress(e.taskId);
+    }
   }
 
   async onSessionEnd(e: { sessionId: string; taskId: string }): Promise<void> {
@@ -105,6 +120,30 @@ export class ClaudeCodeAdapter {
     }
     // Branch enforcement (solo auditing minimale qui; verifica git può essere aggiunta)
     await this.appendAudit({ type: 'tool_used', ...e, ts: new Date().toISOString() });
+    
+    // Update progress tracking
+    if (this.progressTracker && this.usageMonitor) {
+      // Simulate token usage increase based on tool type
+      let tokensToAdd = 50; // Default
+      switch (e.tool) {
+        case 'Write':
+        case 'Edit':
+        case 'MultiEdit':
+          tokensToAdd = 200;
+          break;
+        case 'Bash':
+          tokensToAdd = 100;
+          break;
+        case 'Task':
+          tokensToAdd = 75;
+          break;
+        default:
+          tokensToAdd = 50;
+      }
+      
+      this.usageMonitor.incrementTokenCount(tokensToAdd);
+      await this.progressTracker.updateTaskProgress(e.taskId);
+    }
   }
 
   // =========================

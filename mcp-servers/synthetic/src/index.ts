@@ -8,8 +8,13 @@ import {
 } from '@modelcontextprotocol/sdk/types.js';
 import axios from 'axios';
 import * as dotenv from 'dotenv';
+import { resolve, dirname } from 'path';
+import { fileURLToPath } from 'url';
 
-dotenv.config();
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Ensure local server always loads project .env overriding parent env
+dotenv.config({ path: resolve(__dirname, '../../../.env'), override: true });
 
 // Synthetic.new API configuration
 const SYNTHETIC_API_URL = 'https://api.synthetic.new/v1';

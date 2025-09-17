@@ -143,10 +143,11 @@ start_synthetic() {
   fi
 
   # Check if Claude Code configuration exists (global config)
-  if [ ! -f "$HOME/.config/claude-desktop/claude_desktop_config.json" ]; then
-    # Fallback to local config if global config doesn't exist
+  # This now checks for the correct Claude Code config files, not the obsolete Claude Desktop path.
+  if [ ! -f "$HOME/.claude.json" ] && [ ! -d "$HOME/.claude" ]; then
+    # Fallback to local config if neither global file nor directory exists
     if [ ! -f "$PROJECT_ROOT/.mcp.json" ]; then
-      print_error "MCP configuration not found in global Claude Code config or local .mcp.json"
+      print_error "MCP configuration not found. Looked for Claude Code config (~/.claude.json or ~/.claude/) or local .mcp.json."
       return 1
     fi
   fi
@@ -154,7 +155,7 @@ start_synthetic() {
   # Test that the server can load without errors and API key is properly configured
   cd "$PROJECT_ROOT/mcp-servers/synthetic"
   # Enhanced test that verifies both server load and API key configuration
-  if SERVER_OUTPUT=$(SYNTHETIC_API_BASE_URL="$SYNTHETIC_API_BASE_URL" node -e "
+  if SERVER_OUTPUT=$(SYNTHETIC_API_BASE_URL="$SYNTHETIC_API_BASE_URL" SYNTHETIC_API_KEY="$SYNTHETIC_API_KEY" node -e "
     try {
       console.log('Testing MCP server...');
       require('./dist/dual-enhanced-index.js');
@@ -569,6 +570,7 @@ fi
 # Ensure correct Synthetic API URL is used (override any system-level environment variable)
 if [ -f "$PROJECT_ROOT/.env" ]; then
     export SYNTHETIC_API_BASE_URL=$(grep "^SYNTHETIC_API_BASE_URL=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
+    export SYNTHETIC_API_KEY=$(grep "^SYNTHETIC_API_KEY=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
 fi
 
 # Main execution
