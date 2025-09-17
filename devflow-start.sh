@@ -64,7 +64,7 @@ stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
   # Stop all DevFlow services (including enforcement, session retry, and fallback monitoring)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".fallback.pid")
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".fallback.pid" ".cctools.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -479,6 +479,65 @@ start_fallback_monitoring() {
   fi
 }
 
+# Function to start CC-Tools gRPC Server
+start_cctools() {
+  print_status "Starting CC-Tools gRPC Server..."
+
+  # Check if CC-Tools server is already running
+  if pgrep -f "cc-tools-server" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "cc-tools-server" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.cctools.pid"
+      print_status "CC-Tools gRPC Server already running (PID: $pid)"
+    else
+      print_status "CC-Tools gRPC Server already running"
+    fi
+    return 0
+  fi
+
+  # Resolve binary (support debug mode via CC_TOOLS_USE_DEBUG=true)
+  local use_debug=${CC_TOOLS_USE_DEBUG:-false}
+  local bin_name="cc-tools-server"
+  if [ "$use_debug" = "true" ]; then
+    if [ -f "$PROJECT_ROOT/go-server/cc-tools-server-debug" ]; then
+      bin_name="cc-tools-server-debug"
+      print_status "Using debug binary ($bin_name) with reflection enabled"
+    else
+      print_warning "Debug binary requested but not found; falling back to cc-tools-server"
+    fi
+  fi
+
+  # Check if resolved binary exists
+  if [ ! -f "$PROJECT_ROOT/go-server/$bin_name" ]; then
+    print_error "CC-Tools server binary not found at go-server/$bin_name"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start CC-Tools server in background
+  cd "$PROJECT_ROOT/go-server"
+  nohup "./$bin_name" > ../logs/cc-tools-server.log 2>&1 &
+  local cctools_pid=$!
+  cd "$PROJECT_ROOT"
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $cctools_pid 2>/dev/null; then
+    echo $cctools_pid > "$PROJECT_ROOT/.cctools.pid"
+    local cctools_port=${GRPC_PORT:-50051}
+    print_status "CC-Tools gRPC Server started successfully (PID: $cctools_pid) on port $cctools_port"
+    return 0
+  else
+    print_error "Failed to start CC-Tools gRPC Server"
+    return 1
+  fi
+}
+
 # Function to start DevFlow Orchestrator
 start_orchestrator() {
   print_status "Starting DevFlow Orchestrator..."
@@ -599,6 +658,7 @@ main() {
         ".enforcement.pid:Claude Code Enforcement"
         ".fallback.pid:Dream Team Fallback Monitor"
         ".orchestrator.pid:DevFlow Orchestrator"
+        ".cctools.pid:CC-Tools gRPC Server"
       )
 
       for service in "${services[@]}"; do
@@ -683,6 +743,12 @@ main() {
     exit 1
   fi
 
+  # Start CC-Tools gRPC Server (required for validation hooks)
+  if ! start_cctools; then
+    print_error "CC-Tools gRPC Server failed to start - CRITICAL ERROR"
+    exit 1
+  fi
+
   if ! start_orchestrator; then
     print_error "DevFlow Orchestrator failed to start - CRITICAL ERROR"
     exit 1
@@ -695,6 +761,7 @@ main() {
   print_status "✅ Token Optimizer: Running (Real algorithms)"
   print_status "✅ Synthetic MCP: Running"
   print_status "✅ Auto CCR Runner: Running"
+  print_status "✅ CC-Tools gRPC Server: Running (Port 50051)"
   if is_process_running "$PROJECT_ROOT/.session-retry.pid"; then
     print_status "✅ Smart Session Retry: Running"
   else
