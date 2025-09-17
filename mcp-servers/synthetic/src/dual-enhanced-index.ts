@@ -16,6 +16,7 @@ import { AutonomousFileManager, FileOperation } from './file-operations.js';
 import { MCPErrorFactory, MCPResponseBuilder, MCPError, MCPErrorCode } from './enhanced-tools.js';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import { prepareContextForPrompt } from './context-injection.js';
 
 // Load .env from project root (2 levels up from mcp-servers/synthetic/)
 import { fileURLToPath } from 'url';
@@ -797,7 +798,8 @@ Focus on:
 - Following established patterns
 - Including necessary imports/dependencies`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.objective);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Objective: ${args.objective}
 
@@ -889,7 +891,8 @@ Focus on:
 - Practical implications
 - Step-by-step analysis`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.problem);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Problem to analyze: ${args.problem}
 
@@ -932,7 +935,8 @@ Focus on:
 - Context significance
 - Actionable conclusions`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.content);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Content to analyze:
 ${args.content}
@@ -973,7 +977,8 @@ ${response.choices[0].message.content}
     approval_required?: boolean;
   }, requestId?: string) {
     // First, classify the task to determine the best model
-    const classificationPrompt = `Analyze this task and determine the best approach:
+    const contextPrefix = await prepareContextForPrompt(args.request);
+    const classificationPrompt = `${contextPrefix}Analyze this task and determine the best approach:
 
 Task: ${args.request}
 Constraints: ${args.constraints?.join(', ') || 'None'}
