@@ -147,7 +147,8 @@ class CCRFallbackManager extends EventEmitter {
             return await this.switchToAgent<T>(agentId, strategy.targetAgent, context);
             
           case FallbackStrategy.RETRY:
-            return await this.retryExecution<T>(agentId, context, strategy, executionFn);
+            // Retry should be handled at the executeWithFallback level, not as a fallback strategy
+            throw new Error('Retry strategy not supported in fallback chain');
             
           case FallbackStrategy.SYNTHETIC_RESPONSE:
             return this.generateSyntheticResponse<T>(strategy);
@@ -357,6 +358,13 @@ class CCRFallbackManager extends EventEmitter {
         agentId,
         metrics,
         timestamp: new Date().toISOString()
+      }, {
+        sessionId: 'ccr-fallback',
+        taskId: agentId,
+        metadata: { type: 'metrics' },
+        timestamp: Date.now(),
+        agentId,
+        requestId: this.generateRequestId()
       });
     } catch (error) {
       this.logger.error(`Failed to send metrics to Codex MCP: ${error.message}`);
@@ -408,6 +416,13 @@ class CCRFallbackManager extends EventEmitter {
    */
   private sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
+  }
+
+  /**
+   * Generate unique request ID
+   */
+  private generateRequestId(): string {
+    return `ccr-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
   }
 
   /**
