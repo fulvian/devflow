@@ -68,6 +68,146 @@ is_process_running() {
   fi
 }
 
+# Function to cleanup Real Dream Team Orchestrator (auto-cleanup)
+cleanup_real_dream_team_orchestrator() {
+  print_status "🧹 Auto-cleanup: Checking Real Dream Team Orchestrator..."
+
+  # Check if port 3200 is in use
+  if lsof -Pi :3200 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    print_warning "Port 3200 is occupied - stopping existing Real Dream Team Orchestrator"
+    local pid=$(lsof -Pi :3200 -sTCP:LISTEN -t)
+    if [ -n "$pid" ]; then
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 2
+      # Force kill if still running
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -KILL "$pid" 2>/dev/null || true
+      fi
+      print_status "Stopped existing Real Dream Team Orchestrator (PID: $pid)"
+    fi
+  fi
+
+  # Kill any ts-node processes running real-dream-team
+  if pgrep -f "real-dream-team" > /dev/null; then
+    print_warning "Stopping existing Real Dream Team processes..."
+    pkill -f "real-dream-team" 2>/dev/null || true
+    sleep 1
+  fi
+
+  # Remove old PID file
+  rm -f "$PROJECT_ROOT/.real-dream-team-orchestrator.pid"
+}
+
+# Function to cleanup Codex MCP Server (auto-cleanup)
+cleanup_codex_mcp() {
+  print_status "🧹 Auto-cleanup: Checking Codex MCP Server..."
+
+  # Check if port 3101 is in use
+  if lsof -Pi :3101 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    print_warning "Port 3101 is occupied - stopping existing Codex MCP"
+    local pid=$(lsof -Pi :3101 -sTCP:LISTEN -t)
+    if [ -n "$pid" ]; then
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 1
+      # Force kill if still running
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -KILL "$pid" 2>/dev/null || true
+      fi
+      print_status "Stopped existing Codex MCP (PID: $pid)"
+    fi
+  fi
+
+  # Kill any node processes running minimal-server
+  if pgrep -f "minimal-server" > /dev/null; then
+    print_warning "Stopping existing Codex MCP processes..."
+    pkill -f "minimal-server" 2>/dev/null || true
+    sleep 1
+  fi
+}
+
+# Function to cleanup CLI Integration Manager (auto-cleanup)
+cleanup_cli_integration_manager() {
+  print_status "🧹 Auto-cleanup: Checking CLI Integration Manager..."
+
+  # Check if port 3201 is in use
+  if lsof -Pi :3201 -sTCP:LISTEN -t >/dev/null 2>&1; then
+    print_warning "Port 3201 is occupied - stopping existing CLI Integration Manager"
+    local pid=$(lsof -Pi :3201 -sTCP:LISTEN -t)
+    if [ -n "$pid" ]; then
+      kill -TERM "$pid" 2>/dev/null || true
+      sleep 1
+      # Force kill if still running
+      if kill -0 "$pid" 2>/dev/null; then
+        kill -KILL "$pid" 2>/dev/null || true
+      fi
+      print_status "Stopped existing CLI Integration Manager (PID: $pid)"
+    fi
+  fi
+
+  # Kill any ts-node processes running cli-integration
+  if pgrep -f "cli-integration" > /dev/null; then
+    print_warning "Stopping existing CLI Integration processes..."
+    pkill -f "cli-integration" 2>/dev/null || true
+    sleep 1
+  fi
+
+  # Remove old PID file
+  rm -f "$PROJECT_ROOT/.cli-integration-manager.pid"
+}
+
+# Function to auto-cleanup before starting services
+auto_cleanup_before_start() {
+  print_status "🚀 DevFlow v3.1.0 Auto-Cleanup: Preparing for clean start..."
+
+  # Cleanup Real Dream Team Orchestrator components
+  cleanup_real_dream_team_orchestrator
+  cleanup_codex_mcp
+  cleanup_cli_integration_manager
+
+  # Brief pause to ensure all processes are stopped
+  sleep 2
+
+  print_status "✅ Auto-cleanup completed - ready for clean service start"
+}
+
+# Function to start Codex MCP Server (Cometa v3.1 - for Real Dream Team Orchestrator)
+start_codex_mcp() {
+  print_status "Starting Codex MCP Server..."
+  # Check if Codex MCP is already running
+  if pgrep -f "minimal-server" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "minimal-server" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.codex-mcp.pid"
+      print_status "Codex MCP Server already running (PID: $pid)"
+    else
+      print_status "Codex MCP Server already running"
+    fi
+    return 0
+  fi
+  # Check if Codex MCP minimal server exists
+  if [ ! -f "$PROJECT_ROOT/mcp-servers/codex/minimal-server.js" ]; then
+    print_error "Codex MCP minimal server not found"
+    return 1
+  fi
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+  # Start Codex MCP Server in background
+  PORT=3101 nohup node "$PROJECT_ROOT/mcp-servers/codex/minimal-server.js" > logs/codex-mcp.log 2>&1 &
+  local codex_pid=$!
+  # Give it a moment to start
+  sleep 2
+  # Check if it's still running
+  if kill -0 $codex_pid 2>/dev/null; then
+    echo $codex_pid > "$PROJECT_ROOT/.codex-mcp.pid"
+    print_status "Codex MCP Server started successfully (PID: $codex_pid)"
+    return 0
+  else
+    print_error "Failed to start Codex MCP Server"
+    return 1
+  fi
+}
+
 # Function to stop services
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
@@ -725,7 +865,7 @@ start_cli_integration_manager() {
   mkdir -p "$PROJECT_ROOT/logs"
 
   # Start CLI Integration Manager in background (TypeScript via ts-node)
-  nohup npx ts-node "$PROJECT_ROOT/src/core/mcp/cli-integration-manager.ts" > logs/cli-integration-manager.log 2>&1 &
+  nohup npx ts-node "$PROJECT_ROOT/src/core/mcp/cli-integration-daemon.ts" > logs/cli-integration-manager.log 2>&1 &
   local manager_pid=$!
 
   # Give it a moment to start
@@ -892,7 +1032,10 @@ main() {
   esac
   
   print_status "Starting DevFlow services..."
-  
+
+  # Auto-cleanup existing Real Dream Team components before starting
+  auto_cleanup_before_start
+
   # Check prerequisites
   check_prerequisites
   
@@ -974,6 +1117,11 @@ main() {
   if ! start_real_dream_team_orchestrator; then
     print_error "Real Dream Team Orchestrator failed to start - CRITICAL ERROR"
     exit 1
+  fi
+
+  # Start Codex MCP Server (Cometa v3.1 - OPTIONAL for Codex CLI integration)
+  if ! start_codex_mcp; then
+    print_warning "Codex MCP Server failed to start - CONTINUING WITHOUT CODEX"
   fi
 
   # Start CLI Integration Manager (Cometa v3.1 - CRITICAL for MCP CLI integration)
