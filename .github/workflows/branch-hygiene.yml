@@ -1,0 +1,74 @@
+name: Branch Hygiene Check
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Daily 9 AM UTC
+  workflow_dispatch:
+
+jobs:
+  check-branch-hygiene:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0  # Full history for age calculation
+
+      - name: Check stale branches
+        run: |
+          echo "🔍 Checking branch hygiene..."
+          
+          # Get current timestamp
+          current_date=$(date +%s)
+          week_ago=$((current_date - 604800))  # 7 days ago
+          
+          # Check all feature branches
+          git branch -r | grep "origin/feature/" | while read branch; do
+            branch_name=$(echo $branch | sed 's|origin/||')
+            
+            # Get last commit date for the branch
+            last_commit_date=$(git log -1 --format="%ct" "$branch" 2>/dev/null)
+            
+            if [ -n "$last_commit_date" ] && [ "$last_commit_date" -lt "$week_ago" ]; then
+              days_old=$(( (current_date - last_commit_date) / 86400 ))
+              echo "::warning::Branch $branch_name is $days_old days old (last commit: $(date -d "@$last_commit_date" "+%Y-%m-%d"))"
+              
+              # Create issue for very old branches (>14 days)
+              if [ "$days_old" -gt 14 ]; then
+                echo "::error::Branch $branch_name is critically stale ($days_old days old) - consider deletion"
+              fi
+            fi
+          done
+
+      - name: Check branch naming conventions
+        run: |
+          echo "📝 Checking branch naming conventions..."
+          
+          git branch -r | grep "origin/feature/" | while read branch; do
+            branch_name=$(echo $branch | sed 's|origin/feature/||')
+            
+            # Check if follows YYYY-MM-DD-description pattern
+            if [[ ! "$branch_name" =~ ^[0-9]{4}-[0-9]{2}-[0-9]{2}-.+ ]]; then
+              echo "::warning::Branch feature/$branch_name doesn't follow naming convention (feature/YYYY-MM-DD-description)"
+            fi
+            
+            # Check for forbidden patterns
+            forbidden_patterns=("co-me-ta" "devflow-v" "phase-" "unified-" "backup-" "restore-" "safety-")
+            for pattern in "${forbidden_patterns[@]}"; do
+              if [[ "$branch_name" =~ $pattern ]]; then
+                echo "::error::Branch feature/$branch_name contains forbidden pattern '$pattern'"
+              fi
+            done
+          done
+
+      - name: Generate branch report
+        run: |
+          echo "📊 Branch Summary Report"
+          echo "======================"
+          
+          total_branches=$(git branch -r | grep "origin/feature/" | wc -l)
+          echo "Total feature branches: $total_branches"
+          
+          if [ "$total_branches" -gt 10 ]; then
+            echo "::warning::High number of feature branches ($total_branches) - consider branch cleanup"
+          fi
+          
+          echo "✅ Branch hygiene check completed"
