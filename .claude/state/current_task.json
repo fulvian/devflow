@@ -1,40 +1,6 @@
 {
-  "task": "cc-tools-real-integration-devflow-v31",
+  "task": "week-2-pre-critical-resolution",
   "branch": "feature/co-me-ta_to_real_world",
-  "services": [
-    "grpc-bridge-service",
-    "claude-hooks-replacement",
-    "parallel-validation-controller",
-    "pid-locking-system",
-    "project-detection-classifier",
-    "cli-management-subsystem",
-    "dream-team-orchestrator"
-  ],
-  "updated": "2025-09-17",
-  "system": "devflow-v31-cc-tools-real-integration",
-  "task_status": "ACTIVE - REAL cc-tools integration with Go/Python bridge",
-  "current_phase": "PHASE 1 - Core Integration (Go/Python Bridge)",
-  "integration_strategy": {
-    "approach": "Go-Python hybrid with gRPC communication",
-    "critical_path": "gRPC → Hooks → Parallel Exec → QA (7 days)",
-    "performance_targets": {
-      "hook_latency": "P99 < 45ms",
-      "parallel_throughput": "800+ validations/sec",
-      "lock_acquisition": "<5ms per operation"
-    }
-  },
-  "agent_assignments": {
-    "Claude Tech Lead": "gRPC Interface Design + Architecture (2 days)",
-    "Codex Senior Dev": "Parallel Execution + MCP Integration (4 days)",
-    "Gemini Doc Manager": "Project Detection + Documentation (3 days)",
-    "Qwen QA Specialist": "Validation Tests + Optimization (3 days)",
-    "Synthetic Delegation": "CLI Integration (1 day)"
-  },
-  "batching_optimization": {
-    "strategy": "Performance-critical tasks in parallel batches",
-    "max_batch_size": 8,
-    "priority_threshold": 0.7,
-    "estimated_api_savings": "60% reduction via intelligent coordination"
-  },
-  "operational_status": "CC-TOOLS REAL INTEGRATION ACTIVE - Production-ready implementation in progress"
+  "services": ["enforcement-daemon", "dream-team-orchestration", "ccr-context-bridge"],
+  "updated": "2025-09-18"
 }
