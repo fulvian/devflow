@@ -32,7 +32,7 @@ class RecoveryManager {
       resourceCheckTimeout: config.resourceCheckTimeout || 5000
     };
     
-    this.pidFilePath = join(process.env.ENFORCEMENT_PID_DIR || '/var/run', this.config.pidFileName);
+    this.pidFilePath = join(process.env.ENFORCEMENT_PID_DIR || process.cwd(), 'devflow-enforcement-daemon.pid');
     this.state = {
       attempts: 0,
       lastRecovery: 0,

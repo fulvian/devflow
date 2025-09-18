@@ -1,197 +1,211 @@
-import { ConversationState, SessionMetadata } from './types';
+import { SessionMetadata, ContextEntry, CrossSessionBridge, MemoryPersistenceConfig } from './types';
+import { generateSemanticHash } from '../utils/token-utils';
 
 export class CrossSessionMemory {
-  private memoryStore: Map<string, ConversationState> = new Map();
-  private sessionMetadata: Map<string, SessionMetadata> = new Map();
-  private maxMemorySessions: number = 100;
+  private sessions: Map<string, SessionMetadata>;
+  private contextStore: Map<string, ContextEntry[]>;
+  private bridges: CrossSessionBridge[];
+  private config: MemoryPersistenceConfig;
   
-  async storeSessionState(state: ConversationState): Promise<void> {
-    const sessionId = this.generateSessionId(state);
-    
-    // Store the session state
-    this.memoryStore.set(sessionId, state);
-    
-    // Store metadata for retrieval optimization
+  constructor(config: MemoryPersistenceConfig) {
+    this.sessions = new Map();
+    this.contextStore = new Map();
+    this.bridges = [];
+    this.config = config;
+  }
+
+  createSession(sessionId: string): SessionMetadata {
     const metadata: SessionMetadata = {
       sessionId,
-      timestamp: state.timestamp,
-      contextSize: state.contextWindow.length,
-      topics: this.extractTopics(state.contextWindow)
+      createdAt: Date.now(),
+      lastAccessed: Date.now(),
+      turnCount: 0,
+      totalTokens: 0,
+      compressionHistory: [],
+      topics: []
     };
     
-    this.sessionMetadata.set(sessionId, metadata);
+    this.sessions.set(sessionId, metadata);
+    this.contextStore.set(sessionId, []);
     
     // Run garbage collection if needed
-    await this.garbageCollect();
+    this.garbageCollect();
+    
+    return metadata;
   }
 
-  async retrieveSessionState(sessionId?: string): Promise<ConversationState | null> {
-    if (sessionId) {
-      return this.memoryStore.get(sessionId) || null;
+  storeContext(sessionId: string, entries: ContextEntry[]): void {
+    if (!this.contextStore.has(sessionId)) {
+      this.createSession(sessionId);
     }
     
-    // If no specific session, retrieve most recent
-    const recentSession = this.getMostRecentSession();
-    return recentSession ? this.memoryStore.get(recentSession) || null : null;
-  }
-
-  async retrieveSimilarSession(context: string): Promise<ConversationState | null> {
-    const topics = this.extractTopicsFromText(context);
-    const similarSessionId = this.findSimilarSession(topics);
+    const sessionContext = this.contextStore.get(sessionId) || [];
+    this.contextStore.set(sessionId, [...sessionContext, ...entries]);
     
-    if (similarSessionId) {
-      return this.memoryStore.get(similarSessionId) || null;
-    }
-    
-    return null;
-  }
-
-  async consolidateMemories(): Promise<void> {
-    // Group sessions by topic similarity
-    const topicGroups = this.groupSessionsByTopics();
-    
-    // For each group, create consolidated knowledge
-    for (const [topic, sessionIds] of Object.entries(topicGroups)) {
-      const consolidated = this.consolidateSessions(sessionIds);
-      const consolidatedId = `consolidated-${topic}-${Date.now()}`;
-      
-      this.memoryStore.set(consolidatedId, consolidated);
-      
-      // Update metadata
-      const metadata: SessionMetadata = {
-        sessionId: consolidatedId,
-        timestamp: Date.now()
-      };
-      
-      this.sessionMetadata.set(consolidatedId, metadata);
+    // Update session metadata
+    const metadata = this.sessions.get(sessionId);
+    if (metadata) {
+      metadata.lastAccessed = Date.now();
+      metadata.totalTokens += entries.reduce((sum, entry) => sum + entry.tokenCount, 0);
+      metadata.topics = this.extractTopics(entries);
     }
   }
 
-  private async garbageCollect(): Promise<void> {
-    if (this.memoryStore.size <= this.maxMemorySessions) return;
-    
-    // Remove oldest sessions
-    const sortedSessions = Array.from(this.sessionMetadata.entries())
-      .sort((a, b) => (a[1].timestamp || 0) - (b[1].timestamp || 0));
-      
-    const sessionsToRemove = sortedSessions
-      .slice(0, this.memoryStore.size - this.maxMemorySessions)
-      .map(([id]) => id);
-      
-    for (const sessionId of sessionsToRemove) {
-      this.memoryStore.delete(sessionId);
-      this.sessionMetadata.delete(sessionId);
+  retrieveContext(sessionId: string): ContextEntry[] {
+    const metadata = this.sessions.get(sessionId);
+    if (metadata) {
+      metadata.lastAccessed = Date.now();
     }
+    
+    return this.contextStore.get(sessionId) || [];
   }
 
-  private generateSessionId(state: ConversationState): string {
-    // Create a deterministic session ID based on context content
-    const contentHash = this.hashContent(
-      state.contextWindow
-        .map(entry => entry.content)
-        .join('|')
+  findSimilarSessions(sessionId: string, threshold: number = 0.7): SessionMetadata[] {
+    const targetSession = this.sessions.get(sessionId);
+    if (!targetSession || !targetSession.embedding) return [];
+    
+    const similarSessions: SessionMetadata[] = [];
+    
+    for (const [id, session] of this.sessions) {
+      if (id === sessionId || !session.embedding) continue;
+      
+      const similarity = this.calculateEmbeddingSimilarity(
+        targetSession.embedding, 
+        session.embedding
+      );
+      
+      if (similarity >= threshold) {
+        similarSessions.push({ ...session, similarityScore: similarity });
+      }
+    }
+    
+    return similarSessions.sort((a, b) => (b as any).similarityScore - (a as any).similarityScore);
+  }
+
+  bridgeSessions(sourceSessionId: string, targetSessionId: string): CrossSessionBridge | null {
+    const sourceSession = this.sessions.get(sourceSessionId);
+    const targetSession = this.sessions.get(targetSessionId);
+    
+    if (!sourceSession || !targetSession) return null;
+    
+    // Find shared context based on topics
+    const sharedTopics = sourceSession.topics.filter(topic => 
+      targetSession.topics.includes(topic)
     );
     
-    return `session-${contentHash}-${state.timestamp}`;
-  }
-
-  private extractTopics(contextWindow: any[]): string[] {
-    // Extract key topics from context (simplified implementation)
-    const allContent = contextWindow.map(e => e.content).join(' ');
-    return this.extractTopicsFromText(allContent);
-  }
-
-  private extractTopicsFromText(text: string): string[] {
-    // Simple topic extraction (in practice, would use NLP)
-    const commonWords = new Set(['the', 'and', 'or', 'but', 'in', 'on', 'at', 'to', 'for', 'of', 'with', 'by']);
-    const words = text.toLowerCase().match(/\b(\w+)\b/g) || [];
+    if (sharedTopics.length === 0) return null;
     
-    return Array.from(
-      words
-        .filter(word => word.length > 3 && !commonWords.has(word))
-        .reduce((acc, word) => {
-          acc[word] = (acc[word] || 0) + 1;
-          return acc;
-        }, {} as Record<string, number>)
-    )
-    .filter(([word, count]) => count > 1)
-    .map(([word]) => word)
-    .slice(0, 5); // Top 5 topics
-  }
-
-  private findSimilarSession(topics: string[]): string | null {
-    let bestMatch: { id: string; score: number } | null = null;
+    // Get relevant context entries from source session
+    const sourceContext = this.contextStore.get(sourceSessionId) || [];
+    const sharedContext = sourceContext.filter(entry => 
+      sharedTopics.some(topic => entry.content.includes(topic))
+    );
     
-    for (const [sessionId, metadata] of this.sessionMetadata.entries()) {
-      const similarity = this.calculateTopicSimilarity(topics, metadata.topics || []);
-      
-      if (similarity > 0.5 && (!bestMatch || similarity > bestMatch.score)) {
-        bestMatch = { id: sessionId, score: similarity };
-      }
-    }
+    if (sharedContext.length === 0) return null;
     
-    return bestMatch ? bestMatch.id : null;
-  }
-
-  private calculateTopicSimilarity(topics1: string[], topics2: string[]): number {
-    if (topics1.length === 0 || topics2.length === 0) return 0;
-    
-    const intersection = topics1.filter(t => topics2.includes(t)).length;
-    const union = new Set([...topics1, ...topics2]).size;
-    
-    return union > 0 ? intersection / union : 0;
-  }
-
-  private groupSessionsByTopics(): Record<string, string[]> {
-    const groups: Record<string, string[]> = {};
-    
-    for (const [sessionId, metadata] of this.sessionMetadata.entries()) {
-      const primaryTopic = (metadata.topics || [])[0] || 'general';
-      
-      if (!groups[primaryTopic]) {
-        groups[primaryTopic] = [];
-      }
-      
-      groups[primaryTopic].push(sessionId);
-    }
-    
-    return groups;
-  }
-
-  private consolidateSessions(sessionIds: string[]): ConversationState {
-    // Combine context from multiple sessions
-    const allContextEntries = sessionIds
-      .map(id => this.memoryStore.get(id))
-      .filter(Boolean)
-      .flatMap(state => state!.contextWindow)
-      .sort((a, b) => a.timestamp - b.timestamp);
-      
-    return {
-      contextWindow: allContextEntries,
-      timestamp: Date.now()
+    const bridge: CrossSessionBridge = {
+      sourceSessionId,
+      targetSessionId,
+      sharedContext,
+      similarityScore: sharedTopics.length / Math.max(sourceSession.topics.length, targetSession.topics.length),
+      bridgedAt: Date.now(),
+      topics: sharedTopics
     };
+    
+    this.bridges.push(bridge);
+    
+    // Add bridged context to target session
+    this.storeContext(targetSessionId, sharedContext);
+    
+    return bridge;
   }
 
-  private getMostRecentSession(): string | null {
-    let mostRecent: { id: string; timestamp: number } | null = null;
+  getSessionMetadata(sessionId: string): SessionMetadata | undefined {
+    return this.sessions.get(sessionId);
+  }
+
+  getAllSessions(): SessionMetadata[] {
+    return Array.from(this.sessions.values());
+  }
+
+  private garbageCollect(): void {
+    if (!this.config.garbageCollection.enabled) return;
     
-    for (const [id, metadata] of this.sessionMetadata.entries()) {
-      if (!mostRecent || (metadata.timestamp || 0) > mostRecent.timestamp) {
-        mostRecent = { id, timestamp: metadata.timestamp || 0 };
+    const now = Date.now();
+    const sessions = Array.from(this.sessions.entries());
+    
+    // Remove expired sessions
+    for (const [id, metadata] of sessions) {
+      if (now - metadata.lastAccessed > this.config.ttl) {
+        this.sessions.delete(id);
+        this.contextStore.delete(id);
       }
     }
     
-    return mostRecent ? mostRecent.id : null;
+    // Apply retention policy if we exceed max sessions
+    if (this.sessions.size > this.config.maxSessions) {
+      const sortedSessions = Array.from(this.sessions.entries())
+        .sort((a, b) => {
+          const metadataA = a[1];
+          const metadataB = b[1];
+          
+          switch (this.config.garbageCollection.retentionPolicy) {
+            case 'lru':
+              return metadataA.lastAccessed - metadataB.lastAccessed;
+            case 'topic-based':
+              return metadataB.topics.length - metadataA.topics.length;
+            case 'relevance-based':
+              return metadataB.totalTokens - metadataA.totalTokens;
+            default:
+              return metadataA.lastAccessed - metadataB.lastAccessed;
+          }
+        });
+      
+      // Remove oldest sessions
+      const excess = this.sessions.size - this.config.maxSessions;
+      for (let i = 0; i < excess; i++) {
+        const [id] = sortedSessions[i];
+        this.sessions.delete(id);
+        this.contextStore.delete(id);
+      }
+    }
   }
 
-  private hashContent(content: string): string {
-    // Simple hash function (in practice, use a proper hashing algorithm)
-    let hash = 0;
-    for (let i = 0; i < content.length; i++) {
-      const char = content.charCodeAt(i);
-      hash = ((hash << 5) - hash) + char;
-      hash = hash & hash; // Convert to 32-bit integer
+  private extractTopics(entries: ContextEntry[]): string[] {
+    // Simple topic extraction (in a real implementation, this would use NLP)
+    const content = entries.map(e => e.content).join(' ');
+    const words = content.toLowerCase().match(/\b(\w{5,})\b/g) || [];
+    
+    // Count word frequency
+    const frequency: Record<string, number> = {};
+    words.forEach(word => {
+      frequency[word] = (frequency[word] || 0) + 1;
+    });
+    
+    // Return top 5 most frequent words as topics
+    return Object.entries(frequency)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([word]) => word);
+  }
+
+  private calculateEmbeddingSimilarity(embedding1: number[], embedding2: number[]): number {
+    // Cosine similarity calculation
+    let dotProduct = 0;
+    let magnitude1 = 0;
+    let magnitude2 = 0;
+    
+    for (let i = 0; i < Math.min(embedding1.length, embedding2.length); i++) {
+      dotProduct += embedding1[i] * embedding2[i];
+      magnitude1 += embedding1[i] * embedding1[i];
+      magnitude2 += embedding2[i] * embedding2[i];
     }
-    return Math.abs(hash).toString(16);
+    
+    magnitude1 = Math.sqrt(magnitude1);
+    magnitude2 = Math.sqrt(magnitude2);
+    
+    if (magnitude1 === 0 || magnitude2 === 0) return 0;
+    
+    return dotProduct / (magnitude1 * magnitude2);
   }
 }

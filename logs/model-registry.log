@@ -1,24 +1,180 @@
-{"timestamp":"2025-09-17T22:54:50.953Z","level":"info","service":"model-registry","environment":"development","message":"Starting Model Registry Service","port":8083,"ollamaHost":"http://localhost:11434","syntheticHost":"http://localhost:8090"}
-{"timestamp":"2025-09-17T22:54:50.961Z","level":"info","service":"model-registry","environment":"development","message":"Model Registry Service listening on port 8083"}
-{"timestamp":"2025-09-17T22:54:50.964Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:54:50.971Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:55:20.958Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:55:20.965Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:55:50.950Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:55:50.965Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:56:20.943Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:56:20.952Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:56:50.945Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:56:50.962Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:57:20.943Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:57:20.952Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:57:50.946Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:57:50.954Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:58:20.944Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:58:20.951Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:58:50.944Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:58:50.950Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:59:20.949Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:59:20.963Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
-{"timestamp":"2025-09-17T22:59:50.946Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
-{"timestamp":"2025-09-17T22:59:50.956Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:00:17.670Z","level":"info","service":"model-registry","environment":"development","message":"Starting Model Registry Service","port":8083,"ollamaHost":"http://localhost:11434","syntheticHost":"http://localhost:8090"}
+{"timestamp":"2025-09-18T21:00:17.678Z","level":"info","service":"model-registry","environment":"development","message":"Model Registry Service listening on port 8083"}
+{"timestamp":"2025-09-18T21:00:17.681Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:00:17.688Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:00:47.679Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:00:47.694Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:01:17.683Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:01:17.691Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:01:47.680Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:01:47.697Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:02:17.683Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:02:17.692Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:02:47.684Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:02:47.696Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:03:17.684Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:03:17.694Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:03:47.686Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:03:47.699Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:04:17.686Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:04:17.697Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:04:47.689Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:04:47.702Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:05:17.691Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:05:17.701Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:05:47.690Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:05:47.707Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:06:17.692Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:06:17.709Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:06:47.694Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:06:47.707Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:07:17.705Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:07:17.716Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:07:47.707Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:07:47.721Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:08:17.710Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:08:17.723Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:08:47.715Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:08:47.737Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:09:17.714Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:09:17.736Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:09:47.714Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:09:47.728Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:10:17.715Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:10:17.726Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:10:47.718Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:10:47.733Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:11:17.719Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:11:17.731Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:11:47.721Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:11:47.739Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:12:17.726Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:12:17.738Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:12:47.724Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:12:47.736Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:13:17.727Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:13:17.740Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:13:47.731Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:13:47.750Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:14:17.728Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:14:17.745Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:14:47.733Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:14:47.741Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:15:17.737Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:15:17.755Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:15:47.733Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:15:47.751Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:16:17.737Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:16:17.749Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:16:47.741Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:16:47.747Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:17:17.743Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:17:17.759Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:17:47.743Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:17:47.765Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:18:17.743Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:18:17.758Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:18:47.748Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:18:47.763Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:19:17.751Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:19:17.771Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:19:47.759Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:19:47.777Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:20:17.752Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:20:17.764Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:20:47.754Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:20:47.766Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:21:17.755Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:21:17.766Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:21:47.755Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:21:47.773Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:22:17.757Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:22:17.777Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:22:47.762Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:22:47.781Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:23:17.761Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:23:17.776Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:23:47.762Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:23:47.774Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:24:17.764Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:24:17.782Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:24:47.766Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:24:47.785Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:25:17.734Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:25:17.746Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:25:47.728Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:25:47.742Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:26:17.728Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:26:17.747Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:26:47.729Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:26:47.745Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:27:17.730Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:27:17.743Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:27:47.732Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:27:47.749Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:28:17.732Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:28:17.744Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:28:47.733Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:28:47.745Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:29:17.734Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:29:17.746Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:29:47.734Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:29:47.740Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:30:17.736Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:30:17.743Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:30:47.741Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:30:47.752Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:31:17.742Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:31:17.757Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:31:47.745Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:31:47.775Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:32:17.748Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:32:17.787Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:32:47.745Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:32:47.767Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:33:17.745Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:33:17.757Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:33:47.748Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:33:47.765Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:34:17.748Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:34:17.772Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:34:47.748Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:34:47.763Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:35:17.753Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:35:17.772Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:35:47.753Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:35:47.774Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:36:17.752Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:36:17.771Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:36:47.753Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:36:47.761Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:37:17.754Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:37:17.762Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:37:47.755Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:37:47.765Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:38:17.756Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:38:17.769Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:38:47.757Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:38:47.773Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:39:17.759Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:39:17.778Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:39:47.761Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:39:47.774Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:40:17.761Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:40:17.776Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:40:47.763Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:40:47.780Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:41:17.763Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:41:17.778Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:41:47.763Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:41:47.776Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:42:17.761Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:42:17.775Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:42:47.762Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:42:47.775Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:43:17.763Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:43:17.774Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:43:47.766Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:43:47.781Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}
+{"timestamp":"2025-09-18T21:44:17.766Z","level":"error","service":"model-registry","environment":"development","message":"Synthetic health check failed","error":""}
+{"timestamp":"2025-09-18T21:44:17.779Z","level":"info","service":"model-registry","environment":"development","message":"Health check completed","ollama":true,"synthetic":false,"active":"ollama"}

@@ -7,7 +7,6 @@
  */
 
 import express, { Application, Request, Response, NextFunction } from 'express';
-import { OpenAI } from 'openai';
 import dotenv from 'dotenv';
 import http from 'http';
 
@@ -31,31 +30,29 @@ interface MCPResponse {
 }
 
 // Configuration
-const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3000;
-const OPENAI_API_KEY = process.env.OPENAI_API_KEY;
+// Use a dedicated default port to avoid conflicts with other services
+const PORT = process.env.PORT ? parseInt(process.env.PORT, 10) : 3101;
 
 // Global variables
 let app: Application;
 let server: http.Server;
-let openaiClient: OpenAI | null = null;
+
+// In-memory session store (no external deps, no credentials)
+type SessionMessage = { role: 'user' | 'assistant'; content: string; timestamp: number };
+interface SessionState {
+  id: string;
+  currentModel: 'codex';
+  conversationHistory: SessionMessage[];
+  createdAt: number;
+}
+
+const sessions = new Map<string, SessionState>();
 
 /**
- * Initialize OpenAI client
+ * Generate a simple ID
  */
-function initializeOpenAIClient(): void {
-  if (!OPENAI_API_KEY) {
-    console.warn('OPENAI_API_KEY not found in environment variables. OpenAI features will be disabled.');
-    return;
-  }
-
-  try {
-    openaiClient = new OpenAI({
-      apiKey: OPENAI_API_KEY,
-    });
-    console.log('OpenAI client initialized successfully');
-  } catch (error) {
-    console.error('Failed to initialize OpenAI client:', error);
-  }
+function genId(prefix = 'id'): string {
+  return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`;
 }
 
 /**
@@ -81,7 +78,7 @@ async function handleMCPRequest(req: Request, res: Response): Promise<void> {
       id: mcpRequest.id,
     };
 
-    // TODO: Implement actual MCP protocol handling
+    // Minimal MCP protocol handling for Codex server
     switch (mcpRequest.method) {
       case 'ping':
         response.result = { message: 'pong' };
@@ -89,6 +86,85 @@ async function handleMCPRequest(req: Request, res: Response): Promise<void> {
       case 'list_tools':
         response.result = { tools: ['codex_query', 'memory_store', 'memory_retrieve'] };
         break;
+      case 'session.initialize': {
+        const sessionId = genId('sess');
+        const session: SessionState = {
+          id: sessionId,
+          currentModel: 'codex',
+          conversationHistory: [],
+          createdAt: Date.now(),
+        };
+        sessions.set(sessionId, session);
+        response.result = {
+          sessionId,
+          currentModel: session.currentModel,
+          conversationHistory: session.conversationHistory,
+        };
+        break;
+      }
+      case 'session.state': {
+        const sessionId: string | undefined = mcpRequest.params?.sessionId;
+        if (!sessionId || !sessions.has(sessionId)) {
+          response.error = { code: 404, message: 'Session not found' };
+          break;
+        }
+        const session = sessions.get(sessionId)!;
+        response.result = {
+          sessionId: session.id,
+          currentModel: session.currentModel,
+          conversationHistory: session.conversationHistory,
+        };
+        break;
+      }
+      case 'session.close': {
+        const sessionId: string | undefined = mcpRequest.params?.sessionId;
+        if (sessionId && sessions.has(sessionId)) {
+          sessions.delete(sessionId);
+        }
+        response.result = { closed: true };
+        break;
+      }
+      case 'model.message': {
+        const content: string = mcpRequest.params?.content || '';
+        const model: string = mcpRequest.params?.model || 'codex';
+        let sessionId: string | undefined = mcpRequest.params?.sessionId;
+
+        if (model !== 'codex') {
+          response.error = { code: 400, message: 'Unsupported model for Codex MCP' };
+          break;
+        }
+
+        // Use/ensure a session
+        let session: SessionState | undefined = undefined;
+        if (sessionId && sessions.has(sessionId)) {
+          session = sessions.get(sessionId);
+        } else {
+          sessionId = genId('sess');
+          session = {
+            id: sessionId,
+            currentModel: 'codex',
+            conversationHistory: [],
+            createdAt: Date.now(),
+          } as SessionState;
+          sessions.set(sessionId, session);
+        }
+
+        // Append user message
+        session!.conversationHistory.push({ role: 'user', content, timestamp: Date.now() });
+
+        // Simple local processing (no external APIs, no credentials)
+        const processed = `Codex response to: ${content.substring(0, 200)}...`;
+
+        // Append assistant response
+        session!.conversationHistory.push({ role: 'assistant', content: processed, timestamp: Date.now() });
+
+        response.result = {
+          content: processed,
+          sessionId: sessionId,
+          currentModel: 'codex',
+        };
+        break;
+      }
       default:
         response.error = {
           code: -32601,
@@ -151,6 +227,8 @@ function initializeServer(): void {
   app.get('/health', (req: Request, res: Response) => {
     res.json({ 
       status: 'healthy',
+      server: 'codex-mcp',
+      sessions: sessions.size,
       timestamp: new Date().toISOString(),
     });
   });
@@ -216,7 +294,6 @@ async function main(): Promise<void> {
     
     // Initialize components
     initializeServer();
-    initializeOpenAIClient();
     await initializeDevFlowMemory();
     
     // Setup graceful shutdown

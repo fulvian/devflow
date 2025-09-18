@@ -1,0 +1,186 @@
+import { MCPClient } from '../mcp-client';
+
+interface AgentStatus {
+  name: string;
+  isHealthy: boolean;
+  responseTime: number;
+  lastChecked: Date;
+  error?: string;
+}
+
+interface HealthCheckResult {
+  allHealthy: boolean;
+  agents: AgentStatus[];
+}
+
+class AgentHealthMonitor {
+  private agentEndpoints = [
+    { name: 'Claude Tech Lead', model: 'sonnet' },
+    { name: 'Codex Senior Dev', model: 'codex' },
+    { name: 'Gemini Doc Manager', model: 'gemini' },
+    { name: 'Qwen QA Specialist', model: 'qwen' }
+  ];
+  
+  private mcpClient: MCPClient;
+  private isConnected: boolean = false;
+
+  constructor() {
+    // Initialize MCP client with orchestrator connection
+    this.mcpClient = new MCPClient(
+      process.env.MCP_ORCHESTRATOR_URL || 'ws://localhost:3000',
+      process.env.MCP_API_KEY || 'devflow-api-key'
+    );
+  }
+
+  /**
+   * Connect to the MCP orchestrator
+   */
+  private async connect(): Promise<void> {
+    if (this.isConnected) {
+      return;
+    }
+    
+    try {
+      await this.mcpClient.connect();
+      await this.mcpClient.initializeSession({
+        projectName: 'DevFlow Health Monitor',
+        createdAt: new Date().toISOString()
+      });
+      this.isConnected = true;
+    } catch (error) {
+      console.error('Failed to connect to MCP orchestrator for health monitoring:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Disconnect from the MCP orchestrator
+   */
+  private async disconnect(): Promise<void> {
+    if (!this.isConnected) {
+      return;
+    }
+    
+    try {
+      await this.mcpClient.closeSession();
+      await this.mcpClient.disconnect();
+      this.isConnected = false;
+    } catch (error) {
+      console.error('Error disconnecting from MCP orchestrator:', error);
+    }
+  }
+
+  async performHealthCheck(agentModel: string): Promise<{ isHealthy: boolean; responseTime: number; error?: string }> {
+    const startTime = Date.now();
+    
+    try {
+      // Ensure we're connected to the MCP orchestrator
+      if (!this.isConnected) {
+        await this.connect();
+      }
+      
+      // Send a simple health check message to the model
+      const healthCheckMessage = JSON.stringify({
+        type: 'health-check',
+        timestamp: new Date().toISOString()
+      });
+      
+      // Send message and wait for response
+      await this.mcpClient.sendMessageToModel(
+        healthCheckMessage,
+        agentModel as any
+      );
+      
+      const responseTime = Date.now() - startTime;
+      
+      return { 
+        isHealthy: true, 
+        responseTime 
+      };
+    } catch (error) {
+      const responseTime = Date.now() - startTime;
+      
+      return { 
+        isHealthy: false, 
+        responseTime,
+        error: error instanceof Error ? error.message : 'Unknown error'
+      };
+    }
+  }
+
+  async performRecovery(agentName: string): Promise<boolean> {
+    try {
+      // Find the agent model
+      const agent = this.agentEndpoints.find(a => a.name === agentName);
+      if (!agent) {
+        throw new Error(`Unknown agent: ${agentName}`);
+      }
+      
+      // For recovery, we'll try to reconnect to the orchestrator
+      await this.disconnect();
+      await this.connect();
+      
+      // Perform a health check to verify recovery
+      const healthCheck = await this.performHealthCheck(agent.model);
+      return healthCheck.isHealthy;
+    } catch (error) {
+      console.error(`Recovery failed for ${agentName}:`, error);
+      return false;
+    }
+  }
+
+  async checkAllAgents(): Promise<HealthCheckResult> {
+    try {
+      const agentChecks = this.agentEndpoints.map(async (agent) => {
+        const result = await this.performHealthCheck(agent.model);
+        return {
+          name: agent.name,
+          ...result,
+          lastChecked: new Date()
+        };
+      });
+      
+      const agents = await Promise.all(agentChecks);
+      const allHealthy = agents.every(agent => agent.isHealthy);
+      
+      return {
+        allHealthy,
+        agents
+      };
+    } finally {
+      // Disconnect after health checks
+      await this.disconnect();
+    }
+  }
+
+  async getAgentAvailability(agentName: string): Promise<boolean> {
+    const agent = this.agentEndpoints.find(a => a.name === agentName);
+    if (!agent) {
+      throw new Error(`Unknown agent: ${agentName}`);
+    }
+    
+    try {
+      const result = await this.performHealthCheck(agent.model);
+      return result.isHealthy;
+    } finally {
+      await this.disconnect();
+    }
+  }
+
+  async measureResponseTime(agentName: string): Promise<number> {
+    const agent = this.agentEndpoints.find(a => a.name === agentName);
+    if (!agent) {
+      throw new Error(`Unknown agent: ${agentName}`);
+    }
+    
+    try {
+      const result = await this.performHealthCheck(agent.model);
+      return result.responseTime;
+    } finally {
+      await this.disconnect();
+    }
+  }
+}
+
+export default AgentHealthMonitor;
+export { AgentHealthMonitor, type AgentStatus, type HealthCheckResult };

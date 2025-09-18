@@ -1,38 +1,49 @@
-import { ContextEntry } from './types';
+import { ContextEntry, CompressionStrategy, TurnEntry } from './types';
+import { generateSemanticHash } from '../utils/token-utils';
 
 export class CompressionOptimizer {
-  private compressionRatios = {
-    low: 0.9,
-    medium: 0.7,
-    high: 0.5
-  };
-
-  async compressContext(context: ContextEntry[], targetRatio: keyof typeof this.compressionRatios = 'medium'): Promise<ContextEntry[]> {
-    const ratio = this.compressionRatios[targetRatio];
-    
-    // First pass: semantic-aware chunking
-    const chunkedContext = this.semanticChunking(context);
-    
-    // Second pass: token-aware compression
-    const compressedContext = await this.tokenEfficientCompression(chunkedContext, ratio);
-    
-    // Third pass: preserve semantic integrity
-    return this.preserveSemanticContent(compressedContext);
+  private strategies: Record<CompressionStrategy, (entries: ContextEntry[]) => ContextEntry[]>;
+  
+  constructor() {
+    this.strategies = {
+      'semantic-chunking': this.semanticChunking.bind(this),
+      'turn-boundary': this.turnBoundaryCompression.bind(this),
+      'relevance-ranking': this.relevanceRankingCompression.bind(this),
+      'adaptive-ratio': this.adaptiveRatioCompression.bind(this),
+      'multi-strategy': this.multiStrategyCompression.bind(this)
+    };
   }
 
-  private semanticChunking(context: ContextEntry[]): ContextEntry[] {
-    // Group related context entries
+  compressContext(
+    entries: ContextEntry[], 
+    strategy: CompressionStrategy, 
+    turnHistory: TurnEntry[]
+  ): ContextEntry[] {
+    const compressor = this.strategies[strategy];
+    if (!compressor) {
+      throw new Error(`Unknown compression strategy: ${strategy}`);
+    }
+    
+    return compressor(entries);
+  }
+
+  private semanticChunking(entries: ContextEntry[]): ContextEntry[] {
+    // Group entries by semantic similarity (simplified implementation)
     const chunks: ContextEntry[][] = [];
     let currentChunk: ContextEntry[] = [];
     
-    for (const entry of context) {
-      if (entry.type === 'system' || currentChunk.length === 0) {
-        if (currentChunk.length > 0) {
-          chunks.push(currentChunk);
-        }
-        currentChunk = [entry];
-      } else {
+    for (const entry of entries) {
+      if (currentChunk.length === 0) {
         currentChunk.push(entry);
+      } else {
+        // Check semantic similarity (simplified)
+        const lastEntry = currentChunk[currentChunk.length - 1];
+        if (this.semanticSimilarity(lastEntry, entry) > 0.7) {
+          currentChunk.push(entry);
+        } else {
+          chunks.push(currentChunk);
+          currentChunk = [entry];
+        }
       }
     }
     
@@ -40,99 +51,126 @@ export class CompressionOptimizer {
       chunks.push(currentChunk);
     }
     
-    // Compress each chunk while preserving relationships
-    return chunks.flatMap(chunk => this.compressChunk(chunk));
+    // Compress each chunk into a summary
+    return chunks.map(chunk => this.createSummaryEntry(chunk));
   }
 
-  private compressChunk(chunk: ContextEntry[]): ContextEntry[] {
-    if (chunk.length <= 1) return chunk;
+  private turnBoundaryCompression(entries: ContextEntry[]): ContextEntry[] {
+    // Preserve turn boundaries while compressing within turns
+    const turnGroups = new Map<string, ContextEntry[]>();
     
-    // Preserve first and last entries, compress middle
-    const first = chunk[0];
-    const last = chunk[chunk.length - 1];
-    
-    if (chunk.length <= 2) return [first, last];
-    
-    // Create summary entry for middle content
-    const middleContent = chunk
-      .slice(1, -1)
-      .map(e => e.content)
-      .join(' ');
-      
-    const summaryEntry: ContextEntry = {
-      id: `summary-${Date.now()}`,
-      type: 'summary',
-      content: this.createSummary(middleContent),
-      timestamp: chunk[Math.floor(chunk.length/2)].timestamp,
-      tokenCount: Math.floor(middleContent.length / 4) // Approximation
-    };
-    
-    return [first, summaryEntry, last];
-  }
-
-  private async tokenEfficientCompression(context: ContextEntry[], ratio: number): Promise<ContextEntry[]> {
-    return context.map(entry => {
-      if (entry.type === 'system') return entry; // Never compress system entries
-      
-      const targetLength = Math.floor(entry.content.length * ratio);
-      if (targetLength >= entry.content.length) return entry;
-      
-      return {
-        ...entry,
-        content: this.compressContent(entry.content, targetLength),
-        tokenCount: Math.floor(entry.tokenCount! * ratio)
-      };
-    });
-  }
-
-  private preserveSemanticContent(context: ContextEntry[]): ContextEntry[] {
-    // Ensure key semantic elements are preserved
-    return context.map(entry => {
-      if (entry.type === 'summary' || entry.type === 'system') {
-        // Preserve key entities and actions in summaries
-        const preservedContent = this.extractKeyEntities(entry.content);
-        return {
-          ...entry,
-          content: preservedContent
-        };
+    // Group entries by turnId
+    for (const entry of entries) {
+      const turnId = entry.turnId || 'unknown';
+      if (!turnGroups.has(turnId)) {
+        turnGroups.set(turnId, []);
       }
-      return entry;
+      turnGroups.get(turnId)!.push(entry);
+    }
+    
+    // Compress each turn group
+    const compressedEntries: ContextEntry[] = [];
+    for (const [turnId, group] of turnGroups) {
+      if (group.length > 3) { // Only compress if more than 3 entries
+        const summary = this.createSummaryEntry(group);
+        summary.turnId = turnId;
+        compressedEntries.push(summary);
+      } else {
+        compressedEntries.push(...group);
+      }
+    }
+    
+    return compressedEntries;
+  }
+
+  private relevanceRankingCompression(entries: ContextEntry[]): ContextEntry[] {
+    // Sort by relevance and keep top percentage
+    const sorted = [...entries].sort((a, b) => b.relevanceScore - a.relevanceScore);
+    const keepCount = Math.max(Math.floor(sorted.length * 0.7), 5); // Keep 70% or at least 5
+    return sorted.slice(0, keepCount);
+  }
+
+  private adaptiveRatioCompression(entries: ContextEntry[]): ContextEntry[] {
+    // Adjust compression based on importance scores
+    const totalTokens = entries.reduce((sum, entry) => sum + entry.tokenCount, 0);
+    const targetTokens = Math.floor(totalTokens * 0.6); // Target 60% compression
+    
+    // Sort by importance (relevance * recency)
+    const sorted = [...entries].sort((a, b) => {
+      const importanceA = a.relevanceScore * (1 - (Date.now() - a.timestamp) / (24 * 60 * 60 * 1000));
+      const importanceB = b.relevanceScore * (1 - (Date.now() - b.timestamp) / (24 * 60 * 60 * 1000));
+      return importanceB - importanceA;
     });
-  }
-
-  private createSummary(content: string): string {
-    // In a real implementation, this would use an LLM for summarization
-    // For now, we'll extract key sentences
-    const sentences = content.split('. ').filter(s => s.length > 10);
-    if (sentences.length <= 2) return content;
     
-    // Return first and last sentences as summary
-    return `${sentences[0]} ... ${sentences[sentences.length - 1]}.`;
-  }
-
-  private compressContent(content: string, targetLength: number): string {
-    if (content.length <= targetLength) return content;
+    let tokenCount = 0;
+    const result: ContextEntry[] = [];
     
-    // Remove redundant whitespace and condense phrasing
-    let compressed = content.replace(/\s+/g, ' ');
-    
-    // If still too long, truncate with continuation marker
-    if (compressed.length > targetLength) {
-      compressed = compressed.substring(0, targetLength - 3) + '...';
+    for (const entry of sorted) {
+      if (tokenCount < targetTokens) {
+        result.push(entry);
+        tokenCount += entry.tokenCount;
+      } else {
+        // Compress remaining entries into a summary
+        const remaining = sorted.slice(sorted.indexOf(entry));
+        if (remaining.length > 0) {
+          result.push(this.createSummaryEntry(remaining));
+        }
+        break;
+      }
     }
     
-    return compressed;
+    return result;
   }
 
-  private extractKeyEntities(content: string): string {
-    // Simple entity extraction (in practice, would use NLP)
-    const entities = content.match(/\b[A-Z][a-z]+\b/g) || [];
-    const actions = content.match(/\b(need|want|require|should|must)\b/gi) || [];
+  private multiStrategyCompression(entries: ContextEntry[]): ContextEntry[] {
+    // Apply multiple strategies in sequence
+    let result = [...entries];
     
-    if (entities.length > 0 || actions.length > 0) {
-      return `Key elements: ${[...new Set([...entities, ...actions])].join(', ')}`;
+    // First apply turn boundary preservation
+    result = this.turnBoundaryCompression(result);
+    
+    // Then apply relevance ranking
+    result = this.relevanceRankingCompression(result);
+    
+    // Finally apply semantic chunking if still too large
+    const totalTokens = result.reduce((sum, entry) => sum + entry.tokenCount, 0);
+    if (totalTokens > 2000) { // Threshold for additional compression
+      result = this.semanticChunking(result);
     }
     
-    return content.substring(0, Math.min(100, content.length)) + (content.length > 100 ? '...' : '');
+    return result;
+  }
+
+  private semanticSimilarity(entry1: ContextEntry, entry2: ContextEntry): number {
+    // Simplified semantic similarity check
+    // In a real implementation, this would use embeddings
+    const hash1 = entry1.semanticHash;
+    const hash2 = entry2.semanticHash;
+    
+    // Simple hash comparison (just for demonstration)
+    let matches = 0;
+    for (let i = 0; i < Math.min(hash1.length, hash2.length); i++) {
+      if (hash1[i] === hash2[i]) matches++;
+    }
+    
+    return matches / Math.max(hash1.length, hash2.length);
+  }
+
+  private createSummaryEntry(entries: ContextEntry[]): ContextEntry {
+    // Create a summary entry from multiple entries
+    const combinedContent = entries.map(e => e.content).join(' ');
+    const summary = combinedContent.length > 200 
+      ? combinedContent.substring(0, 197) + '...'
+      : combinedContent;
+      
+    return {
+      id: `summary_${Date.now()}_${Math.random().toString(36).substr(2, 5)}`,
+      content: summary,
+      role: 'system',
+      timestamp: Date.now(),
+      relevanceScore: Math.max(...entries.map(e => e.relevanceScore)),
+      tokenCount: Math.floor(combinedContent.length / 4), // Rough estimate
+      semanticHash: generateSemanticHash(summary)
+    };
   }
 }

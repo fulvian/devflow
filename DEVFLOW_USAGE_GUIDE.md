@@ -138,6 +138,11 @@ SYNTHETIC_API_KEY=your-synthetic-key
 GEMINI_API_KEY=your-gemini-key
 ```
 
+### Gemini OAuth (non-interactive)
+- Se preferisci usare OAuth personale invece di API key, completa una volta l'OAuth su una macchina con browser e copia `~/.gemini` o `~/.config/gemini` sulla macchina target.
+- DevFlow rileva automaticamente le credenziali in: `$GEMINI_CONFIG_DIR`, `$XDG_CONFIG_HOME/gemini`, `~/.config/gemini`, `~/.gemini`.
+- Dettagli e opzioni (SSH port-forward, debug URL): vedi `docs/gemini-oauth-noninteractive.md`.
+
 ### **Configurazione Piattaforme**
 ```json
 {

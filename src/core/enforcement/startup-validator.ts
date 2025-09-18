@@ -19,10 +19,10 @@ class StartupValidator {
       requiredResources: config.requiredResources || ['/tmp', '/var/log']
     };
     
-    // Environment-agnostic PID file path
+    // Environment-agnostic PID file path - align with existing daemon
     this.pidFilePath = join(
-      process.env.ENFORCEMENT_PID_DIR || '/var/run',
-      this.config.pidFileName
+      process.env.ENFORCEMENT_PID_DIR || process.cwd(),
+      'devflow-enforcement-daemon.pid'
     );
   }
 
@@ -59,8 +59,9 @@ class StartupValidator {
   }
 
   private async validateArchitecture(): Promise<void> {
+    const supportedPlatforms = ['linux', 'darwin']; // Support macOS for development
     const requiredArch = process.env.ENFORCEMENT_ARCH || 'x64';
-    if (platform() !== 'linux' || process.arch !== requiredArch) {
+    if (!supportedPlatforms.includes(platform()) || process.arch !== requiredArch) {
       throw new Error(`Unsupported architecture: ${platform()}-${process.arch}`);
     }
   }
