@@ -86,7 +86,7 @@ export class OrchestratorClient extends EventEmitter {
           resolve();
         });
 
-        this.ws.on('message', (data: WebSocket.Data) => {
+        this.ws.on('message', (data: Buffer) => {
           try {
             const message: MCPMessage = JSON.parse(data.toString());
             this.handleMessage(message);
@@ -427,8 +427,5 @@ export class ClaudeCodeSession {
 // Export types and interfaces
 export default {
   OrchestratorClient,
-  ClaudeCodeSession,
-  type ModelType,
-  type SessionState,
-  type RoleTransferRequest
+  ClaudeCodeSession
 };

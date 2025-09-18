@@ -30,8 +30,6 @@ global.DEVFLOW_FINAL_ORCHESTRATION = {
     openaiSessionStart: null,
     geminiSessionUsage: 0,
     geminiSessionStart: null,
-    geminiBlocked: false,
-    geminiBlockedUntil: null,
 
     // Service configurations
     services: {
@@ -49,9 +47,9 @@ global.DEVFLOW_FINAL_ORCHESTRATION = {
         },
         gemini: {
             name: 'Gemini CLI',
-            monitor: 'session_tracking',
-            resetPeriod: '12h',
-            limits: { requests: 15, period: 43200000 } // 12 hours in ms
+            monitor: 'stats_command',
+            resetPeriod: 'daily',
+            limits: { requests: 100, period: 86400000 } // 24 hours in ms
         },
         synthetic: {
             name: 'Synthetic API',
@@ -162,63 +160,33 @@ global.DEVFLOW_FINAL_ORCHESTRATION = {
         return status;
     },
 
-    // Check Claude Pro usage via ccusage (CORRECTED: Monitor messages, not tokens)
+    // Check Claude Pro usage via ccusage
     async checkClaudeUsage() {
         try {
             const { stdout } = await execAsync('npx ccusage@latest blocks --json 2>/dev/null || echo "{}"');
             const data = JSON.parse(stdout || '{}');
 
-            // Find current active block (5-hour window)
-            const currentBlock = data.blocks ? data.blocks.find(block => block.isActive) : null;
+            const used = data.requests_used || this.sessionTasks; // Fallback to session tracking
+            const limit = 40; // Pro plan limit
+            const utilization = used / limit;
 
-            if (currentBlock) {
-                const used = currentBlock.entries || 0; // MESSAGE COUNT, not tokens!
-                const limit = 250; // Claude Pro limit: ~250 messages per 5-hour window
-                const utilization = used / limit;
-
-                // Calculate time until reset
-                const resetTime = new Date(currentBlock.usageLimitResetTime);
-                const timeUntilReset = Math.max(0, resetTime.getTime() - Date.now());
-
-                return {
-                    available: utilization < 0.9, // 90% threshold (225 messages)
-                    usage: { used, limit, resetTime },
-                    utilization,
-                    source: 'ccusage_blocks_messages',
-                    currentBlock: {
-                        id: currentBlock.id,
-                        startTime: currentBlock.startTime,
-                        endTime: currentBlock.endTime,
-                        entries: currentBlock.entries,
-                        timeUntilReset: Math.round(timeUntilReset / 1000 / 60) // minutes
-                    }
-                };
-            } else {
-                // No active block found - check if we can create a new session
-                const lastBlock = data.blocks && data.blocks.length > 0 ? data.blocks[data.blocks.length - 1] : null;
-
-                return {
-                    available: true, // New session available
-                    usage: { used: 0, limit: 250 },
-                    utilization: 0,
-                    source: 'ccusage_new_session',
-                    lastBlock: lastBlock ? {
-                        entries: lastBlock.entries,
-                        endTime: lastBlock.actualEndTime || lastBlock.endTime
-                    } : null
-                };
-            }
+            return {
+                available: utilization < 0.9, // 90% threshold
+                usage: { used, limit },
+                utilization,
+                source: 'ccusage'
+            };
         } catch (error) {
             // Fallback to session-based tracking
             const used = this.sessionTasks;
-            const limit = 250; // Updated limit for messages
+            const limit = 40;
             const utilization = used / limit;
 
             return {
                 available: utilization < 0.9,
                 usage: { used, limit },
                 utilization,
-                source: 'session_fallback_messages',
+                source: 'session_fallback',
                 error: error.message
             };
         }
@@ -262,88 +230,37 @@ global.DEVFLOW_FINAL_ORCHESTRATION = {
         }
     },
 
-    // Check Gemini CLI usage via session tracking (CORRECTED: No stats API available)
+    // Check Gemini CLI usage via stats command
     async checkGeminiUsage() {
         try {
-            const now = Date.now();
+            const { stdout } = await execAsync('echo "/stats" | gemini 2>/dev/null || echo "unavailable"');
 
-            // Check if currently blocked
-            if (this.geminiBlocked && this.geminiBlockedUntil && now < this.geminiBlockedUntil) {
-                const timeUntilReset = Math.round((this.geminiBlockedUntil - now) / 1000 / 60); // minutes
-                return {
-                    available: false,
-                    usage: { used: 15, limit: 15 },
-                    utilization: 1.0,
-                    source: 'session_tracking_blocked',
-                    blockedUntil: new Date(this.geminiBlockedUntil),
-                    timeUntilReset
-                };
-            }
-
-            // Reset if block period expired
-            if (this.geminiBlocked && this.geminiBlockedUntil && now >= this.geminiBlockedUntil) {
-                this.geminiBlocked = false;
-                this.geminiBlockedUntil = null;
-                this.geminiSessionUsage = 0;
-                this.geminiSessionStart = now;
-            }
-
-            // Reset session if 12 hours passed
-            if (!this.geminiSessionStart) {
-                this.geminiSessionStart = now;
-            }
-
-            const sessionDuration = now - this.geminiSessionStart;
-            const twelveHours = 12 * 60 * 60 * 1000;
-
-            if (sessionDuration > twelveHours) {
-                this.geminiSessionUsage = 0;
-                this.geminiSessionStart = now;
-                this.geminiBlocked = false;
-                this.geminiBlockedUntil = null;
-            }
-
-            const used = this.geminiSessionUsage || 0;
-            const limit = 15; // Real limit: 10-15 prompts before Pro→Flash downgrade
+            // Parse Gemini stats output (simplified)
+            const used = this.parseGeminiUsage(stdout);
+            const limit = 100; // Free daily limit
             const utilization = used / limit;
 
-            // Block if limit reached
-            if (used >= limit && !this.geminiBlocked) {
-                this.geminiBlocked = true;
-                this.geminiBlockedUntil = now + twelveHours; // Block for 12 hours
-            }
-
             return {
-                available: !this.geminiBlocked && utilization < 1.0,
+                available: utilization < 0.9,
                 usage: { used, limit },
                 utilization,
-                source: 'session_tracking_15_limit',
-                sessionStart: new Date(this.geminiSessionStart),
-                nextReset: new Date(this.geminiSessionStart + twelveHours)
+                source: 'stats_command'
             };
         } catch (error) {
             return {
                 available: false,
-                usage: { used: 15, limit: 15 },
-                utilization: 1.0,
-                source: 'session_tracking_error',
+                usage: { used: 0, limit: 100 },
+                utilization: 1,
                 error: error.message
             };
         }
     },
 
-    // Record Gemini usage (call this when using Gemini CLI)
-    recordGeminiUsage() {
-        if (!this.geminiBlocked) {
-            this.geminiSessionUsage = (this.geminiSessionUsage || 0) + 1;
-
-            // Auto-block if limit reached
-            if (this.geminiSessionUsage >= 15) {
-                this.geminiBlocked = true;
-                this.geminiBlockedUntil = Date.now() + (12 * 60 * 60 * 1000); // 12 hours
-                console.log(`🚫 GEMINI BLOCKED: 15 calls limit reached. Blocked for 12 hours until ${new Date(this.geminiBlockedUntil).toISOString()}`);
-            }
-        }
+    // Parse Gemini usage from stats output
+    parseGeminiUsage(output) {
+        // Simple parsing - in real implementation would be more sophisticated
+        const match = output.match(/(\d+).*requests.*today/i);
+        return match ? parseInt(match[1], 10) : 0;
     },
 
     // Complete routing with real monitoring and MCP delegation

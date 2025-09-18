@@ -118,6 +118,42 @@ export class ClaudeSessionTracker {
   }
 
   private parseLimitMessage(message: string): LimitParseResult {
+    // Parse messages like "5-hour limit reached ∙ resets 3am"
+    const resetTimeRegex = /resets\s*(\d+)(?::(\d+))?\s*(am|pm)/i;
+    const resetMatch = message.match(resetTimeRegex);
+
+    if (resetMatch) {
+      const hour = parseInt(resetMatch[1], 10);
+      const minute = resetMatch[2] ? parseInt(resetMatch[2], 10) : 0;
+      const period = resetMatch[3].toLowerCase();
+      
+      // Convert to 24-hour format
+      let hour24 = hour;
+      if (period === 'pm' && hour !== 12) {
+        hour24 += 12;
+      } else if (period === 'am' && hour === 12) {
+        hour24 = 0;
+      }
+      
+      // Calculate time until reset
+      const now = new Date();
+      const resetTime = new Date(now);
+      resetTime.setHours(hour24, minute, 0, 0);
+      
+      // If reset time is in the past, it's for tomorrow
+      if (resetTime <= now) {
+        resetTime.setDate(resetTime.getDate() + 1);
+      }
+      
+      const minutesUntilReset = Math.ceil((resetTime.getTime() - now.getTime()) / 60000);
+      
+      return {
+        hours: Math.floor(minutesUntilReset / 60),
+        minutes: minutesUntilReset % 60,
+        totalMinutes: minutesUntilReset
+      };
+    }
+
     // Parse messages like "You've reached the limit. 3h 25m remaining until reset."
     const timeRegex = /(\d+)h\s*(\d+)m\s*remaining/i;
     const match = message.match(timeRegex);

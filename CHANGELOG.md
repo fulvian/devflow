@@ -200,6 +200,25 @@ All core foundation components successfully implemented and operational:
 - Intelligent context eviction mechanism to manage memory efficiently
 - QA-deployment agent for automated testing and deployment validation
 
+## [2.6.1] - 2025-09-17
+
+### Security
+- **API Key Rotation**: Updated Synthetic API key across all configuration files after security exposure
+  - Updated `.env` with new Synthetic API key
+  - Updated `claude-code-mcp-config.json` to use environment variable instead of hardcoded key
+  - Enhanced `devflow-start.sh` to properly load environment variables from `.env` file
+
+### Fixed
+- **Environment Variable Loading**: Fixed issue where environment variables from `.env` were not being loaded by the startup script
+  - Added proper environment variable loading mechanism to `devflow-start.sh`
+  - Implemented filtering to exclude comments and empty lines from `.env` file
+  - Verified successful restart of all DevFlow services with updated configuration
+
+### Improved
+- **Configuration Security**: Improved security posture by eliminating hardcoded API keys
+  - Replaced hardcoded Synthetic API key with environment variable reference
+  - Ensured all services properly inherit environment variables at startup
+
 ### Improved
 - Performance optimizations resulting in 45-50% token savings
 - Enhanced error handling and recovery mechanisms

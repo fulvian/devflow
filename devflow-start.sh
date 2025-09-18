@@ -48,6 +48,15 @@ is_process_running() {
         rm -f "$1"
         return 1
       fi
+    # Special case for limit detection system (not a real process)
+    elif [ "$pid" = "AVAILABLE" ]; then
+      # Check if required files exist
+      if [ -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ] && [ -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+        return 0
+      else
+        rm -f "$1"
+        return 1
+      fi
     elif kill -0 "$pid" 2>/dev/null; then
       return 0
     else
@@ -63,8 +72,20 @@ is_process_running() {
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
-  # Stop all DevFlow services (including enforcement, session retry, and fallback monitoring)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".fallback.pid")
+  # Remove global alias if it exists
+  if [ -f "/usr/local/bin/retry-claude" ]; then
+    if [ -w "/usr/local/bin" ]; then
+      rm -f /usr/local/bin/retry-claude 2>/dev/null && \
+        print_status "✅ Global alias 'retry-claude' removed" || \
+        print_status "ℹ️  Global alias 'retry-claude' not removed"
+    else
+      # Need sudo to remove, but don't force it
+      print_status "ℹ️  Global alias 'retry-claude' may require manual removal (sudo)"
+    fi
+  fi
+
+  # Stop all DevFlow services (including enforcement, session retry, limit detection, and fallback monitoring)
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -143,10 +164,11 @@ start_synthetic() {
   fi
 
   # Check if Claude Code configuration exists (global config)
-  if [ ! -f "$HOME/.config/claude-desktop/claude_desktop_config.json" ]; then
-    # Fallback to local config if global config doesn't exist
+  # This now checks for the correct Claude Code config files, not the obsolete Claude Desktop path.
+  if [ ! -f "$HOME/.claude.json" ] && [ ! -d "$HOME/.claude" ]; then
+    # Fallback to local config if neither global file nor directory exists
     if [ ! -f "$PROJECT_ROOT/.mcp.json" ]; then
-      print_error "MCP configuration not found in global Claude Code config or local .mcp.json"
+      print_error "MCP configuration not found. Looked for Claude Code config (~/.claude.json or ~/.claude/) or local .mcp.json."
       return 1
     fi
   fi
@@ -154,7 +176,7 @@ start_synthetic() {
   # Test that the server can load without errors and API key is properly configured
   cd "$PROJECT_ROOT/mcp-servers/synthetic"
   # Enhanced test that verifies both server load and API key configuration
-  if SERVER_OUTPUT=$(SYNTHETIC_API_BASE_URL="$SYNTHETIC_API_BASE_URL" node -e "
+  if SERVER_OUTPUT=$(SYNTHETIC_API_BASE_URL="$SYNTHETIC_API_BASE_URL" SYNTHETIC_API_KEY="$SYNTHETIC_API_KEY" node -e "
     try {
       console.log('Testing MCP server...');
       require('./dist/dual-enhanced-index.js');
@@ -433,6 +455,53 @@ start_session_retry() {
   fi
 }
 
+# Function to start Claude Code Limit Detection System
+start_limit_detection() {
+  print_status "Starting Claude Code Limit Detection System..."
+
+  # Check if limit detection hook exists
+  if [ ! -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ]; then
+    print_warning "Limit detection hook not found - creating symlink..."
+    mkdir -p "$PROJECT_ROOT/.claude/hooks"
+    if [ -f "$PROJECT_ROOT/src/core/session/session-limit-detector.js" ]; then
+      ln -sf "$PROJECT_ROOT/src/core/session/session-limit-detector.js" "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js"
+    elif [ ! -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ]; then
+      print_warning "Limit detection hook not found - limit detection will not be available"
+      return 0
+    fi
+  fi
+
+  # Check if Claude Code wrapper exists
+  if [ ! -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+    print_warning "Claude Code wrapper not found - limit detection will not be available"
+    return 0
+  fi
+
+  # Create global alias for quick limit notification
+  if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ]; then
+    ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
+      print_status "✅ Global alias 'retry-claude' created" || \
+      print_warning "⚠️  Could not create global alias"
+  else
+    # Try with sudo if we have it
+    if command_exists sudo && [ -d "/usr/local/bin" ]; then
+      if sudo -n true 2>/dev/null; then
+        sudo ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
+          print_status "✅ Global alias 'retry-claude' created (with sudo)" || \
+          print_warning "⚠️  Could not create global alias (sudo failed)"
+      else
+        print_warning "⚠️  sudo required for global alias - run: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
+      fi
+    else
+      print_warning "⚠️  /usr/local/bin not writable - global alias not created"
+      print_status "💡 Tip: Create alias manually with: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
+    fi
+  fi
+
+  print_status "Claude Code Limit Detection System ready"
+  return 0
+}
+
 # Function to start Fallback Monitoring System (Dream Team monitoring)
 start_fallback_monitoring() {
   print_status "Starting Dream Team Fallback Monitoring System..."
@@ -474,6 +543,65 @@ start_fallback_monitoring() {
     return 0
   else
     print_error "Failed to start Fallback Monitoring System"
+    return 1
+  fi
+}
+
+# Function to start CC-Tools gRPC Server
+start_cctools() {
+  print_status "Starting CC-Tools gRPC Server..."
+
+  # Check if CC-Tools server is already running
+  if pgrep -f "cc-tools-server" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "cc-tools-server" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.cctools.pid"
+      print_status "CC-Tools gRPC Server already running (PID: $pid)"
+    else
+      print_status "CC-Tools gRPC Server already running"
+    fi
+    return 0
+  fi
+
+  # Resolve binary (support debug mode via CC_TOOLS_USE_DEBUG=true)
+  local use_debug=${CC_TOOLS_USE_DEBUG:-false}
+  local bin_name="cc-tools-server"
+  if [ "$use_debug" = "true" ]; then
+    if [ -f "$PROJECT_ROOT/go-server/cc-tools-server-debug" ]; then
+      bin_name="cc-tools-server-debug"
+      print_status "Using debug binary ($bin_name) with reflection enabled"
+    else
+      print_warning "Debug binary requested but not found; falling back to cc-tools-server"
+    fi
+  fi
+
+  # Check if resolved binary exists
+  if [ ! -f "$PROJECT_ROOT/go-server/$bin_name" ]; then
+    print_error "CC-Tools server binary not found at go-server/$bin_name"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start CC-Tools server in background
+  cd "$PROJECT_ROOT/go-server"
+  nohup "./$bin_name" > ../logs/cc-tools-server.log 2>&1 &
+  local cctools_pid=$!
+  cd "$PROJECT_ROOT"
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $cctools_pid 2>/dev/null; then
+    echo $cctools_pid > "$PROJECT_ROOT/.cctools.pid"
+    local cctools_port=${GRPC_PORT:-50051}
+    print_status "CC-Tools gRPC Server started successfully (PID: $cctools_pid) on port $cctools_port"
+    return 0
+  else
+    print_error "Failed to start CC-Tools gRPC Server"
     return 1
   fi
 }
@@ -569,6 +697,7 @@ fi
 # Ensure correct Synthetic API URL is used (override any system-level environment variable)
 if [ -f "$PROJECT_ROOT/.env" ]; then
     export SYNTHETIC_API_BASE_URL=$(grep "^SYNTHETIC_API_BASE_URL=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
+    export SYNTHETIC_API_KEY=$(grep "^SYNTHETIC_API_KEY=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
 fi
 
 # Main execution
@@ -594,9 +723,11 @@ main() {
         ".synthetic.pid:Synthetic MCP"
         ".ccr.pid:Auto CCR Runner"
         ".session-retry.pid:Smart Session Retry"
+        ".limit-detection.pid:Claude Code Limit Detection"
         ".enforcement.pid:Claude Code Enforcement"
         ".fallback.pid:Dream Team Fallback Monitor"
         ".orchestrator.pid:DevFlow Orchestrator"
+        ".cctools.pid:CC-Tools gRPC Server"
       )
 
       for service in "${services[@]}"; do
@@ -670,6 +801,14 @@ main() {
     print_warning "Smart Session Retry System failed to start - CONTINUING WITHOUT SESSION RETRY"
   fi
 
+  # Start Claude Code limit detection system (optional - enhances session retry)
+  if ! start_limit_detection; then
+    print_warning "Claude Code Limit Detection System failed to start - limit detection will not be available"
+  else
+    # Create a dummy PID file to indicate the service is available
+    echo "AVAILABLE" > "$PROJECT_ROOT/.limit-detection.pid"
+  fi
+
   # Start enforcement system (optional - graceful degradation)
   if ! start_enforcement; then
     print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
@@ -678,6 +817,12 @@ main() {
   # Start Dream Team fallback monitoring system (CRITICAL for agent coordination)
   if ! start_fallback_monitoring; then
     print_error "Dream Team Fallback Monitoring failed to start - CRITICAL ERROR"
+    exit 1
+  fi
+
+  # Start CC-Tools gRPC Server (required for validation hooks)
+  if ! start_cctools; then
+    print_error "CC-Tools gRPC Server failed to start - CRITICAL ERROR"
     exit 1
   fi
 
@@ -693,10 +838,16 @@ main() {
   print_status "✅ Token Optimizer: Running (Real algorithms)"
   print_status "✅ Synthetic MCP: Running"
   print_status "✅ Auto CCR Runner: Running"
+  print_status "✅ CC-Tools gRPC Server: Running (Port 50051)"
   if is_process_running "$PROJECT_ROOT/.session-retry.pid"; then
     print_status "✅ Smart Session Retry: Running"
   else
     print_warning "⚠️  Smart Session Retry: Not Running"
+  fi
+  if [ -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ] && [ -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+    print_status "✅ Claude Code Limit Detection: Available"
+  else
+    print_warning "⚠️  Claude Code Limit Detection: Not Available"
   fi
   if is_process_running "$PROJECT_ROOT/.enforcement.pid"; then
     print_status "✅ Claude Code Enforcement: Running"

@@ -9,8 +9,14 @@
 
 import https from 'https';
 
-const SYNTHETIC_API_KEY = 'syn_4f04a1a3108cfbb64ac973367542d361';
+const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
 const API_URL = 'https://api.synthetic.new/v1/chat/completions';
+
+if (!SYNTHETIC_API_KEY) {
+  console.error('❌ SYNTHETIC_API_KEY environment variable is not set');
+  console.error('Please ensure your .env file contains SYNTHETIC_API_KEY=your_key_here');
+  process.exit(1);
+}
 
 class SyntheticRateMonitor {
   constructor() {

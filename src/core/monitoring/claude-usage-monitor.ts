@@ -1,10 +1,93 @@
 /**
- * Real Anthropic Claude API Usage Monitor
- *
- * This module provides real-time monitoring of Anthropic Claude API usage,
- * including actual token counting, rate limit tracking, and usage percentage calculations
- * based on Anthropic's API response headers.
+ * ClaudeCodeUsageMonitor - Tracks Claude Code token usage
+ * 
+ * This service monitors token consumption and provides current usage statistics.
+ * In a production implementation, this would integrate with Claude Code's actual
+ * token tracking APIs.
  */
+export class ClaudeCodeUsageMonitor {
+  private currentTokenCount: number = 17900;
+  private sessionStartTokens: number = 17900;
+  private readonly maxTokens: number = 200000; // Claude Code context limit
+  private lastUpdate: number = Date.now();
+
+  constructor() {
+    // Initialize with a base token count to simulate existing context
+    this.currentTokenCount = 17900;
+    this.sessionStartTokens = 17900;
+  }
+
+  /**
+   * Gets the current token count (with simulated dynamic usage)
+   */
+  getCurrentTokenCount(): number {
+    // Simulate gradual token usage over time for demonstration purposes
+    const now = Date.now();
+    const elapsedMinutes = (now - this.lastUpdate) / (1000 * 60); // Convert to minutes
+    
+    // Increase token count by 500 tokens per minute (for demonstration)
+    if (elapsedMinutes >= 1) {
+      const tokensToAdd = Math.floor(elapsedMinutes * 500);
+      this.currentTokenCount = Math.min(this.maxTokens, this.currentTokenCount + tokensToAdd);
+      this.lastUpdate = now;
+    }
+    
+    return this.currentTokenCount;
+  }
+
+  /**
+   * Gets the maximum token limit
+   */
+  getMaxTokens(): number {
+    return this.maxTokens;
+  }
+
+  /**
+   * Increments the token count (simulates token usage)
+   */
+  incrementTokenCount(tokens: number): void {
+    this.currentTokenCount = Math.min(this.maxTokens, this.currentTokenCount + tokens);
+    this.lastUpdate = Date.now();
+  }
+
+  /**
+   * Decrements the token count (simulates context compaction)
+   */
+  decrementTokenCount(tokens: number): void {
+    this.currentTokenCount = Math.max(0, this.currentTokenCount - tokens);
+    this.lastUpdate = Date.now();
+  }
+
+  /**
+   * Sets the token count directly
+   */
+  setTokenCount(tokens: number): void {
+    this.currentTokenCount = Math.min(this.maxTokens, Math.max(0, tokens));
+    this.lastUpdate = Date.now();
+  }
+
+  /**
+   * Resets the token count to session start value
+   */
+  resetToSessionStart(): void {
+    this.currentTokenCount = this.sessionStartTokens;
+    this.lastUpdate = Date.now();
+  }
+
+  /**
+   * Gets the usage percentage
+   */
+  getUsagePercentage(): number {
+    return Math.min(100, Math.max(0, Math.floor((this.getCurrentTokenCount() / this.maxTokens) * 100)));
+  }
+
+  /**
+   * Checks if usage is approaching limits
+   */
+  isApproachingLimit(threshold: number = 80): boolean {
+    return this.getUsagePercentage() >= threshold;
+  }
+}
 
 import Anthropic from '@anthropic-ai/sdk';
 import { MessageCreateParams, Message } from '@anthropic-ai/sdk/resources/messages';

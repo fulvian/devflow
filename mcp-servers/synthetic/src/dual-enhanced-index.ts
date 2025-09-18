@@ -16,12 +16,23 @@ import { AutonomousFileManager, FileOperation } from './file-operations.js';
 import { MCPErrorFactory, MCPResponseBuilder, MCPError, MCPErrorCode } from './enhanced-tools.js';
 import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
+import { prepareContextForPrompt } from './context-injection.js';
 
-dotenv.config();
+// Load .env from project root (2 levels up from mcp-servers/synthetic/)
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Force-load project .env and override any pre-set values from parent process
+dotenv.config({ path: resolve(__dirname, '../../../.env'), override: true });
 
 // Synthetic.new API configuration
-const SYNTHETIC_API_URL = 'https://api.synthetic.new/v1';
+const SYNTHETIC_API_URL = process.env.SYNTHETIC_API_BASE_URL || 'https://api.synthetic.new/v1';
 const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
+
+// Debug: Log API configuration (without exposing full key)
+console.log(`[Synthetic MCP] API Configuration:
+- Base URL: ${SYNTHETIC_API_URL}
+- API Key: ${SYNTHETIC_API_KEY ? `${SYNTHETIC_API_KEY.substring(0, 15)}...` : 'NOT LOADED'}`);
 
 // Enhanced configuration
 const DEVFLOW_PROJECT_ROOT = process.env.DEVFLOW_PROJECT_ROOT || process.cwd();
@@ -787,7 +798,8 @@ Focus on:
 - Following established patterns
 - Including necessary imports/dependencies`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.objective);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Objective: ${args.objective}
 
@@ -853,7 +865,7 @@ ${JSON.stringify(mcpResponse.metadata, null, 2)}`,
       try {
         const tasks = await this.db.all('SELECT * FROM tasks WHERE description LIKE ?', `%${args.problem}%`);
         if (tasks && tasks.length > 0) {
-          const taskDetails = tasks.map(t => `- **${t.title}**: ${t.status} - ${t.description}`).join('\n');
+          const taskDetails = tasks.map((t: any) => `- **${t.title}**: ${t.status} - ${t.description}`).join('\n');
           return {
             content: [
               {
@@ -879,7 +891,8 @@ Focus on:
 - Practical implications
 - Step-by-step analysis`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.problem);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Problem to analyze: ${args.problem}
 
@@ -922,7 +935,8 @@ Focus on:
 - Context significance
 - Actionable conclusions`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.content);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Content to analyze:
 ${args.content}
@@ -963,7 +977,8 @@ ${response.choices[0].message.content}
     approval_required?: boolean;
   }, requestId?: string) {
     // First, classify the task to determine the best model
-    const classificationPrompt = `Analyze this task and determine the best approach:
+    const contextPrefix = await prepareContextForPrompt(args.request);
+    const classificationPrompt = `${contextPrefix}Analyze this task and determine the best approach:
 
 Task: ${args.request}
 Constraints: ${args.constraints?.join(', ') || 'None'}

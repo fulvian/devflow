@@ -1,0 +1,25 @@
+{
+  "name": "synthetic-mcp-server",
+  "version": "1.0.0",
+  "description": "MCP Server per integrazione synthetic.new con Qwen CLI",
+  "main": "src/index.js",
+  "type": "module",
+  "scripts": {
+    "start": "node src/index.js",
+    "dev": "node --inspect src/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^0.5.0",
+    "axios": "^1.6.0",
+    "fs-extra": "^11.2.0",
+    "path": "^0.12.7",
+    "glob": "^10.3.0",
+    "dotenv": "^16.0.0"
+  },
+  "bin": {
+    "synthetic-mcp": "./src/index.js"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

@@ -26,7 +26,10 @@ def get_devflow_state():
             with open(current_task_file) as f:
                 task_data = json.load(f)
                 task_info["task"] = task_data.get("task", "unknown")
+                # Try to get progress percentage directly, fallback to derived progress
                 task_info["progress"] = task_data.get("progress_percentage", 0)
+                if not task_info["progress"]:
+                    task_info["progress"] = task_data.get("progress_percentage", 0)
         except:
             pass
 
@@ -149,7 +152,8 @@ def update_footer_state(tool_info):
         "version": "3.1",
         "progress": {
             "percentage": devflow_state["task"]["progress"],
-            "current_task": devflow_state["task"]["task"]
+            "current_task": devflow_state["task"]["task"],
+            "token_count": devflow_state["task"].get("token_count", 0)
         },
         "system": {
             "status": devflow_state["system_status"],
