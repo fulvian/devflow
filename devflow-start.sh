@@ -48,6 +48,15 @@ is_process_running() {
         rm -f "$1"
         return 1
       fi
+    # Special case for limit detection system (not a real process)
+    elif [ "$pid" = "AVAILABLE" ]; then
+      # Check if required files exist
+      if [ -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ] && [ -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+        return 0
+      else
+        rm -f "$1"
+        return 1
+      fi
     elif kill -0 "$pid" 2>/dev/null; then
       return 0
     else
@@ -63,8 +72,20 @@ is_process_running() {
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
-  # Stop all DevFlow services (including enforcement, session retry, and fallback monitoring)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".fallback.pid" ".cctools.pid")
+  # Remove global alias if it exists
+  if [ -f "/usr/local/bin/retry-claude" ]; then
+    if [ -w "/usr/local/bin" ]; then
+      rm -f /usr/local/bin/retry-claude 2>/dev/null && \
+        print_status "✅ Global alias 'retry-claude' removed" || \
+        print_status "ℹ️  Global alias 'retry-claude' not removed"
+    else
+      # Need sudo to remove, but don't force it
+      print_status "ℹ️  Global alias 'retry-claude' may require manual removal (sudo)"
+    fi
+  fi
+
+  # Stop all DevFlow services (including enforcement, session retry, limit detection, and fallback monitoring)
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -434,6 +455,53 @@ start_session_retry() {
   fi
 }
 
+# Function to start Claude Code Limit Detection System
+start_limit_detection() {
+  print_status "Starting Claude Code Limit Detection System..."
+
+  # Check if limit detection hook exists
+  if [ ! -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ]; then
+    print_warning "Limit detection hook not found - creating symlink..."
+    mkdir -p "$PROJECT_ROOT/.claude/hooks"
+    if [ -f "$PROJECT_ROOT/src/core/session/session-limit-detector.js" ]; then
+      ln -sf "$PROJECT_ROOT/src/core/session/session-limit-detector.js" "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js"
+    elif [ ! -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ]; then
+      print_warning "Limit detection hook not found - limit detection will not be available"
+      return 0
+    fi
+  fi
+
+  # Check if Claude Code wrapper exists
+  if [ ! -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+    print_warning "Claude Code wrapper not found - limit detection will not be available"
+    return 0
+  fi
+
+  # Create global alias for quick limit notification
+  if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ]; then
+    ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
+      print_status "✅ Global alias 'retry-claude' created" || \
+      print_warning "⚠️  Could not create global alias"
+  else
+    # Try with sudo if we have it
+    if command_exists sudo && [ -d "/usr/local/bin" ]; then
+      if sudo -n true 2>/dev/null; then
+        sudo ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
+          print_status "✅ Global alias 'retry-claude' created (with sudo)" || \
+          print_warning "⚠️  Could not create global alias (sudo failed)"
+      else
+        print_warning "⚠️  sudo required for global alias - run: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
+      fi
+    else
+      print_warning "⚠️  /usr/local/bin not writable - global alias not created"
+      print_status "💡 Tip: Create alias manually with: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
+    fi
+  fi
+
+  print_status "Claude Code Limit Detection System ready"
+  return 0
+}
+
 # Function to start Fallback Monitoring System (Dream Team monitoring)
 start_fallback_monitoring() {
   print_status "Starting Dream Team Fallback Monitoring System..."
@@ -655,6 +723,7 @@ main() {
         ".synthetic.pid:Synthetic MCP"
         ".ccr.pid:Auto CCR Runner"
         ".session-retry.pid:Smart Session Retry"
+        ".limit-detection.pid:Claude Code Limit Detection"
         ".enforcement.pid:Claude Code Enforcement"
         ".fallback.pid:Dream Team Fallback Monitor"
         ".orchestrator.pid:DevFlow Orchestrator"
@@ -732,6 +801,14 @@ main() {
     print_warning "Smart Session Retry System failed to start - CONTINUING WITHOUT SESSION RETRY"
   fi
 
+  # Start Claude Code limit detection system (optional - enhances session retry)
+  if ! start_limit_detection; then
+    print_warning "Claude Code Limit Detection System failed to start - limit detection will not be available"
+  else
+    # Create a dummy PID file to indicate the service is available
+    echo "AVAILABLE" > "$PROJECT_ROOT/.limit-detection.pid"
+  fi
+
   # Start enforcement system (optional - graceful degradation)
   if ! start_enforcement; then
     print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
@@ -766,6 +843,11 @@ main() {
     print_status "✅ Smart Session Retry: Running"
   else
     print_warning "⚠️  Smart Session Retry: Not Running"
+  fi
+  if [ -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ] && [ -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+    print_status "✅ Claude Code Limit Detection: Available"
+  else
+    print_warning "⚠️  Claude Code Limit Detection: Not Available"
   fi
   if is_process_running "$PROJECT_ROOT/.enforcement.pid"; then
     print_status "✅ Claude Code Enforcement: Running"

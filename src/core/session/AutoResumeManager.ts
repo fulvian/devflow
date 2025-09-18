@@ -6,6 +6,7 @@
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
+import { spawn } from 'child_process';
 import { ClaudeSessionTracker } from './ClaudeSessionTracker';
 
 interface ResumeSchedule {
@@ -179,9 +180,8 @@ export class AutoResumeManager {
         this.resumeTimers.delete(sessionId);
       }
 
-      // Here you would integrate with Claude Code to actually resume the session
-      // For now, we just log the event and could trigger a notification
-      await this.logResumeEvent(sessionId);
+      // Execute actual Claude Code resume command
+      await this.executeClaudeCodeResume(sessionId);
 
       console.log(`✅ Auto-resume executed for session ${sessionId}`);
 
@@ -210,6 +210,92 @@ export class AutoResumeManager {
           await this.saveSchedules();
         }
       }
+    }
+  }
+
+  private async executeClaudeCodeResume(sessionId: string): Promise<void> {
+    try {
+      console.log(`🔄 Resuming Claude Code session ${sessionId}...`);
+      
+      // Get session info to determine what to resume
+      const sessionInfo = await this.getSessionInfo(sessionId);
+      if (!sessionInfo) {
+        throw new Error(`No session info found for ${sessionId}`);
+      }
+
+      const { spawn } = require('child_process');
+      const path = require('path');
+      
+      // Check for our custom resume script first
+      const resumeScriptPath = path.join(process.cwd(), 'scripts', 'resume-claude-session.sh');
+      let resumeCommand = '';
+      let resumeArgs: string[] = [];
+      
+      if (require('fs').existsSync(resumeScriptPath)) {
+        resumeCommand = resumeScriptPath;
+        resumeArgs = [sessionId];
+      } 
+      // Check for cc-tools availability
+      else if (this.commandExists('cc-tools')) {
+        resumeCommand = 'cc-tools';
+        resumeArgs = ['resume', sessionId];
+      } 
+      // Check for devflow availability
+      else if (this.commandExists('devflow')) {
+        resumeCommand = 'devflow';
+        resumeArgs = ['resume', sessionId];
+      }
+      // Fallback to Claude Code direct command
+      else {
+        resumeCommand = 'claude-code';
+        resumeArgs = ['--resume', sessionId];
+      }
+      
+      console.log(`🔧 Executing resume command: ${resumeCommand} ${resumeArgs.join(' ')}`);
+      
+      const child = spawn(resumeCommand, resumeArgs, {
+        cwd: process.cwd(),
+        env: process.env,
+        stdio: 'pipe'
+      });
+      
+      child.stdout.on('data', (data: Buffer) => {
+        console.log(`[RESUME STDOUT] ${data.toString()}`);
+      });
+      
+      child.stderr.on('data', (data: Buffer) => {
+        console.error(`[RESUME STDERR] ${data.toString()}`);
+      });
+      
+      child.on('close', (code: number) => {
+        if (code === 0) {
+          console.log(`✅ Resume command completed successfully for session ${sessionId}`);
+        } else {
+          console.error(`❌ Resume command failed with code ${code} for session ${sessionId}`);
+        }
+      });
+      
+      child.on('error', (error: Error) => {
+        console.error(`❌ Failed to execute resume command for session ${sessionId}:`, error);
+        throw error;
+      });
+      
+      // Wait a bit to ensure the command was sent
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+    } catch (error) {
+      console.error(`❌ Failed to execute Claude Code resume for ${sessionId}:`, error);
+      throw error;
+    }
+  }
+
+  private commandExists(command: string): boolean {
+    const { spawnSync } = require('child_process');
+    try {
+      const result = spawnSync('which', [command]);
+      return result.status === 0;
+    } catch {
+      return false;
     }
   }
 

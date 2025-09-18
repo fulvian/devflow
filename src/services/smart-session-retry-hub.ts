@@ -146,6 +146,11 @@ export class SmartSessionRetryHub {
 
       if (!existsSync(currentSessionFile)) {
         console.warn('⚠️ No current session file found');
+        // Create a default session for testing
+        const sessionId = `session_${Date.now()}`;
+        await this.sessionTracker.startSession(Date.now());
+        await this.autoResumeManager.handleSessionLimitReached(sessionId);
+        await this.logEvent('LIMIT_EVENT', `Session ${sessionId}: ${limitMessage}`);
         return;
       }
 
@@ -192,37 +197,70 @@ export class SmartSessionRetryHub {
     return new Promise((resolve, reject) => {
       this.server = http.createServer(async (req, res) => {
         const url = req.url || '';
+        let body = '';
 
-        // Set CORS headers
-        res.setHeader('Access-Control-Allow-Origin', '*');
-        res.setHeader('Content-Type', 'application/json');
-
-        try {
-          if (url === '/health') {
-            const status = await this.getStatus();
-            res.writeHead(200);
-            res.end(JSON.stringify(status, null, 2));
-
-          } else if (url === '/sessions') {
-            const sessions = await this.sessionTracker.getActiveSessions();
-            res.writeHead(200);
-            res.end(JSON.stringify(sessions, null, 2));
-
-          } else if (url === '/schedules') {
-            const schedules = await this.getResumeSchedules();
-            res.writeHead(200);
-            res.end(JSON.stringify(schedules, null, 2));
-
-          } else {
-            res.writeHead(404);
-            res.end(JSON.stringify({ error: 'Not found' }));
-          }
-
-        } catch (error) {
-          console.error('❌ Health check server error:', error);
-          res.writeHead(500);
-          res.end(JSON.stringify({ error: 'Internal server error' }));
+        // Collect request body for POST requests
+        if (req.method === 'POST') {
+          req.on('data', chunk => {
+            body += chunk.toString();
+          });
         }
+
+        req.on('end', async () => {
+          // Set CORS headers
+          res.setHeader('Access-Control-Allow-Origin', '*');
+          res.setHeader('Content-Type', 'application/json');
+
+          try {
+            if (url === '/health') {
+              const status = await this.getStatus();
+              res.writeHead(200);
+              res.end(JSON.stringify(status, null, 2));
+
+            } else if (url === '/sessions') {
+              const sessions = await this.sessionTracker.getActiveSessions();
+              res.writeHead(200);
+              res.end(JSON.stringify(sessions, null, 2));
+
+            } else if (url === '/schedules') {
+              const schedules = await this.getResumeSchedules();
+              res.writeHead(200);
+              res.end(JSON.stringify(schedules, null, 2));
+
+            } else if (url === '/notify-limit' && req.method === 'POST') {
+              // Handle limit notification
+              const requestData = JSON.parse(body);
+              const limitMessage = requestData.limitMessage;
+              
+              if (!limitMessage) {
+                res.writeHead(400);
+                res.end(JSON.stringify({ error: 'Missing limitMessage parameter' }));
+                return;
+              }
+              
+              await this.handleClaudeCodeLimitEvent(limitMessage);
+              
+              res.writeHead(200);
+              res.end(JSON.stringify({ success: true, message: 'Limit event processed' }));
+
+            } else if (req.method === 'OPTIONS') {
+              // Handle CORS preflight
+              res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
+              res.setHeader('Access-Control-Allow-Headers', 'Content-Type');
+              res.writeHead(200);
+              res.end();
+
+            } else {
+              res.writeHead(404);
+              res.end(JSON.stringify({ error: 'Not found' }));
+            }
+
+          } catch (error) {
+            console.error('❌ Health check server error:', error);
+            res.writeHead(500);
+            res.end(JSON.stringify({ error: 'Internal server error' }));
+          }
+        });
       });
 
       this.server.listen(this.config.healthCheckPort, (err?: Error) => {
