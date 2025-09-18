@@ -1,0 +1,1 @@
+Test basico - integrazione completata

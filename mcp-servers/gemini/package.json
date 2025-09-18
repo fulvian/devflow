@@ -1,0 +1,21 @@
+{
+  "name": "@devflow/gemini-mcp-server",
+  "version": "1.0.0",
+  "description": "Gemini MCP Server with user account authentication for DevFlow",
+  "main": "dist/index.js",
+  "scripts": {
+    "build": "echo 'No build needed - using direct JS'",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.0"
+  },
+  "keywords": [
+    "mcp",
+    "gemini",
+    "devflow",
+    "user-auth"
+  ],
+  "author": "DevFlow Team",
+  "license": "MIT"
+}

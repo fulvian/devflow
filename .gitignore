@@ -48,20 +48,28 @@ configs/**/ccr-config*.json
 .claude/hooks/*.py
 .devflow/sessions/
 
-# Backup directories (may contain sensitive data)
+# DevFlow specific files
+*.pid
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+logs/
+data/
 backups/
 .backups/
 *.backup-*
-
-# Log files (may contain sensitive info)
-logs/
-*.log
-
-# PID files
-*.pid
+config/
+sessions/tasks/
+prova/
+test-output/
 
 # Test files with hardcoded keys
 test**/synthetic*.ts
 test**/openai*.ts
 **/test/**/*key*.ts
 **/test/**/*secret*.ts
+
+# Temporary files
+ciao
+ciao.ts
+synthetic-ciao.ts
