@@ -1,0 +1,45 @@
+{
+  "mcpServers": {
+    "devflow-synthetic-cc-sessions": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "syn_4f04a1a3108cfbb64ac973367542d361",
+        "SYNTHETIC_API_BASE_URL": "https://api.synthetic.new/v1",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "DEVFLOW_STORAGE_MODE": "devflow",
+        "AUTONOMOUS_FILE_OPERATIONS": "true",
+        "REQUIRE_APPROVAL": "false",
+        "CREATE_BACKUPS": "true",
+        "ALLOWED_FILE_EXTENSIONS": ".ts,.js,.json,.md,.py,.tsx,.jsx,.css,.scss,.html,.yml,.yaml",
+        "AGENT_HIERARCHY": "claude,codex,gemini,qwen3",
+        "FALLBACK_ENABLED": "true"
+      }
+    },
+    "ctir-router-mcp": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp/ctir-router-mcp/dist/index.js"],
+      "env": {
+        "ROUTER_MODE": "fallback_only",
+        "ENABLE_HEALTH_CHECKS": "true",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow"
+      }
+    }
+  },
+  "agentFallbackConfig": {
+    "hierarchy": ["claude", "codex", "gemini", "qwen3"],
+    "healthCheckInterval": 30000,
+    "maxRetries": 2,
+    "timeoutMs": 5000,
+    "failureThreshold": 3,
+    "fallbackStrategies": {
+      "coding": ["codex", "qwen3", "claude", "gemini"],
+      "debugging": ["claude", "gemini", "qwen3", "codex"],
+      "testing": ["gemini", "codex", "qwen3", "claude"],
+      "general": ["claude", "codex", "gemini", "qwen3"]
+    }
+  }
+}

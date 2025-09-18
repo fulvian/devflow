@@ -1,0 +1,16 @@
+{
+  "system": "cometa-devflow",
+  "version": "3.1.0",
+  "primary_db": "data/devflow.sqlite",
+  "backup_path": "backups/cc-session-backup-20250915_031611",
+  "migration_timestamp": "2025-09-15T01:16:11.3NZ",
+  "features": {
+    "unified_memory": true,
+    "task_management": true,
+    "session_tracking": true,
+    "agent_delegation": true,
+    "synthetic_integration": true
+  },
+  "replaced_systems": ["cc-session"],
+  "status": "active"
+}
