@@ -84,8 +84,8 @@ stop_services() {
     fi
   fi
 
-  # Stop all DevFlow services (including enforcement, session retry, limit detection, and fallback monitoring)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid")
+  # Stop all DevFlow services (including enforcement, session retry, limit detection, fallback monitoring, and Real Dream Team Orchestrator)
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid" ".real-dream-team-orchestrator.pid" ".cli-integration-manager.pid" ".platform-status-tracker.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -654,6 +654,138 @@ start_orchestrator() {
   fi
 }
 
+# Function to start Real Dream Team Orchestrator (Cometa v3.1)
+start_real_dream_team_orchestrator() {
+  print_status "Starting Real Dream Team Orchestrator..."
+
+  # Check if Real Dream Team Orchestrator is already running
+  if pgrep -f "real-dream-team-orchestrator" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "real-dream-team-orchestrator" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.real-dream-team-orchestrator.pid"
+      print_status "Real Dream Team Orchestrator already running (PID: $pid)"
+    else
+      print_status "Real Dream Team Orchestrator already running"
+    fi
+    return 0
+  fi
+
+  # Check if Real Dream Team Orchestrator exists
+  if [ ! -f "$PROJECT_ROOT/src/core/orchestration/real-dream-team-orchestrator.ts" ]; then
+    print_error "Real Dream Team Orchestrator not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start Real Dream Team Orchestrator in background (TypeScript via ts-node)
+  nohup npx ts-node "$PROJECT_ROOT/src/core/orchestration/real-dream-team-daemon.ts" > logs/real-dream-team-orchestrator.log 2>&1 &
+  local orchestrator_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $orchestrator_pid 2>/dev/null; then
+    echo $orchestrator_pid > "$PROJECT_ROOT/.real-dream-team-orchestrator.pid"
+    print_status "Real Dream Team Orchestrator started successfully (PID: $orchestrator_pid)"
+    return 0
+  else
+    print_error "Failed to start Real Dream Team Orchestrator"
+    return 1
+  fi
+}
+
+# Function to start CLI Integration Manager (Cometa v3.1)
+start_cli_integration_manager() {
+  print_status "Starting CLI Integration Manager..."
+
+  # Check if CLI Integration Manager is already running
+  if pgrep -f "cli-integration-manager" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "cli-integration-manager" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.cli-integration-manager.pid"
+      print_status "CLI Integration Manager already running (PID: $pid)"
+    else
+      print_status "CLI Integration Manager already running"
+    fi
+    return 0
+  fi
+
+  # Check if CLI Integration Manager exists
+  if [ ! -f "$PROJECT_ROOT/src/core/mcp/cli-integration-manager.ts" ]; then
+    print_error "CLI Integration Manager not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start CLI Integration Manager in background (TypeScript via ts-node)
+  nohup npx ts-node "$PROJECT_ROOT/src/core/mcp/cli-integration-manager.ts" > logs/cli-integration-manager.log 2>&1 &
+  local manager_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $manager_pid 2>/dev/null; then
+    echo $manager_pid > "$PROJECT_ROOT/.cli-integration-manager.pid"
+    print_status "CLI Integration Manager started successfully (PID: $manager_pid)"
+    return 0
+  else
+    print_error "Failed to start CLI Integration Manager"
+    return 1
+  fi
+}
+
+# Function to start Platform Status Tracker (Cometa v3.1)
+start_platform_status_tracker() {
+  print_status "Starting Platform Status Tracker..."
+
+  # Check if Platform Status Tracker is already running
+  if pgrep -f "platform-status-tracker" > /dev/null; then
+    local pid
+    pid=$(pgrep -f -n "platform-status-tracker" || true)
+    if [ -n "$pid" ]; then
+      echo "$pid" > "$PROJECT_ROOT/.platform-status-tracker.pid"
+      print_status "Platform Status Tracker already running (PID: $pid)"
+    else
+      print_status "Platform Status Tracker already running"
+    fi
+    return 0
+  fi
+
+  # Check if Platform Status Tracker exists
+  if [ ! -f "$PROJECT_ROOT/src/core/ui/platform-status-tracker.ts" ]; then
+    print_error "Platform Status Tracker not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start Platform Status Tracker in background (TypeScript via ts-node)
+  nohup npx ts-node "$PROJECT_ROOT/src/core/ui/platform-status-tracker.ts" > logs/platform-status-tracker.log 2>&1 &
+  local tracker_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $tracker_pid 2>/dev/null; then
+    echo $tracker_pid > "$PROJECT_ROOT/.platform-status-tracker.pid"
+    print_status "Platform Status Tracker started successfully (PID: $tracker_pid)"
+    return 0
+  else
+    print_error "Failed to start Platform Status Tracker"
+    return 1
+  fi
+}
+
 # Function to check prerequisites
 check_prerequisites() {
   print_status "Checking prerequisites..."
@@ -728,6 +860,9 @@ main() {
         ".fallback.pid:Dream Team Fallback Monitor"
         ".orchestrator.pid:DevFlow Orchestrator"
         ".cctools.pid:CC-Tools gRPC Server"
+        ".real-dream-team-orchestrator.pid:Real Dream Team Orchestrator (Cometa v3.1)"
+        ".cli-integration-manager.pid:CLI Integration Manager (Cometa v3.1)"
+        ".platform-status-tracker.pid:Platform Status Tracker (Cometa v3.1)"
       )
 
       for service in "${services[@]}"; do
@@ -810,8 +945,12 @@ main() {
   fi
 
   # Start enforcement system (optional - graceful degradation)
-  if ! start_enforcement; then
-    print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
+  if [ "$DISABLE_ENFORCEMENT" = "critical" ]; then
+    print_warning "Enforcement DISABLED (DISABLE_ENFORCEMENT=critical). Skipping enforcement startup."
+  else
+    if ! start_enforcement; then
+      print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
+    fi
   fi
 
   # Start Dream Team fallback monitoring system (CRITICAL for agent coordination)
@@ -831,7 +970,24 @@ main() {
     exit 1
   fi
 
-  print_status "🎉 DevFlow v2.1.0 Production System Started Successfully!"
+  # Start Real Dream Team Orchestrator system (Cometa v3.1 - CRITICAL for real CLI integration)
+  if ! start_real_dream_team_orchestrator; then
+    print_error "Real Dream Team Orchestrator failed to start - CRITICAL ERROR"
+    exit 1
+  fi
+
+  # Start CLI Integration Manager (Cometa v3.1 - CRITICAL for MCP CLI integration)
+  if ! start_cli_integration_manager; then
+    print_error "CLI Integration Manager failed to start - CRITICAL ERROR"
+    exit 1
+  fi
+
+  # Start Platform Status Tracker (Cometa v3.1 - enhances real-time monitoring)
+  if ! start_platform_status_tracker; then
+    print_warning "Platform Status Tracker failed to start - CONTINUING WITHOUT REAL-TIME UI"
+  fi
+
+  print_status "🎉 DevFlow v3.1.0 Cometa Production System Started Successfully!"
   print_status "✅ Database Manager: Running"
   print_status "✅ Model Registry: Running"
   print_status "✅ Vector Memory: Running (EmbeddingGemma)"
@@ -854,9 +1010,29 @@ main() {
   else
     print_warning "⚠️  Claude Code Enforcement: Not Running"
   fi
+
+  # Cometa v3.1 Real Dream Team Orchestrator Status
+  if is_process_running "$PROJECT_ROOT/.real-dream-team-orchestrator.pid"; then
+    print_status "✅ Real Dream Team Orchestrator: Running (Cometa v3.1)"
+  else
+    print_error "❌ Real Dream Team Orchestrator: Not Running (CRITICAL)"
+  fi
+  if is_process_running "$PROJECT_ROOT/.cli-integration-manager.pid"; then
+    print_status "✅ CLI Integration Manager: Running (Cometa v3.1)"
+  else
+    print_error "❌ CLI Integration Manager: Not Running (CRITICAL)"
+  fi
+  if is_process_running "$PROJECT_ROOT/.platform-status-tracker.pid"; then
+    print_status "✅ Platform Status Tracker: Running (Cometa v3.1)"
+  else
+    print_warning "⚠️  Platform Status Tracker: Not Running"
+  fi
+
   print_status ""
-  print_status "🚀 System Status: PRODUCTION READY"
+  print_status "🚀 System Status: COMETA v3.1 PRODUCTION READY"
   print_status "🔄 Auto CCR monitoring active for fallback orchestration"
+  print_status "🎯 Real Dream Team Orchestrator active for CLI integration"
+  print_status "⚡ MCP CLI Integration Manager active for Codex/Gemini/Qwen"
 }
 
 # Trap SIGINT and SIGTERM to stop services gracefully

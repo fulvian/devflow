@@ -23,7 +23,9 @@
     "cctools:list": "bash scripts/cc-tools-cli.sh list --auto-start",
     "cctools:metadata": "bash scripts/cc-tools-cli.sh metadata --project-root /Users/fulvioventura/devflow --auto-start",
     "cctools:validate": "bash scripts/cc-tools-cli.sh validate --project-root /Users/fulvioventura/devflow --timeout-ms 15000 --auto-start",
-    "cctools:health": "bash scripts/cc-tools-health.sh"
+    "cctools:health": "bash scripts/cc-tools-health.sh",
+    "check:cli": "node scripts/check-cli.mjs",
+    "smoke:orchestrator": "ts-node src/core/orchestration/smoke-run.ts smoke ping"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.62.0",

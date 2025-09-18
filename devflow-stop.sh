@@ -52,15 +52,15 @@ is_process_running() {
   fi
 }
 
-print_status "🛑 Stopping DevFlow v2.1.0 services..."
+print_status "🛑 Stopping DevFlow v3.1.0 Cometa services..."
 
-# Stop all DevFlow services (including enforcement) - aligned with devflow-start.sh
-local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid")
+# Stop all DevFlow services (including enforcement and Cometa v3.1 Real Dream Team Orchestrator) - aligned with devflow-start.sh
+services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid" ".real-dream-team-orchestrator.pid" ".cli-integration-manager.pid" ".platform-status-tracker.pid")
 
 for service_pid in "${services[@]}"; do
   if is_process_running "$PROJECT_ROOT/$service_pid"; then
-    local pid=$(cat "$PROJECT_ROOT/$service_pid")
-    local service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
+    pid=$(cat "$PROJECT_ROOT/$service_pid")
+    service_name=$(echo $service_pid | sed 's/.pid//' | sed 's/\.//')
 
     if [ "$pid" = "MCP_READY" ]; then
       print_status "Stopping $service_name (MCP Server)..."
@@ -91,6 +91,15 @@ pkill -f "synthetic" 2>/dev/null || true
 pkill -f "devflow" 2>/dev/null || true
 pkill -f "ccr" 2>/dev/null || true
 
+# Kill Cometa v3.1 Real Dream Team Orchestrator processes as backup
+print_status "Running Cometa v3.1 backup cleanup..."
+pkill -f "real-dream-team-orchestrator" 2>/dev/null || true
+pkill -f "cli-integration-manager" 2>/dev/null || true
+pkill -f "platform-status-tracker" 2>/dev/null || true
+pkill -f "ts-node.*orchestration" 2>/dev/null || true
+pkill -f "ts-node.*mcp" 2>/dev/null || true
+pkill -f "ts-node.*ui" 2>/dev/null || true
+
 # Stop CCR Services
 if [ -f "scripts/ccr-services.sh" ]; then
     print_status "Stopping CCR services script..."
@@ -103,4 +112,7 @@ if [ -f "emergency-ccr-cli.mjs" ]; then
     node emergency-ccr-cli.mjs stop 2>/dev/null || true
 fi
 
-print_status "✅ All DevFlow services stopped"
+print_status "✅ All DevFlow v3.1.0 Cometa services stopped"
+print_status "🎯 Real Dream Team Orchestrator stopped"
+print_status "⚡ CLI Integration Manager stopped"
+print_status "📊 Platform Status Tracker stopped"
