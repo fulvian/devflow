@@ -617,17 +617,22 @@ start_orchestrator() {
   fi
 
   # Check if orchestrator app exists
-  if [ ! -f "$PROJECT_ROOT/services/devflow-orchestrator/dist/main.js" ]; then
-    print_error "Orchestrator app not found at services/devflow-orchestrator/dist/main.js"
+  if [ ! -f "$PROJECT_ROOT/services/devflow-orchestrator/dist/app.js" ]; then
+    print_error "Orchestrator app not found at services/devflow-orchestrator/dist/app.js"
     return 1
   fi
 
   # Create logs directory if it doesn't exist
   mkdir -p "$PROJECT_ROOT/logs"
 
+  # Export database path for orchestrator
+  export DEVFLOW_DB_PATH="$PROJECT_ROOT/devflow.sqlite"
+
   # Start orchestrator in background
-  nohup node "$PROJECT_ROOT/services/devflow-orchestrator/dist/main.js" > logs/orchestrator.log 2>&1 &
+  cd "$PROJECT_ROOT/services/devflow-orchestrator"
+  nohup node dist/app.js > ../../logs/orchestrator.log 2>&1 &
   local orchestrator_pid=$!
+  cd "$PROJECT_ROOT"
 
   # Give it a moment to start
   sleep 3

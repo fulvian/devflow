@@ -7,8 +7,12 @@ import * as http from 'http';
 import * as fs from 'fs/promises';
 import * as path from 'path';
 import { existsSync } from 'fs';
+import { exec } from 'child_process';
+import { promisify } from 'util';
 import { ClaudeSessionTracker } from '../core/session/ClaudeSessionTracker';
 import { AutoResumeManager } from '../core/session/AutoResumeManager';
+
+const execAsync = promisify(exec);
 
 interface HubConfig {
   enabled: boolean;
@@ -26,6 +30,17 @@ interface SessionRetrySystemStatus {
   uptime: number;
   lastActivity: string;
   errors: number;
+  claudeUsage?: {
+    current: number;
+    limit: number;
+    percentage: number;
+    lastCheck: string;
+  };
+  devflowCometa?: {
+    connected: boolean;
+    lastSync: string;
+    taskState?: any;
+  };
 }
 
 export class SmartSessionRetryHub {
@@ -126,6 +141,8 @@ export class SmartSessionRetryHub {
   async getStatus(): Promise<SessionRetrySystemStatus> {
     const activeSessions = await this.sessionTracker.getActiveSessions();
     const schedules = await this.getResumeSchedules();
+    const claudeUsage = await this.checkClaudeUsage();
+    const devflowCometa = await this.checkDevFlowCometa();
 
     return {
       status: this.isRunning ? 'running' : 'stopped',
@@ -133,13 +150,21 @@ export class SmartSessionRetryHub {
       scheduledResumes: schedules.filter(s => s.status === 'scheduled').length,
       uptime: this.startTime ? Math.floor((Date.now() - this.startTime) / 1000) : 0,
       lastActivity: new Date().toISOString(),
-      errors: this.errorCount
+      errors: this.errorCount,
+      claudeUsage,
+      devflowCometa
     };
   }
 
   async handleClaudeCodeLimitEvent(limitMessage: string): Promise<void> {
     try {
       console.log('⚠️ Claude Code limit event detected:', limitMessage);
+
+      // Check current usage for intelligent timing
+      const claudeUsage = await this.checkClaudeUsage();
+      const adaptiveDelay = this.calculateAdaptiveRetryDelay(claudeUsage);
+
+      console.log(`🕐 Calculated adaptive retry delay: ${adaptiveDelay}ms based on usage: ${claudeUsage?.percentage}%`);
 
       // Extract session info from current session
       const currentSessionFile = path.join(process.cwd(), '.devflow', 'sessions', 'current_session.json');
@@ -150,26 +175,66 @@ export class SmartSessionRetryHub {
         const sessionId = `session_${Date.now()}`;
         await this.sessionTracker.startSession(Date.now());
         await this.autoResumeManager.handleSessionLimitReached(sessionId);
-        await this.logEvent('LIMIT_EVENT', `Session ${sessionId}: ${limitMessage}`);
+        await this.logEvent('LIMIT_EVENT', `Session ${sessionId}: ${limitMessage} (adaptive delay: ${adaptiveDelay}ms)`);
         return;
       }
 
       const currentSession = JSON.parse(await fs.readFile(currentSessionFile, 'utf-8'));
       const sessionId = currentSession.task || `session_${Date.now()}`;
 
-      // Record the limit event
+      // Record the limit event with adaptive timing
       await this.sessionTracker.recordLimitEvent(sessionId, limitMessage);
 
-      // Trigger auto-resume handling
-      await this.autoResumeManager.handleSessionLimitReached(sessionId);
+      // Schedule intelligent retry based on ClaudeNightsWatch patterns
+      this.scheduleAdaptiveRetry(sessionId, adaptiveDelay);
 
-      await this.logEvent('LIMIT_EVENT', `Session ${sessionId}: ${limitMessage}`);
+      await this.logEvent('LIMIT_EVENT', `Session ${sessionId}: ${limitMessage} (adaptive delay: ${adaptiveDelay}ms)`);
 
     } catch (error) {
       console.error('❌ Failed to handle Claude Code limit event:', error);
       this.errorCount++;
       await this.logEvent('ERROR', `Failed to handle limit event: ${error}`);
     }
+  }
+
+  private calculateAdaptiveRetryDelay(usage?: { current: number; limit: number; percentage: number }): number {
+    // ClaudeNightsWatch-inspired adaptive timing
+    if (!usage) return 300000; // 5 minutes default
+
+    const percentage = usage.percentage;
+
+    if (percentage >= 95) return 1800000; // 30 minutes - near limit
+    if (percentage >= 85) return 900000;  // 15 minutes - high usage
+    if (percentage >= 70) return 600000;  // 10 minutes - moderate usage
+    if (percentage >= 50) return 300000;  // 5 minutes - light usage
+
+    return 180000; // 3 minutes - low usage
+  }
+
+  private scheduleAdaptiveRetry(sessionId: string, delay: number): void {
+    setTimeout(async () => {
+      try {
+        console.log(`🔄 Adaptive retry triggered for session ${sessionId}`);
+
+        // Check if conditions have improved
+        const claudeUsage = await this.checkClaudeUsage();
+        const devflowState = await this.checkDevFlowCometa();
+
+        if (claudeUsage && claudeUsage.percentage < 80 && devflowState?.connected) {
+          console.log('✅ Conditions improved, triggering auto-resume');
+          await this.autoResumeManager.handleSessionLimitReached(sessionId);
+          await this.logEvent('ADAPTIVE_RETRY', `Session ${sessionId}: Auto-resumed after improved conditions`);
+        } else {
+          console.log('⏳ Conditions not yet optimal, scheduling next check');
+          const nextDelay = this.calculateAdaptiveRetryDelay(claudeUsage);
+          this.scheduleAdaptiveRetry(sessionId, Math.min(nextDelay, delay * 1.5)); // Exponential backoff
+        }
+
+      } catch (error) {
+        console.error('❌ Adaptive retry failed:', error);
+        await this.logEvent('ERROR', `Adaptive retry failed for session ${sessionId}: ${error}`);
+      }
+    }, delay);
   }
 
   private loadConfiguration(): HubConfig {
@@ -386,6 +451,72 @@ export class SmartSessionRetryHub {
     }
 
     return [];
+  }
+
+  private async checkClaudeUsage(): Promise<{ current: number; limit: number; percentage: number; lastCheck: string; } | undefined> {
+    try {
+      // Use ccusage command similar to ClaudeNightsWatch pattern
+      const { stdout } = await execAsync('ccusage 2>/dev/null || echo "Error: ccusage not available"');
+
+      if (stdout.includes('Error:')) {
+        return undefined;
+      }
+
+      // Parse ccusage output (format varies, handle common patterns)
+      const lines = stdout.trim().split('\n');
+      let current = 0, limit = 0;
+
+      for (const line of lines) {
+        if (line.includes('Current:') || line.includes('Used:')) {
+          const match = line.match(/(\d+)/);
+          if (match) current = parseInt(match[1]);
+        }
+        if (line.includes('Limit:') || line.includes('Total:')) {
+          const match = line.match(/(\d+)/);
+          if (match) limit = parseInt(match[1]);
+        }
+      }
+
+      return {
+        current,
+        limit,
+        percentage: limit > 0 ? Math.round((current / limit) * 100) : 0,
+        lastCheck: new Date().toISOString()
+      };
+    } catch (error) {
+      console.warn('⚠️ Could not check Claude usage:', error);
+      return undefined;
+    }
+  }
+
+  private async checkDevFlowCometa(): Promise<{ connected: boolean; lastSync: string; taskState?: any; } | undefined> {
+    try {
+      // Check DevFlow Cometa API (single source of truth) - Updated to correct port 3007
+      const response = await fetch('http://localhost:3007/health');
+
+      if (!response.ok) {
+        return { connected: false, lastSync: new Date().toISOString() };
+      }
+
+      // Try to get current task state from Cometa
+      const taskResponse = await fetch('http://localhost:3007/api/tasks/current', {
+        headers: { 'Authorization': 'Bearer dev-token' }
+      });
+
+      let taskState = undefined;
+      if (taskResponse.ok) {
+        taskState = await taskResponse.json();
+      }
+
+      return {
+        connected: true,
+        lastSync: new Date().toISOString(),
+        taskState
+      };
+    } catch (error) {
+      console.warn('⚠️ Could not check DevFlow Cometa:', error);
+      return { connected: false, lastSync: new Date().toISOString() };
+    }
   }
 
   private async logEvent(type: string, message: string): Promise<void> {
