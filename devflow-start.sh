@@ -30,6 +30,23 @@ print_error() {
   echo -e "${RED}[ERROR]${NC} $1"
 }
 
+# Ensure logs directory exists
+ensure_logs_dir() {
+  mkdir -p "$PROJECT_ROOT/logs" "$PROJECT_ROOT/logs/archive"
+}
+
+# Rotate logs into archive with timestamp
+rotate_logs() {
+  ensure_logs_dir
+  local ts
+  ts=$(date +%Y%m%d_%H%M%S)
+  shopt -s nullglob
+  for f in "$PROJECT_ROOT"/logs/*.log; do
+    mv "$f" "$PROJECT_ROOT/logs/archive/$(basename "$f" .log).$ts.log" 2>/dev/null || true
+  done
+  shopt -u nullglob
+}
+
 # Function to check if a command exists
 command_exists() {
   command -v "$1" >/dev/null 2>&1
@@ -216,14 +233,23 @@ start_database() {
     return 0
   fi
 
-  # Start Database Manager (production service)
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/database-manager.cjs" > logs/database-manager.log 2>&1 &
+  ensure_logs_dir
+  # Start Database Manager (production service) on documented port 3002
+  PORT=${DB_MANAGER_PORT:-3002} nohup node "$PROJECT_ROOT/packages/core/dist/services/database-manager.cjs" > logs/database-manager.log 2>&1 &
   local db_pid=$!
   sleep 3
 
   if kill -0 $db_pid 2>/dev/null; then
     echo $db_pid > "$PROJECT_ROOT/.database.pid"
     print_status "Database Manager started (PID: $db_pid)"
+    # Health loop (non-failing within set -e)
+    local attempts=0
+    while [ $attempts -lt 10 ]; do
+      if curl -sf --max-time 2 "http://localhost:${DB_MANAGER_PORT:-3002}/health" >/dev/null 2>&1; then
+        break
+      fi
+      sleep 1; attempts=$((attempts+1))
+    done
     return 0
   else
     print_error "Failed to start Database Manager"
@@ -247,14 +273,22 @@ start_vector() {
     return 0
   fi
 
-  # Start Vector Memory Service with EmbeddingGemma
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/vector-memory-service.cjs" > logs/vector-memory.log 2>&1 &
+  ensure_logs_dir
+  # Start Vector Memory Service with EmbeddingGemma on documented port 3003
+  PORT=${VECTOR_MEMORY_PORT:-3003} nohup node "$PROJECT_ROOT/packages/core/dist/services/vector-memory-service.cjs" > logs/vector-memory.log 2>&1 &
   local vector_pid=$!
   sleep 3
 
   if kill -0 $vector_pid 2>/dev/null; then
     echo $vector_pid > "$PROJECT_ROOT/.vector.pid"
     print_status "Vector Memory Service started (PID: $vector_pid)"
+    local attempts=0
+    while [ $attempts -lt 10 ]; do
+      if curl -sf --max-time 2 "http://localhost:${VECTOR_MEMORY_PORT:-3003}/health" >/dev/null 2>&1; then
+        break
+      fi
+      sleep 1; attempts=$((attempts+1))
+    done
     return 0
   else
     print_error "Failed to start Vector Memory Service"
@@ -278,14 +312,22 @@ start_optimizer() {
     return 0
   fi
 
-  # Start Token Optimizer with real algorithms
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/token-optimizer-service.cjs" > logs/token-optimizer.log 2>&1 &
+  ensure_logs_dir
+  # Start Token Optimizer with real algorithms on documented port 3006
+  PORT=${TOKEN_OPTIMIZER_PORT:-3006} nohup node "$PROJECT_ROOT/packages/core/dist/services/token-optimizer-service.cjs" > logs/token-optimizer.log 2>&1 &
   local opt_pid=$!
   sleep 3
 
   if kill -0 $opt_pid 2>/dev/null; then
     echo $opt_pid > "$PROJECT_ROOT/.optimizer.pid"
     print_status "Token Optimizer started (PID: $opt_pid)"
+    local attempts=0
+    while [ $attempts -lt 10 ]; do
+      if curl -sf --max-time 2 "http://localhost:${TOKEN_OPTIMIZER_PORT:-3006}/health" >/dev/null 2>&1; then
+        break
+      fi
+      sleep 1; attempts=$((attempts+1))
+    done
     return 0
   else
     print_error "Failed to start Token Optimizer"
@@ -309,14 +351,24 @@ start_registry() {
     return 0
   fi
 
-  # Start Model Registry with auto-selection
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/model-registry-service.cjs" > logs/model-registry.log 2>&1 &
+  ensure_logs_dir
+  # Start Model Registry with auto-selection on documented port 3004
+  PORT=${MODEL_REGISTRY_PORT:-3004} nohup node "$PROJECT_ROOT/packages/core/dist/services/model-registry-service.cjs" > logs/model-registry.log 2>&1 &
   local reg_pid=$!
   sleep 3
 
   if kill -0 $reg_pid 2>/dev/null; then
     echo $reg_pid > "$PROJECT_ROOT/.registry.pid"
     print_status "Model Registry started (PID: $reg_pid)"
+    # Consider responsive even if /health returns 503 (providers unhealthy)
+    local attempts=0 code
+    while [ $attempts -lt 10 ]; do
+      code=$(curl -s -o /dev/null -w "%{http_code}" --max-time 2 "http://localhost:${MODEL_REGISTRY_PORT:-3004}/health" || echo "000")
+      if [ "$code" = "200" ] || [ "$code" = "503" ]; then
+        break
+      fi
+      sleep 1; attempts=$((attempts+1))
+    done
     return 0
   else
     print_error "Failed to start Model Registry"
@@ -610,8 +662,10 @@ start_cctools() {
 start_orchestrator() {
   print_status "Starting DevFlow Orchestrator..."
 
+  # Orchestrator port mapping (docs: 3007)
+  export ORCHESTRATOR_PORT=${ORCHESTRATOR_PORT:-3007}
   # Check if orchestrator is already running
-  if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+  if curl -sf --max-time 2 "http://localhost:${ORCHESTRATOR_PORT}/health" >/dev/null 2>&1; then
     print_status "DevFlow Orchestrator already running"
     return 0
   fi
@@ -622,11 +676,10 @@ start_orchestrator() {
     return 1
   fi
 
-  # Create logs directory if it doesn't exist
-  mkdir -p "$PROJECT_ROOT/logs"
+  ensure_logs_dir
 
-  # Export database path for orchestrator
-  export DEVFLOW_DB_PATH="$PROJECT_ROOT/devflow.sqlite"
+  # Export canonical database path for all services (prefer data/)
+  export DEVFLOW_DB_PATH="$PROJECT_ROOT/data/devflow.sqlite"
 
   # Start orchestrator in background
   cd "$PROJECT_ROOT/services/devflow-orchestrator"
@@ -639,10 +692,10 @@ start_orchestrator() {
 
   # Check if it's still running
   if kill -0 $orchestrator_pid 2>/dev/null; then
-    # Validate with health check
+    # Validate with health check (longer loop)
     local health_attempts=0
-    while [ $health_attempts -lt 5 ]; do
-      if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+    while [ $health_attempts -lt 15 ]; do
+      if curl -sf --max-time 2 "http://localhost:${ORCHESTRATOR_PORT}/health" >/dev/null 2>&1; then
         echo $orchestrator_pid > "$PROJECT_ROOT/.orchestrator.pid"
         print_status "DevFlow Orchestrator started successfully (PID: $orchestrator_pid)"
         return 0
@@ -675,6 +728,7 @@ check_prerequisites() {
     exit 1
   fi
   
+  ensure_logs_dir
   # Check if project is built
   if [ ! -d "$PROJECT_ROOT/packages/core/dist" ]; then
     print_warning "Project not built. Building now..."
@@ -715,6 +769,7 @@ main() {
       ;;
     restart)
       stop_services
+      rotate_logs
       # Continue to start services
       ;;
     status)
