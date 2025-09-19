@@ -6,7 +6,7 @@ This document provides a comprehensive mapping of all ports used by DevFlow serv
 
 | Service | Port | Protocol | Status | Description |
 |---------|------|----------|--------|-------------|
-| **DevFlow Orchestrator** | `3005` | HTTP/WebSocket | Required | API for external AI agents (Codex/Gemini) - **CONFLICT DETECTED** |
+| **DevFlow Orchestrator** | `3007` | HTTP/WebSocket | Required | API for external AI agents (Codex/Gemini) |
 | **Database Manager** | `3002` | HTTP | Required | SQLite database operations and task management |
 | **Vector Memory Service** | `3003` | HTTP | Required | EmbeddingGemma vector operations and semantic search |
 | **Model Registry** | `3004` | HTTP | Required | AI model coordination and fallback management |
@@ -32,7 +32,6 @@ This document provides a comprehensive mapping of all ports used by DevFlow serv
 | Port | Service | Reason |
 |------|---------|--------|
 | `3001` | Unknown Node.js process | Currently occupied - conflict detected |
-| `3005` | Previous Orchestrator Instance | Port conflict during migration - use 3007 |
 | `8080` | Common development servers | Standard HTTP alternative |
 | `8000` | Common API servers | Standard development port |
 | `5000` | Common Flask/development | Standard development port |
@@ -40,8 +39,8 @@ This document provides a comprehensive mapping of all ports used by DevFlow serv
 ## Port Allocation Strategy
 
 ### Production Ports (3000-3999)
-- **3002-3006**: Core DevFlow services
-- **3007**: DevFlow Orchestrator (external API) - **UPDATED PORT**
+- **3002-3006**: Core DevFlow services (DB Manager 3002, Vector 3003, Model Registry 3004, Token Optimizer 3006)
+- **3007**: DevFlow Orchestrator (external API)
 - **3008-3010**: Reserved for future expansion
 
 ### Management Ports (8000-8999)
