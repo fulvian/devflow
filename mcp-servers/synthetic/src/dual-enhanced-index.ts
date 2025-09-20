@@ -18,6 +18,9 @@ import sqlite3 from 'sqlite3';
 import { open } from 'sqlite';
 import { prepareContextForPrompt } from './context-injection.js';
 
+// ORCHESTRATION INTEGRATION
+import { LiveOrchestrationMiddleware, TaskRequest, AgentStatus } from './orchestration-middleware.js';
+
 // Load .env from project root (2 levels up from mcp-servers/synthetic/)
 import { fileURLToPath } from 'url';
 const __filename = fileURLToPath(import.meta.url);
@@ -43,13 +46,19 @@ const SYNTHETIC_DELETE_ENABLED = process.env.SYNTHETIC_DELETE_ENABLED === 'true'
 const ALLOWED_FILE_EXTENSIONS = process.env.ALLOWED_FILE_EXTENSIONS?.split(',') || 
   ['.ts', '.js', '.json', '.md', '.py', '.tsx', '.jsx', '.css', '.scss', '.html', '.yml', '.yaml', '.txt', '.sh', '.sql', '.env'];
 
+// ORCHESTRATION CONFIGURATION
+const ORCHESTRATION_ENABLED = process.env.ORCHESTRATION_ENABLED !== 'false';
+const MCP_SERVER_HOST = process.env.MCP_SERVER_HOST || 'localhost';
+const MCP_SERVER_PORT = parseInt(process.env.MCP_SERVER_PORT || '3000', 10);
+
 console.log(`[Synthetic MCP] Configuration loaded:
 - Project Root: ${DEVFLOW_PROJECT_ROOT}
 - Autonomous File Operations: ${AUTONOMOUS_FILE_OPERATIONS}
 - Require Approval: ${REQUIRE_APPROVAL}
 - Create Backups: ${CREATE_BACKUPS}
 - Delete Operations: ${SYNTHETIC_DELETE_ENABLED}
-- Allowed Extensions: ${ALLOWED_FILE_EXTENSIONS.length} types`);
+- Allowed Extensions: ${ALLOWED_FILE_EXTENSIONS.length} types
+- Orchestration Enabled: ${ORCHESTRATION_ENABLED}`);
 
 // Expand allowed paths to include all DevFlow project subdirectories
 const getAllowedPaths = () => {
@@ -144,6 +153,10 @@ export class EnhancedSyntheticMCPServer {
   private fileManager: AutonomousFileManager;
   private requestIdCounter: number = 0;
   private db: any;
+  
+  // ORCHESTRATION COMPONENTS
+  private orchestrationMiddleware?: LiveOrchestrationMiddleware;
+  private agentStatuses: Map<string, AgentStatus> = new Map();
 
   constructor() {
     // Initialize expanded allowed paths for full project control
@@ -173,6 +186,7 @@ export class EnhancedSyntheticMCPServer {
 
     this.allowedPaths = [DEVFLOW_PROJECT_ROOT];
     this.initDatabase();
+    this.initOrchestration();
     this.setupToolHandlers();
     this.setupErrorHandling();
   }
@@ -190,12 +204,118 @@ export class EnhancedSyntheticMCPServer {
     }
   }
 
+  private initOrchestration(): void {
+    if (!ORCHESTRATION_ENABLED) {
+      console.log('[Synthetic MCP] Orchestration disabled');
+      return;
+    }
+
+    try {
+      // Initialize orchestration middleware
+      this.orchestrationMiddleware = new LiveOrchestrationMiddleware({
+        mcpServerHost: MCP_SERVER_HOST,
+        mcpServerPort: MCP_SERVER_PORT,
+        monitoringInterval: 30000, // 30 seconds
+      });
+
+      // Register available agents
+      this.registerOrchestrationAgents();
+
+      // Setup event handlers
+      this.orchestrationMiddleware.on('task-delegated', (event) => {
+        console.log(`[Orchestration] Task ${event.taskId} delegated to agent ${event.agentId}`);
+      });
+
+      this.orchestrationMiddleware.on('task-unhandled', (task) => {
+        console.warn(`[Orchestration] Unhandled task: ${task.id}`);
+      });
+
+      console.log('[Synthetic MCP] ✅ LiveOrchestrationMiddleware activated');
+    } catch (error) {
+      console.error('[Synthetic MCP] Failed to initialize orchestration:', error);
+    }
+  }
+
+  private registerOrchestrationAgents(): void {
+    // Register Codex agent
+    this.agentStatuses.set('codex-1', {
+      id: 'codex-1',
+      type: 'codex',
+      available: true,
+      load: 0.1,
+    });
+
+    // Register Gemini agent
+    this.agentStatuses.set('gemini-1', {
+      id: 'gemini-1', 
+      type: 'gemini',
+      available: true,
+      load: 0.1,
+    });
+
+    // Register Synthetic agent (self)
+    this.agentStatuses.set('synthetic-1', {
+      id: 'synthetic-1',
+      type: 'synthetic',
+      available: true,
+      load: 0.2,
+    });
+
+    // Register agents with middleware
+    for (const [id, status] of this.agentStatuses.entries()) {
+      this.orchestrationMiddleware?.registerAgent(status);
+      console.log(`[Orchestration] Registered ${status.type} agent: ${id}`);
+    }
+  }
+
+  private shouldDelegateTask(args: any): TaskRequest | null {
+    if (!this.orchestrationMiddleware) return null;
+
+    // Check if this is a coding task that should be delegated
+    const isCodeTask = args.language || args.objective?.toLowerCase().includes('code') || 
+                       args.objective?.toLowerCase().includes('implement');
+    
+    if (!isCodeTask) return null;
+
+    // Calculate complexity based on requirements
+    const complexity = this.calculateTaskComplexity(args);
+    
+    // Estimate Sonnet usage (this would come from actual session monitoring)
+    const sonnetUsage = 0.6; // Placeholder - in reality, get from session monitor
+
+    return {
+      id: this.generateRequestId(),
+      type: complexity > 0.8 ? 'codex' : complexity > 0.4 ? 'gemini' : 'synthetic',
+      payload: args,
+      metadata: {
+        complexity,
+        sonnetUsage,
+        timestamp: Date.now(),
+      },
+    };
+  }
+
+  private calculateTaskComplexity(args: any): number {
+    let complexity = 0.3; // Base complexity
+    
+    // Increase complexity based on requirements
+    if (args.requirements && args.requirements.length > 3) complexity += 0.2;
+    if (args.context && args.context.length > 1000) complexity += 0.2;
+    if (args.language === 'typescript' || args.language === 'rust') complexity += 0.1;
+    if (args.objective?.includes('architecture') || args.objective?.includes('system')) complexity += 0.3;
+    
+    return Math.min(complexity, 1.0);
+  }
+
   private setupErrorHandling(): void {
     this.server.onerror = (error) => {
       console.error('[Enhanced MCP Error]', error);
     };
 
     process.on('SIGINT', async () => {
+      if (this.orchestrationMiddleware) {
+        this.orchestrationMiddleware.shutdown();
+      }
       await this.server.close();
       process.exit(0);
     });
@@ -658,6 +778,18 @@ export class EnhancedSyntheticMCPServer {
 
       try {
         const requestId = this.generateRequestId();
+
+        // ORCHESTRATION INTERCEPT: Check if task should be delegated
+        if (this.orchestrationMiddleware && (name === 'synthetic_code' || name === 'synthetic_auto_file')) {
+          const taskRequest = this.shouldDelegateTask(args);
+          if (taskRequest) {
+            console.log(`[Orchestration] 🎯 Intercepting ${name} for delegation`);
+            // This would normally delegate to external agents
+            // For now, log the delegation and continue with local processing
+            console.log(`[Orchestration] Task complexity: ${taskRequest.metadata.complexity}`);
+            console.log(`[Orchestration] Recommended agent: ${taskRequest.type}`);
+          }
+        }
         
         switch (name) {
           case 'synthetic_code':
