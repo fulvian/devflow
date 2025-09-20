@@ -60,9 +60,30 @@ logs/
 # PID files
 *.pid
 
+# Database files
+*.sqlite
+*.sqlite-shm
+*.sqlite-wal
+data/
+
 # Test files with hardcoded keys
 test**/synthetic*.ts
 test**/openai*.ts
 **/test/**/*key*.ts
 **/test/**/*secret*.ts
 .gemini/
+
+# Temporary files
+ciao
+ciao.ts
+synthetic-ciao.ts
+
+# Additional backup patterns
+*backup-*
+*.backup
+
+# DevFlow specific
+config/
+sessions/tasks/
+prova/
+test-output/

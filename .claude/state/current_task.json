@@ -1,6 +1,12 @@
 {
-  "task": "devflow-startup-fix",
+  "task": "devflow-cometa-real-integration",
   "branch": "feature/co-me-ta_to_real_world",
-  "services": ["devflow-orchestrator", "system-startup"],
-  "updated": "2025-09-20"
+  "services": [
+    "ui",
+    "real-time-platform-visibility",
+    "footer",
+    "session-recovery"
+  ],
+  "updated": "2025-09-20",
+  "progress_percentage": 75
 }

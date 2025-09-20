@@ -18,8 +18,8 @@ def get_devflow_state():
     """Get current DevFlow system state"""
     project_root = Path(__file__).parent.parent.parent
 
-    # Read current task
-    task_info = {"task": "devflow-v3_1-deployment", "progress": 0}
+    # Read current task from real system state
+    task_info = {"task": "unknown", "progress": 0}
     current_task_file = project_root / ".claude/state/current_task.json"
     if current_task_file.exists():
         try:
@@ -131,6 +131,48 @@ def get_devflow_state():
         "system_status": "PRODUCTION" if active_services >= 6 else "PARTIAL" if active_services >= 3 else "DEGRADED"
     }
 
+def sync_current_task_json(project_root, footer_state):
+    """Sync .claude/state/current_task.json with footer state data"""
+    try:
+        current_task_file = project_root / ".claude/state/current_task.json"
+
+        # Read existing current_task.json
+        current_task_data = {}
+        if current_task_file.exists():
+            try:
+                with open(current_task_file, 'r') as f:
+                    current_task_data = json.load(f)
+            except:
+                pass
+
+        # Update with footer state data
+        current_task_data.update({
+            "task": footer_state["progress"]["current_task"],
+            "progress_percentage": footer_state["progress"]["percentage"],
+            "updated": datetime.now().strftime("%Y-%m-%d")
+        })
+
+        # Preserve existing fields if they exist
+        if "branch" not in current_task_data:
+            current_task_data["branch"] = "feature/co-me-ta_to_real_world"
+        if "services" not in current_task_data:
+            current_task_data["services"] = ["ui", "real-time-platform-visibility", "footer", "session-recovery"]
+
+        # Write updated current_task.json
+        current_task_file.parent.mkdir(exist_ok=True)
+        with open(current_task_file, 'w') as f:
+            json.dump(current_task_data, f, indent=2)
+
+    except Exception as e:
+        # Log error but don't fail
+        try:
+            log_file = project_root / "logs/footer-debug.log"
+            log_file.parent.mkdir(exist_ok=True)
+            with open(log_file, 'a') as f:
+                f.write(f"{datetime.now().isoformat()}: Error syncing current_task.json: {e}\n")
+        except:
+            pass
+
 def update_footer_state(tool_info):
     """Update footer state file"""
     project_root = Path(__file__).parent.parent.parent
@@ -169,6 +211,10 @@ def update_footer_state(tool_info):
     try:
         with open(state_file, 'w') as f:
             json.dump(footer_state, f, indent=2)
+
+        # Sync current_task.json for cascading updates
+        sync_current_task_json(project_root, footer_state)
+
     except Exception as e:
         # Log error
         log_file = project_root / "logs/footer-debug.log"

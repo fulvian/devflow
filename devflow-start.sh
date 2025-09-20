@@ -1101,6 +1101,9 @@ if [ -f "$PROJECT_ROOT/.env" ]; then
     export SYNTHETIC_API_KEY=$(grep "^SYNTHETIC_API_KEY=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
 fi
 
+# Set DevFlow Database Path
+export DEVFLOW_DB_PATH="$PROJECT_ROOT/data/devflow.sqlite"
+
 # Main execution
 main() {
   # Handle script arguments
