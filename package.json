@@ -23,7 +23,8 @@
     "cctools:list": "bash scripts/cc-tools-cli.sh list --auto-start",
     "cctools:metadata": "bash scripts/cc-tools-cli.sh metadata --project-root /Users/fulvioventura/devflow --auto-start",
     "cctools:validate": "bash scripts/cc-tools-cli.sh validate --project-root /Users/fulvioventura/devflow --timeout-ms 15000 --auto-start",
-    "cctools:health": "bash scripts/cc-tools-health.sh"
+    "cctools:health": "bash scripts/cc-tools-health.sh",
+    "cometa:mcp:start": "cd mcp-servers/cometa && npm run dev"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.62.0",
@@ -32,8 +33,12 @@
     "axios": "^1.12.2",
     "better-sqlite3": "^12.2.0",
     "ccusage": "^16.2.5",
+    "commander": "^14.0.1",
+    "cors": "^2.8.5",
+    "express": "^5.1.0",
     "gray-matter": "^4.0.3",
     "sqlite": "^5.1.1",
+    "sqlite3": "^5.1.7",
     "uuid": "^9.0.0",
     "winston": "^3.17.0",
     "zod": "^3.22.4"
