@@ -208,7 +208,7 @@ start_codex_mcp() {
   fi
 }
 
-# Function to stop services
+# Function to stop services with aggressive cleanup
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
@@ -224,8 +224,8 @@ stop_services() {
     fi
   fi
 
-  # Stop all DevFlow services (including enforcement, session retry, limit detection, fallback monitoring, and Real Dream Team Orchestrator)
-  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid" ".real-dream-team-orchestrator.pid" ".cli-integration-manager.pid" ".platform-status-tracker.pid")
+  # Stop all DevFlow services (including enforcement, session retry, limit detection, fallback monitoring, Real Dream Team Orchestrator, DAIC, Branch Manager, and Codex MCP)
+  local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid" ".real-dream-team-orchestrator.pid" ".cli-integration-manager.pid" ".platform-status-tracker.pid" ".daic-daemon.pid" ".branch-daemon.pid" ".codex-mcp.pid")
 
   for service_pid in "${services[@]}"; do
     if is_process_running "$PROJECT_ROOT/$service_pid"; then
@@ -247,6 +247,64 @@ stop_services() {
       fi
     fi
   done
+
+  # AGGRESSIVE CLEANUP: Kill all DevFlow processes by pattern
+  print_status "🧹 Aggressive cleanup: Finding all DevFlow processes..."
+
+  # Kill processes by known DevFlow patterns
+  local devflow_patterns=(
+    "database-manager"
+    "model-registry"
+    "vector-memory-service"
+    "token-optimizer-service"
+    "auto-ccr-runner"
+    "session-retry-service"
+    "fallback-monitoring-bootstrap"
+    "cc-tools-server"
+    "real-dream-team"
+    "cli-integration"
+    "platform-status-tracker"
+    "daic-production-daemon"
+    "branch-production-daemon"
+    "minimal-server"
+    "enforcement-daemon"
+  )
+
+  for pattern in "${devflow_patterns[@]}"; do
+    local pids=$(pgrep -f "$pattern" 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+      print_status "Killing $pattern processes: $pids"
+      echo "$pids" | xargs -r kill -TERM 2>/dev/null || true
+      sleep 1
+      # Force kill if still running
+      local remaining_pids=$(pgrep -f "$pattern" 2>/dev/null || true)
+      if [ -n "$remaining_pids" ]; then
+        echo "$remaining_pids" | xargs -r kill -KILL 2>/dev/null || true
+      fi
+    fi
+  done
+
+  # Kill processes on known DevFlow ports
+  print_status "🧹 Cleaning up processes on DevFlow ports..."
+  local devflow_ports=(3101 3200 3201 3005 3007 3204 3205 3206 8787 50051)
+
+  for port in "${devflow_ports[@]}"; do
+    local pids=$(lsof -ti :$port 2>/dev/null || true)
+    if [ -n "$pids" ]; then
+      print_status "Killing processes on port $port: $pids"
+      echo "$pids" | xargs -r kill -TERM 2>/dev/null || true
+      sleep 1
+      # Force kill if still running
+      local remaining_pids=$(lsof -ti :$port 2>/dev/null || true)
+      if [ -n "$remaining_pids" ]; then
+        echo "$remaining_pids" | xargs -r kill -KILL 2>/dev/null || true
+      fi
+    fi
+  done
+
+  # Clean up all PID files
+  print_status "🧹 Cleaning up PID files..."
+  rm -f "$PROJECT_ROOT"/.*.pid "$PROJECT_ROOT"/devflow-enforcement-daemon.pid 2>/dev/null || true
 
   print_status "All DevFlow services stopped."
 }
@@ -750,8 +808,9 @@ start_cctools() {
 start_orchestrator() {
   print_status "Starting DevFlow Orchestrator..."
 
-  # Check if orchestrator is already running
-  if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+  # Check if orchestrator is already running (default port 3007)
+  local orchestrator_port=${ORCHESTRATOR_PORT:-3007}
+  if curl -sf --max-time 2 "http://localhost:${orchestrator_port}/health" >/dev/null 2>&1; then
     print_status "DevFlow Orchestrator already running"
     return 0
   fi
@@ -777,7 +836,7 @@ start_orchestrator() {
     # Validate with health check
     local health_attempts=0
     while [ $health_attempts -lt 5 ]; do
-      if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+      if curl -sf --max-time 2 "http://localhost:${orchestrator_port}/health" >/dev/null 2>&1; then
         echo $orchestrator_pid > "$PROJECT_ROOT/.orchestrator.pid"
         print_status "DevFlow Orchestrator started successfully (PID: $orchestrator_pid)"
         return 0
@@ -820,8 +879,8 @@ start_real_dream_team_orchestrator() {
   # Create logs directory if it doesn't exist
   mkdir -p "$PROJECT_ROOT/logs"
 
-  # Start Real Dream Team Orchestrator in background (TypeScript via ts-node)
-  nohup npx ts-node "$PROJECT_ROOT/src/core/orchestration/real-dream-team-daemon.ts" > logs/real-dream-team-orchestrator.log 2>&1 &
+  # Start Real Dream Team Orchestrator in background (TypeScript via ts-node) with dedicated port
+  REAL_DREAM_TEAM_PORT=3200 nohup npx ts-node "$PROJECT_ROOT/src/core/orchestration/real-dream-team-daemon.ts" > logs/real-dream-team-orchestrator.log 2>&1 &
   local orchestrator_pid=$!
 
   # Give it a moment to start
@@ -926,6 +985,76 @@ start_platform_status_tracker() {
   fi
 }
 
+# Function to start DAIC Context Manager Production Daemon
+start_daic_context_manager() {
+  # Check if already running
+  if is_process_running "$PROJECT_ROOT/.daic-daemon.pid"; then
+    print_status "DAIC Context Manager already running"
+    return 0
+  fi
+
+  # Check if DAIC simple daemon exists
+  if [ ! -f "$PROJECT_ROOT/src/core/services/daic-simple-daemon.ts" ]; then
+    print_error "DAIC Simple Daemon not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start DAIC simple daemon in background
+  DAIC_PORT=3205 nohup npx ts-node "$PROJECT_ROOT/src/core/services/daic-simple-daemon.ts" > logs/daic-daemon.log 2>&1 &
+  local daic_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $daic_pid 2>/dev/null; then
+    echo $daic_pid > "$PROJECT_ROOT/.daic-daemon.pid"
+    print_status "DAIC Context Manager started successfully (PID: $daic_pid)"
+    return 0
+  else
+    print_error "Failed to start DAIC Context Manager"
+    return 1
+  fi
+}
+
+# Function to start DevFlow Branch Manager Production Daemon
+start_branch_manager() {
+  # Check if already running
+  if is_process_running "$PROJECT_ROOT/.branch-daemon.pid"; then
+    print_status "DevFlow Branch Manager already running"
+    return 0
+  fi
+
+  # Check if Branch daemon exists
+  if [ ! -f "$PROJECT_ROOT/src/core/services/branch-production-daemon.ts" ]; then
+    print_error "DevFlow Branch Manager daemon not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start Branch daemon in background
+  BRANCH_PORT=3206 nohup npx ts-node "$PROJECT_ROOT/src/core/services/branch-production-daemon.ts" > logs/branch-daemon.log 2>&1 &
+  local branch_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $branch_pid 2>/dev/null; then
+    echo $branch_pid > "$PROJECT_ROOT/.branch-daemon.pid"
+    print_status "DevFlow Branch Manager started successfully (PID: $branch_pid)"
+    return 0
+  else
+    print_error "Failed to start DevFlow Branch Manager"
+    return 1
+  fi
+}
+
 # Function to check prerequisites
 check_prerequisites() {
   print_status "Checking prerequisites..."
@@ -1001,6 +1130,7 @@ main() {
         ".orchestrator.pid:DevFlow Orchestrator"
         ".cctools.pid:CC-Tools gRPC Server"
         ".real-dream-team-orchestrator.pid:Real Dream Team Orchestrator (Cometa v3.1)"
+        ".codex-mcp.pid:Codex MCP Server (Cometa v3.1)"
         ".cli-integration-manager.pid:CLI Integration Manager (Cometa v3.1)"
         ".platform-status-tracker.pid:Platform Status Tracker (Cometa v3.1)"
       )
@@ -1133,6 +1263,16 @@ main() {
   # Start Platform Status Tracker (Cometa v3.1 - enhances real-time monitoring)
   if ! start_platform_status_tracker; then
     print_warning "Platform Status Tracker failed to start - CONTINUING WITHOUT REAL-TIME UI"
+  fi
+
+  # Start DAIC Context Manager (DevFlow v3.1 - replaces invasive legacy hooks)
+  if ! start_daic_context_manager; then
+    print_warning "DAIC Context Manager failed to start - CONTINUING WITHOUT INTELLIGENT SUGGESTIONS"
+  fi
+
+  # Start DevFlow Branch Manager (DevFlow v3.1 - replaces dysfunctional branch governance)
+  if ! start_branch_manager; then
+    print_warning "DevFlow Branch Manager failed to start - CONTINUING WITHOUT SMART BRANCH MANAGEMENT"
   fi
 
   print_status "🎉 DevFlow v3.1.0 Cometa Production System Started Successfully!"

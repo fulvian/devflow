@@ -1,6 +1,6 @@
 [TokenOptimizer] Initializing production token optimizer...
 [TokenOptimizer] Strategy: balanced
 [TokenOptimizer] Max tokens: 4096
-[TokenOptimizer] Production service running on port 8081
-[TokenOptimizer] Health check: http://localhost:8081/health
-[TokenOptimizer] Optimization endpoint: POST http://localhost:8081/optimize
+[TokenOptimizer] Production service running on port 3006
+[TokenOptimizer] Health check: http://localhost:3006/health
+[TokenOptimizer] Optimization endpoint: POST http://localhost:3006/optimize

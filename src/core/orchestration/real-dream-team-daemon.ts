@@ -5,7 +5,7 @@
 import http from 'http';
 import RealDreamTeamOrchestrator from './real-dream-team-orchestrator';
 
-const PORT = parseInt(process.env.ORCHESTRATOR_PORT || '3200', 10);
+const PORT = parseInt(process.env.REAL_DREAM_TEAM_PORT || process.env.ORCHESTRATOR_PORT || '3200', 10);
 
 class OrchestratorDaemon {
   private orchestrator: RealDreamTeamOrchestrator;

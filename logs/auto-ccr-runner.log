@@ -1,1061 +1,239 @@
-[AutoCCR] Runner started. DB=devflow.sqlite, poll=5000ms, level=critical(0.85)
-(node:94777) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js is not specified and it doesn't parse as CommonJS.
+[AutoCCR] Runner started. DB=./data/devflow.sqlite, poll=5000ms, level=critical(0.85)
+(node:65373) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js is not specified and it doesn't parse as CommonJS.
 Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
 To eliminate this warning, add "type": "module" to /Users/fulvioventura/devflow/package.json.
 (Use `node --trace-warnings ...` to show where the warning was created)
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:00:27.014Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:00:27.029Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:00:47.081Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:00:47.097Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:01:07.160Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:01:07.173Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:01:27.222Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:01:27.235Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:01:47.289Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:01:47.303Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:02:07.352Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:02:07.366Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:02:27.419Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:02:27.431Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:02:47.493Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:02:47.528Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:03:07.584Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:03:07.598Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:03:27.655Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:03:27.670Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:03:47.724Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:03:47.747Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:04:07.801Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:04:07.815Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:04:27.873Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:04:27.885Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:04:47.935Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:04:47.949Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:05:08.034Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:05:08.048Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:05:28.117Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:05:28.136Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:05:48.189Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:05:48.205Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:06:08.262Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:06:08.276Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:06:28.334Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:06:28.351Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:06:48.419Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:06:48.433Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:07:08.492Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:07:08.506Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:07:28.569Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:07:28.582Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:07:48.634Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:07:48.649Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:08:08.701Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:08:08.714Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:08:28.765Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:08:28.779Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:08:48.851Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:08:48.864Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:09:08.943Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:09:08.956Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:09:29.005Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:09:29.018Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:09:49.069Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:09:49.081Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:10:09.131Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:10:09.143Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:10:29.193Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:10:29.207Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:10:49.261Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:10:49.284Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:11:09.338Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:11:09.351Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:11:29.413Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:11:29.427Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:11:49.476Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:11:49.489Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:12:09.574Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:12:09.587Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:12:29.659Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:12:29.671Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:12:49.735Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:12:49.747Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:13:09.804Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:13:09.817Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:13:29.878Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:13:29.891Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:13:49.975Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:13:49.988Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:14:10.036Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:14:10.051Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:14:30.100Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:14:30.113Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:14:50.198Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:14:50.211Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:15:10.270Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:15:10.285Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:15:30.368Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:15:30.383Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:15:50.465Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:15:50.478Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:16:10.532Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:16:10.544Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:16:30.606Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:16:30.623Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:16:50.678Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:16:50.690Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:17:10.758Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:17:10.771Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:17:30.836Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:17:30.849Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:17:50.916Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:17:50.931Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:18:10.985Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:18:10.998Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:18:31.050Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:18:31.064Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:18:51.131Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:18:51.149Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:19:11.210Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:19:11.223Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:19:31.273Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:19:31.288Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:19:51.346Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:19:51.360Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:20:11.424Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:20:11.439Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:20:31.515Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:20:31.529Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:20:51.587Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:20:51.600Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:21:11.656Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:21:11.668Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:21:31.725Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:21:31.745Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:21:51.803Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:21:51.816Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:22:11.877Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:22:11.899Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:22:31.965Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:22:31.984Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:22:52.046Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:22:52.075Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:23:12.132Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:23:12.150Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:23:32.206Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:23:32.229Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:23:52.291Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:23:52.305Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:24:12.357Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:24:12.371Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:24:32.499Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:24:32.515Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:24:52.571Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:24:52.584Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:25:12.612Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:25:12.627Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:25:32.675Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:25:32.689Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:25:52.742Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:25:52.755Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:26:12.818Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:26:12.830Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:26:32.896Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:26:32.910Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:26:52.980Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:26:53.000Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:27:13.050Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:27:13.064Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:27:33.114Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:27:33.128Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:27:53.180Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:27:53.193Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:28:13.243Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:28:13.256Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:28:33.309Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:28:33.323Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:28:53.375Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:28:53.388Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:29:13.441Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:29:13.454Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:29:33.505Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:29:33.519Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:29:53.583Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:29:53.595Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:30:13.680Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:30:13.693Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:30:33.780Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:30:33.793Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:30:53.850Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:30:53.864Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:31:13.921Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:31:13.935Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:31:34.001Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:31:34.015Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:31:54.095Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:31:54.108Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:32:14.165Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:32:14.179Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:32:34.249Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:32:34.263Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:32:54.328Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:32:54.341Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:33:14.400Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:33:14.413Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:33:34.499Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:33:34.519Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:33:54.575Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:33:54.590Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:34:14.651Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:34:14.664Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:34:34.760Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:34:34.775Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:34:54.842Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:34:54.859Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:35:14.955Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:35:14.973Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:35:35.029Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:35:35.048Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:35:55.104Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:35:55.121Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:36:15.183Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:36:15.196Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:36:35.254Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:36:35.268Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:36:55.318Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:36:55.331Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:37:15.385Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:37:15.400Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:37:35.449Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:37:35.463Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:37:55.518Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:37:55.531Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:38:15.584Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:38:15.597Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:38:35.650Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:38:35.665Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:38:55.716Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:38:55.730Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:39:15.783Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:39:15.797Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:39:35.869Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:39:35.883Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:39:55.940Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:39:55.960Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:40:16.013Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:40:16.027Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:40:36.085Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:40:36.107Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:40:56.164Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:40:56.178Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:41:16.239Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:41:16.253Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:41:36.310Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:41:36.325Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:41:56.373Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:41:56.386Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:42:16.446Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:42:16.459Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:42:36.523Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:42:36.537Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:42:56.601Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:42:56.617Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:43:16.685Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:43:16.702Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:43:36.764Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:43:36.781Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:43:56.849Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:43:56.862Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
-[AutoCCR] Triggering Emergency CCR (task test-cross-platform-001) — reason: util=100.0% >= critical
-🚀 === EMERGENCY CCR ACTIVATION ===
-🎯 Activating CCR Emergency Proxy...
-[CCRAutoStarter] 2025-09-18T21:44:16.925Z - Starting CCR process...
-[CCRAutoStarter] 2025-09-18T21:44:16.938Z - CCR started successfully
-✅ CCR Emergency Proxy ACTIVATED
-🎯 DevFlow can continue with Qwen3-Coder-480B
-💡 Use: npx @musistudio/claude-code-router code "your request"
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at Socket.<anonymous> (node:internal/child_process:456:11)
+    at Socket.emit (node:events:518:28)
+    at Pipe.<anonymous> (node:net:351:12)
+[AutoCCR] tick error Error: Error: in prepare, no such table: coordination_sessions
+
+    at ChildProcess.<anonymous> (file:///Users/fulvioventura/devflow/tools/auto-ccr-runner.js:31:37)
+    at ChildProcess.emit (node:events:518:28)
+    at maybeClose (node:internal/child_process:1101:16)
+    at ChildProcess._handle.onexit (node:internal/child_process:304:5)
