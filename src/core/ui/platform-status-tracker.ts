@@ -1,4 +1,8 @@
+#!/usr/bin/env node
 import { EventEmitter } from 'events';
+import http from 'http';
+import fs from 'fs';
+import path from 'path';
 
 export interface PlatformStatus {
   name: string;
@@ -201,3 +205,164 @@ export class PlatformStatusTracker extends EventEmitter {
 }
 
 export default PlatformStatusTracker;
+
+// Daemon Entry Point - Execute when run directly
+if (require.main === module) {
+
+  const PORT = parseInt(process.env.PLATFORM_STATUS_PORT || '3204', 10);
+  const PID_FILE = path.join(process.cwd(), '.platform-status-tracker.pid');
+
+  class PlatformStatusTrackerDaemon {
+    private tracker: PlatformStatusTracker;
+    private server: http.Server;
+
+    constructor() {
+      this.tracker = new PlatformStatusTracker();
+      this.server = http.createServer(this.handleRequest.bind(this));
+
+      // Setup signal handlers for graceful shutdown
+      process.on('SIGTERM', this.shutdown.bind(this));
+      process.on('SIGINT', this.shutdown.bind(this));
+      process.on('uncaughtException', (error) => {
+        console.error('[Platform Status Tracker] Uncaught exception:', error);
+        this.shutdown();
+      });
+
+      // Listen to tracker events
+      this.tracker.on('statusUpdate', (data) => {
+        console.log(`[Platform Status Tracker] Status update for ${data.platform}:`, data.status);
+      });
+
+      this.tracker.on('executionRecorded', (metrics) => {
+        console.log(`[Platform Status Tracker] Execution recorded for ${metrics.model}: ${metrics.success ? 'SUCCESS' : 'FAILED'} (${metrics.executionTime}ms)`);
+      });
+
+      this.tracker.on('periodicUpdate', () => {
+        const systemHealth = this.tracker.getOverallSystemHealth();
+        console.log(`[Platform Status Tracker] System health: ${systemHealth.healthy ? 'HEALTHY' : 'UNHEALTHY'} - ${systemHealth.message}`);
+      });
+    }
+
+    private async handleRequest(req: http.IncomingMessage, res: http.ServerResponse) {
+      const url = req.url || '';
+
+      // Health check endpoint
+      if (url === '/health') {
+        const systemHealth = this.tracker.getOverallSystemHealth();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          status: 'healthy',
+          timestamp: new Date().toISOString(),
+          systemHealth
+        }));
+        return;
+      }
+
+      // Status endpoint - all platforms
+      if (url === '/status') {
+        const allStatuses = this.tracker.getAllStatuses();
+        const systemHealth = this.tracker.getOverallSystemHealth();
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          platforms: allStatuses,
+          system: systemHealth,
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+
+      // Metrics endpoint - platform-specific metrics
+      if (url.startsWith('/metrics/')) {
+        const platform = url.replace('/metrics/', '');
+        const metrics = this.tracker.getPlatformMetrics(platform);
+        const status = this.tracker.getPlatformStatus(platform);
+
+        if (!status) {
+          res.writeHead(404, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({ error: 'Platform not found' }));
+          return;
+        }
+
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          platform,
+          status,
+          metrics,
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+
+      // Active platforms endpoint
+      if (url === '/active') {
+        const activePlatforms = this.tracker.getActivePlatforms();
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({
+          activePlatforms,
+          count: activePlatforms.length,
+          timestamp: new Date().toISOString()
+        }));
+        return;
+      }
+
+      // Default response
+      res.writeHead(404, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Not found' }));
+    }
+
+    public async start(): Promise<void> {
+      return new Promise((resolve, reject) => {
+        this.server.listen(PORT, (err?: Error) => {
+          if (err) {
+            reject(err);
+            return;
+          }
+
+          // Write PID file
+          fs.writeFileSync(PID_FILE, process.pid.toString());
+
+          console.log(`🎯 Platform Status Tracker running on port ${PORT}`);
+          console.log(`📊 Health: http://localhost:${PORT}/health`);
+          console.log(`📈 Status: http://localhost:${PORT}/status`);
+          console.log(`📋 Active: http://localhost:${PORT}/active`);
+          console.log(`📊 Metrics: http://localhost:${PORT}/metrics/{platform}`);
+          console.log(`🔧 PID: ${process.pid}`);
+
+          // Log initial status
+          const systemHealth = this.tracker.getOverallSystemHealth();
+          console.log(`[Platform Status Tracker] Started - System health: ${systemHealth.healthy ? 'HEALTHY' : 'UNHEALTHY'}`);
+
+          resolve();
+        });
+      });
+    }
+
+    public shutdown(): void {
+      console.log('[Platform Status Tracker] Shutting down gracefully...');
+
+      // Stop the tracker
+      this.tracker.shutdown();
+
+      // Close HTTP server
+      this.server.close(() => {
+        console.log('[Platform Status Tracker] HTTP server closed');
+      });
+
+      // Remove PID file
+      if (fs.existsSync(PID_FILE)) {
+        fs.unlinkSync(PID_FILE);
+        console.log('[Platform Status Tracker] PID file removed');
+      }
+
+      process.exit(0);
+    }
+  }
+
+  // Start the daemon
+  const daemon = new PlatformStatusTrackerDaemon();
+  daemon.start().catch((error) => {
+    console.error('[Platform Status Tracker] Failed to start:', error);
+    process.exit(1);
+  });
+}
