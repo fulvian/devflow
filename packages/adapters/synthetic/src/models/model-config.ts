@@ -1,85 +1,47 @@
-export interface SyntheticModelSpec {
-  readonly id: string;
-  readonly provider: 'synthetic';
-  readonly displayName: string;
-  readonly contextLimit: number;
-  readonly capabilities: ReadonlyArray<string>;
-  readonly specialty: 'code' | 'reasoning' | 'context' | 'general';
-  readonly costPerMonth: number; // Flat fee model
+import { ModelCapabilities, ModelConfig } from '@shared/types/model';
+
+export interface SyntheticModelConfig extends ModelConfig {
+  specialization?: 'strategic_analyst' | 'autonomous_coding' | 'enterprise_workflow' | 'agentic_hybrid';
 }
 
-export const SYNTHETIC_MODELS: ReadonlyArray<SyntheticModelSpec> = [
-  // Code Specialists
-  {
-    id: 'hf:Qwen/Qwen2.5-Coder-32B-Instruct',
-    provider: 'synthetic',
-    displayName: 'Qwen 2.5 Coder 32B',
+export const SYNTHETIC_MODEL_CONFIGS: Record<string, SyntheticModelConfig> = {
+  'hf:deepseek-ai/DeepSeek-V3.1': {
+    id: 'hf:deepseek-ai/DeepSeek-V3.1',
+    name: 'DeepSeek-V3.1',
+    provider: 'huggingface',
+    capabilities: ['text-generation', 'analysis', 'reasoning'],
+    contextLimit: 128000,
+    specialization: 'strategic_analyst'
+  },
+  'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct': {
+    id: 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct',
+    name: 'Qwen3-Coder',
+    provider: 'huggingface',
+    capabilities: ['code-generation', 'code-review', 'debugging'],
     contextLimit: 32768,
-    capabilities: ['code', 'implementation', 'refactoring'],
-    specialty: 'code',
-    costPerMonth: 20, // $20/month flat
+    specialization: 'autonomous_coding'
   },
-  {
-    id: 'hf:deepseek-ai/DeepSeek-Coder-V2-Instruct',
-    provider: 'synthetic',
-    displayName: 'DeepSeek Coder V2',
-    contextLimit: 163840,
-    capabilities: ['code', 'implementation', 'debugging'],
-    specialty: 'code',
-    costPerMonth: 20,
-  },
-  // Reasoning Specialists  
-  {
-    id: 'hf:deepseek-ai/DeepSeek-V3',
-    provider: 'synthetic',
-    displayName: 'DeepSeek V3',
+  'hf:moonshotai/Kimi-K2-Instruct-0905': {
+    id: 'hf:moonshotai/Kimi-K2-Instruct-0905',
+    name: 'Kimi-K2',
+    provider: 'huggingface',
+    capabilities: ['enterprise-workflow', 'process-optimization', 'business-analysis'],
     contextLimit: 65536,
-    capabilities: ['reasoning', 'analysis', 'problem_solving'],
-    specialty: 'reasoning',
-    costPerMonth: 20,
+    specialization: 'enterprise_workflow'
   },
-  {
-    id: 'hf:meta-llama/Llama-3.1-405B-Instruct',
-    provider: 'synthetic',
-    displayName: 'Llama 3.1 405B',
-    contextLimit: 131072,
-    capabilities: ['reasoning', 'creative', 'analysis'],
-    specialty: 'reasoning',
-    costPerMonth: 20,
-  },
-  // Large Context Specialists
-  {
-    id: 'hf:Qwen/Qwen2.5-72B-Instruct',
-    provider: 'synthetic',
-    displayName: 'Qwen 2.5 72B',
-    contextLimit: 524288, // 512K context
-    capabilities: ['large_context', 'analysis', 'documentation'],
-    specialty: 'context',
-    costPerMonth: 20,
-  },
-  // General Purpose
-  {
-    id: 'hf:meta-llama/Llama-3.1-70B-Instruct',
-    provider: 'synthetic',
-    displayName: 'Llama 3.1 70B',
-    contextLimit: 131072,
-    capabilities: ['general', 'chat', 'assistance'],
-    specialty: 'general',
-    costPerMonth: 20,
-  },
-];
-
-export const DEFAULT_SYNTHETIC_MODELS = {
-  code: 'hf:Qwen/Qwen2.5-Coder-32B-Instruct',
-  reasoning: 'hf:deepseek-ai/DeepSeek-V3', 
-  context: 'hf:Qwen/Qwen2.5-72B-Instruct',
-  general: 'hf:meta-llama/Llama-3.1-70B-Instruct',
+  'hf:zai-org/GLM-4.5': {
+    id: 'hf:zai-org/GLM-4.5',
+    name: 'GLM-4.5',
+    provider: 'huggingface',
+    capabilities: ['multi-agent-coordination', 'hybrid-reasoning', 'task-planning'],
+    contextLimit: 98304,
+    specialization: 'agentic_hybrid'
+  }
 };
 
-export function findSyntheticModel(modelId: string): SyntheticModelSpec | undefined {
-  return SYNTHETIC_MODELS.find(m => m.id === modelId);
-}
-
-export function getModelsBySpecialty(specialty: SyntheticModelSpec['specialty']): ReadonlyArray<SyntheticModelSpec> {
-  return SYNTHETIC_MODELS.filter(m => m.specialty === specialty);
-}
+export const DEFAULT_SYNTHETIC_MODELS: Record<string, string> = {
+  strategic_analyst: 'hf:deepseek-ai/DeepSeek-V3.1',
+  autonomous_coder: 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct',
+  enterprise_workflow: 'hf:moonshotai/Kimi-K2-Instruct-0905',
+  agentic_hybrid: 'hf:zai-org/GLM-4.5'
+};

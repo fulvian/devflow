@@ -1,151 +1,134 @@
-import { SyntheticClient, type ChatMessage, type ChatResponse } from '../client/api-client.js';
-import { DEFAULT_SYNTHETIC_MODELS } from '../models/model-config.js';
+import { BaseSyntheticAgent } from './base-agent';
+import { SyntheticModelConfig } from '../models/model-config';
 
-export interface AgentRequest {
-  readonly title?: string;
-  readonly description: string;
-  readonly messages: ReadonlyArray<ChatMessage>;
-  readonly maxTokens?: number;
-  readonly temperature?: number;
-  readonly context?: { injected?: string };
+export interface StrategicAnalystAgent extends BaseSyntheticAgent {
+  analyzeStrategicProblem(problem: string): Promise<StrategicAnalysis>;
 }
 
-export interface AgentResponse {
-  readonly agent: string;
-  readonly model: string;
-  readonly text: string;
-  readonly raw: ChatResponse;
-  readonly tokensUsed?: number;
+export interface CodeGenerationAgent extends BaseSyntheticAgent {
+  generateAutonomousCode(requirements: string): Promise<CodeGenerationResult>;
 }
 
-export abstract class BaseSyntheticAgent {
-  protected readonly client: SyntheticClient;
-  protected readonly agentName: string;
+export interface EnterpriseWorkflowAgent extends BaseSyntheticAgent {
+  optimizeBusinessProcess(process: BusinessProcess): Promise<OptimizationPlan>;
+}
 
-  constructor(client: SyntheticClient, agentName: string) {
-    this.client = client;
-    this.agentName = agentName;
+export interface AgenticHybridAgent extends BaseSyntheticAgent {
+  coordinateMultiAgentTask(task: MultiAgentTask): Promise<CoordinationResult>;
+}
+
+export class SyntheticStrategicAnalystAgent implements StrategicAnalystAgent {
+  modelConfig: SyntheticModelConfig;
+  systemPrompt: string;
+
+  constructor(modelConfig: SyntheticModelConfig) {
+    this.modelConfig = modelConfig;
+    this.systemPrompt = `You are a Strategic Analyst AI with exceptional analytical capabilities. Your role is to:
+1. Decompose complex strategic problems into manageable components
+2. Identify key variables and their interdependencies
+3. Generate multiple strategic scenarios with probability assessments
+4. Provide risk analysis and mitigation strategies
+5. Recommend optimal strategic paths based on data-driven insights
+
+Focus exclusively on strategic analysis. Do NOT generate code or implement technical solutions.`;
   }
 
-  abstract getPreferredModel(): string;
-  abstract getSystemPrompt(): string;
-
-  async process(request: AgentRequest): Promise<AgentResponse> {
-    const model = this.getPreferredModel();
-    
-    // Prepare messages with system prompt
-    const messages: ChatMessage[] = [
-      { role: 'system', content: this.getSystemPrompt() }
-    ];
-
-    // Add context if provided
-    if (request.context?.injected) {
-      messages.push({
-        role: 'system',
-        content: `Context: ${request.context.injected}`
-      });
-    }
-
-    // Add user messages
-    messages.push(...request.messages);
-
-    const response = await this.client.chat({
-      model,
-      messages,
-      maxTokens: request.maxTokens ?? undefined,
-      temperature: request.temperature ?? 0.1,
-    });
-
-    return {
-      agent: this.agentName,
-      model: response.model,
-      text: response.choices[0]?.message.content ?? '',
-      raw: response,
-      tokensUsed: response.usage?.total_tokens ?? 0,
-    };
+  async analyzeStrategicProblem(problem: string): Promise<StrategicAnalysis> {
+    // Implementation would call the model with the problem and system prompt
+    return { problem, analysis: 'Analysis result placeholder' };
   }
 }
 
-export class SyntheticCodeAgent extends BaseSyntheticAgent {
-  constructor(client: SyntheticClient) {
-    super(client, 'synthetic-code');
+export class SyntheticCodeAgent implements CodeGenerationAgent {
+  modelConfig: SyntheticModelConfig;
+  systemPrompt: string;
+
+  constructor(modelConfig: SyntheticModelConfig) {
+    this.modelConfig = modelConfig;
+    this.systemPrompt = `You are an Autonomous Code Generation AI with advanced programming capabilities. Your role is to:
+1. Analyze coding requirements and technical specifications
+2. Generate complete, production-ready code implementations
+3. Follow best practices for the specified programming language
+4. Include comprehensive error handling and documentation
+5. Optimize for performance and maintainability
+
+You have full autonomy to make technical decisions. Focus exclusively on code generation and implementation.`;
   }
 
-  getPreferredModel(): string {
-    return DEFAULT_SYNTHETIC_MODELS.code;
-  }
-
-  getSystemPrompt(): string {
-    return `You are a specialized code implementation agent. Your primary role is:
-
-1. **Rapid Code Implementation**: Generate production-ready code following established patterns
-2. **API Integration**: Implement API clients, wrappers, and integration patterns
-3. **Refactoring**: Improve existing code while maintaining functionality
-4. **Pattern Following**: Adhere to existing project conventions and architecture
-
-Focus on:
-- Clean, readable, maintainable code
-- Following existing patterns in the codebase
-- TypeScript best practices with strict typing
-- Error handling and edge cases
-- Performance considerations
-
-Keep responses concise and code-focused. Avoid lengthy explanations unless requested.`;
+  async generateAutonomousCode(requirements: string): Promise<CodeGenerationResult> {
+    return { requirements, code: 'Generated code placeholder' };
   }
 }
 
-export class SyntheticReasoningAgent extends BaseSyntheticAgent {
-  constructor(client: SyntheticClient) {
-    super(client, 'synthetic-reasoning');
+export class SyntheticEnterpriseWorkflowAgent implements EnterpriseWorkflowAgent {
+  modelConfig: SyntheticModelConfig;
+  systemPrompt: string;
+
+  constructor(modelConfig: SyntheticModelConfig) {
+    this.modelConfig = modelConfig;
+    this.systemPrompt = `You are an Enterprise Workflow Optimization AI. Your role is to:
+1. Analyze business processes and organizational workflows
+2. Identify bottlenecks and inefficiencies
+3. Design optimized process architectures
+4. Recommend automation opportunities
+5. Create implementation roadmaps with ROI projections
+
+Focus on enterprise-level workflow optimization. Do NOT engage in technical implementation or coding.`;
   }
 
-  getPreferredModel(): string {
-    return DEFAULT_SYNTHETIC_MODELS.reasoning;
-  }
-
-  getSystemPrompt(): string {
-    return `You are a specialized reasoning and analysis agent. Your primary role is:
-
-1. **Technical Decision Making**: Analyze architectural choices and trade-offs
-2. **Problem Solving**: Break down complex problems into manageable components
-3. **System Analysis**: Evaluate system design, performance, and scalability
-4. **Debugging Logic**: Identify root causes and systematic solutions
-
-Focus on:
-- Clear logical reasoning and analysis
-- Weighing pros and cons of different approaches
-- Identifying potential issues and risks
-- Providing actionable recommendations
-- Strategic thinking over implementation details
-
-Provide thorough analysis while remaining concise and actionable.`;
+  async optimizeBusinessProcess(process: BusinessProcess): Promise<OptimizationPlan> {
+    return { process, plan: 'Optimization plan placeholder' };
   }
 }
 
-export class SyntheticContextAgent extends BaseSyntheticAgent {
-  constructor(client: SyntheticClient) {
-    super(client, 'synthetic-context');
+export class SyntheticAgenticHybridAgent implements AgenticHybridAgent {
+  modelConfig: SyntheticModelConfig;
+  systemPrompt: string;
+
+  constructor(modelConfig: SyntheticModelConfig) {
+    this.modelConfig = modelConfig;
+    this.systemPrompt = `You are an Agentic Hybrid Coordination AI. Your role is to:
+1. Coordinate multiple specialized agents for complex tasks
+2. Decompose multi-faceted problems into subtasks
+3. Assign subtasks to appropriate specialized agents
+4. Synthesize results from multiple agents
+5. Ensure coherent, integrated final outputs
+
+Focus on multi-agent coordination and task orchestration. Do NOT perform specialized functions directly.`;
   }
 
-  getPreferredModel(): string {
-    return DEFAULT_SYNTHETIC_MODELS.context;
+  async coordinateMultiAgentTask(task: MultiAgentTask): Promise<CoordinationResult> {
+    return { task, result: 'Coordination result placeholder' };
   }
+}
 
-  getSystemPrompt(): string {
-    return `You are a specialized large-context analysis agent. Your primary role is:
+// Type definitions
+interface StrategicAnalysis {
+  problem: string;
+  analysis: string;
+}
 
-1. **Comprehensive Analysis**: Process and understand large codebases and documents
-2. **Documentation Generation**: Create thorough documentation from extensive code
-3. **Cross-Reference Analysis**: Find relationships and dependencies across large projects
-4. **Migration Planning**: Analyze entire systems for refactoring or migration
+interface CodeGenerationResult {
+  requirements: string;
+  code: string;
+}
 
-Focus on:
-- Handling large amounts of context efficiently
-- Identifying patterns and relationships across the entire codebase
-- Providing comprehensive summaries and documentation
-- Strategic overview rather than implementation details
-- Maintaining context awareness throughout long conversations
+interface BusinessProcess {
+  name: string;
+  description: string;
+}
 
-Use your large context window to provide insights that shorter-context models cannot.`;
-  }
+interface OptimizationPlan {
+  process: BusinessProcess;
+  plan: string;
+}
+
+interface MultiAgentTask {
+  id: string;
+  description: string;
+}
+
+interface CoordinationResult {
+  task: MultiAgentTask;
+  result: string;
 }
