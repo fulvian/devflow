@@ -1,0 +1,70 @@
+syntax = "proto3";
+
+package cc_tools;
+
+// CC-Tools gRPC service definition
+service CCTools {
+  // Validates Claude Code Hook data
+  rpc validateClaudeCodeHook(ValidateClaudeCodeHookRequest) returns (ValidateClaudeCodeHookResponse);
+
+  // Returns the current server status
+  rpc getServerStatus(GetServerStatusRequest) returns (GetServerStatusResponse);
+
+  // Performs a health check of the service
+  rpc healthCheck(HealthCheckRequest) returns (HealthCheckResponse);
+}
+
+// Request message for validateClaudeCodeHook
+message ValidateClaudeCodeHookRequest {
+  // The hook data to validate
+  string hook_data = 1;
+}
+
+// Response message for validateClaudeCodeHook
+message ValidateClaudeCodeHookResponse {
+  // Whether the hook data is valid
+  bool is_valid = 1;
+  // Error message if validation failed
+  string error_message = 2;
+  // Additional validation details
+  string details = 3;
+}
+
+// Request message for getServerStatus
+message GetServerStatusRequest {
+  // Empty request as no parameters are needed
+}
+
+// Response message for getServerStatus
+message GetServerStatusResponse {
+  // Server status information
+  string status = 1;
+  // Server version
+  string version = 2;
+  // Uptime in seconds
+  int64 uptime_seconds = 3;
+  // Additional server metrics
+  map<string, string> metrics = 4;
+}
+
+// Request message for healthCheck
+message HealthCheckRequest {
+  // Empty request as no parameters are needed
+}
+
+// Response message for healthCheck
+message HealthCheckResponse {
+  // Health status of the service
+  enum HealthStatus {
+    UNKNOWN = 0;
+    HEALTHY = 1;
+    UNHEALTHY = 2;
+  }
+  
+  // Current health status
+  HealthStatus status = 1;
+  // Timestamp of the health check
+  int64 timestamp = 2;
+  // Additional health information
+  string message = 3;
+}

@@ -89,7 +89,7 @@ export class DreamTeamCoordinator extends EventEmitter {
     // Implementation...
   }
 
-  private handleTaskFailure(task: Task, error: any): void> {
+  private handleTaskFailure(task: Task, error: any): void {
     this.emit('task-failed', { task, error });
     
     // Generate alternative solution

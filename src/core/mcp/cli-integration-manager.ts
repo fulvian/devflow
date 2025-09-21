@@ -19,6 +19,7 @@ export class CLIIntegrationManager extends EventEmitter {
   private platformSelector: PlatformSelector;
   private activeProcesses: Map<string, ChildProcess> = new Map();
   private defaultTimeout: number = 300000; // 5 minutes
+  private heartbeatInterval: NodeJS.Timeout | null = null;
 
   constructor() {
     super();
@@ -187,7 +188,7 @@ export class CLIIntegrationManager extends EventEmitter {
     if (!output || output.trim().length === 0) {
       return false;
     }
-    
+
     // Check for common error patterns
     const errorPatterns = [
       /error/i,
@@ -195,9 +196,90 @@ export class CLIIntegrationManager extends EventEmitter {
       /failed/i,
       /fatal/i
     ];
-    
+
     return !errorPatterns.some(pattern => pattern.test(output));
   }
+
+  private startHeartbeat(): void {
+    // Start heartbeat to keep process alive
+    this.heartbeatInterval = setInterval(() => {
+      // Emit heartbeat event for monitoring
+      this.emit('heartbeat', {
+        timestamp: new Date().toISOString(),
+        activeProcesses: this.getActiveProcesses().length
+      });
+    }, 30000); // 30 seconds
+  }
+
+  private stopHeartbeat(): void {
+    if (this.heartbeatInterval) {
+      clearInterval(this.heartbeatInterval);
+      this.heartbeatInterval = null;
+    }
+  }
+
+  public async start(): Promise<void> {
+    console.log('CLI Integration Manager starting...');
+
+    // Start heartbeat to keep process alive
+    this.startHeartbeat();
+
+    // Initialize platform selector and emit ready event
+    this.emit('started');
+    console.log('CLI Integration Manager started successfully');
+  }
+
+  public async stop(): Promise<void> {
+    console.log('CLI Integration Manager stopping...');
+
+    // Stop heartbeat
+    this.stopHeartbeat();
+
+    // Terminate all active processes
+    this.terminateAllProcesses();
+
+    this.emit('stopped');
+    console.log('CLI Integration Manager stopped successfully');
+  }
+}
+
+// Global manager instance for signal handling
+let manager: CLIIntegrationManager | null = null;
+
+// Graceful shutdown function
+async function shutdown(): Promise<void> {
+  console.log('CLI Integration Manager received shutdown signal');
+  if (manager) {
+    await manager.stop();
+  }
+  process.exit(0);
+}
+
+// Only start the daemon if this file is executed directly
+if (require.main === module) {
+  const startDaemon = async () => {
+    try {
+      console.log('Starting CLI Integration Manager Daemon...');
+
+      // Create and start the manager
+      manager = new CLIIntegrationManager();
+      await manager.start();
+
+      // Setup signal handlers for graceful shutdown
+      process.on('SIGTERM', shutdown);
+      process.on('SIGINT', shutdown);
+
+      console.log('CLI Integration Manager Daemon started successfully');
+    } catch (error) {
+      console.error('Failed to start CLI Integration Manager Daemon:', error);
+      process.exit(1);
+    }
+  };
+
+  startDaemon().catch((error) => {
+    console.error('Fatal error starting CLI Integration Manager:', error);
+    process.exit(1);
+  });
 }
 
 export default CLIIntegrationManager;

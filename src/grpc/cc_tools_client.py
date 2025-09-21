@@ -26,7 +26,7 @@ class CCToolsClient:
         async with self._connection_lock:
             if self.channel is None or self.channel._channel.closed():
                 self.channel = grpc.aio.insecure_channel(self.server_address)
-                self.stub = pb2_grpc.CCToolsServiceStub(self.channel)
+                self.stub = pb2_grpc.CCToolsIntegrationStub(self.channel)
                 logger.info(f"Connected to gRPC server at {self.server_address}")
     
     async def disconnect(self):
@@ -82,20 +82,20 @@ class CCToolsClient:
         self, 
         project_id: str, 
         project_root: str
-    ) -> pb2.MetadataResponse:
+    ) -> pb2.ProjectMetadata:
         """Get project metadata from cc-tools server"""
-        request = pb2.ProjectMetadataRequest(
-            project_id=project_id,
-            project_root=project_root
+        request = pb2.ValidationRequest(
+            project_root=project_root,
+            hook_type="metadata"
         )
         
-        return await self._make_request(self.stub.GetMetadata, request)
+        return await self._make_request(self.stub.GetProjectMetadata, request)
     
     async def acquire_lock(
         self, 
         project_id: str, 
         requester_pid: int
-    ) -> pb2.LockStatusResponse:
+    ) -> pb2.LockStatus:
         """Acquire project lock"""
         request = pb2.LockRequest(
             project_id=project_id,
@@ -108,7 +108,7 @@ class CCToolsClient:
         self, 
         project_id: str, 
         requester_pid: int
-    ) -> pb2.LockStatusResponse:
+    ) -> pb2.LockStatus:
         """Release project lock"""
         request = pb2.LockRequest(
             project_id=project_id,
@@ -121,7 +121,7 @@ class CCToolsClient:
         self, 
         project_id: str, 
         requester_pid: int
-    ) -> pb2.LockStatusResponse:
+    ) -> pb2.LockStatus:
         """Check project lock status"""
         request = pb2.LockRequest(
             project_id=project_id,

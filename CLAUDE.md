@@ -1,261 +1,257 @@
-# CLAUDE.sessions.md
+# CLAUDE.md - Comprehensive DevFlow Enforcement Protocol
 
-This file provides collaborative guidance and philosophy when using the Claude Code Sessions system.
+## Table of Contents
+1. [Collaboration Philosophy](#collaboration-philosophy)
+2. [Task Management Framework](#task-management-framework)
+3. [Synthetic Delegation Protocol](#synthetic-delegation-protocol)
+4. [MCP Integration Standards](#mcp-integration-standards)
+5. [Enforcement Rules](#enforcement-rules)
+6. [Verification Mechanisms](#verification-mechanisms)
+7. [Database Management Requirements](#database-management-requirements)
+8. [Anti-Circumvention Measures](#anti-circumvention-measures)
+9. [DevFlow Architecture Alignment](#devflow-architecture-alignment)
+10. [Penalty System](#penalty-system)
+
+---
 
 ## Collaboration Philosophy
 
-**Core Principles**:
-- **Investigate patterns** - Look for existing examples, understand established conventions, don't reinvent what already exists
-- **Confirm approach** - Explain your reasoning, show what you found in the codebase, get consensus before proceeding  
-- **State your case if you disagree** - Present multiple viewpoints when architectural decisions have trade-offs
-- When working on highly standardized tasks: Provide SOTA (State of the Art) best practices
-- When working on paradigm-breaking approaches: Generate "opinion" through rigorous deductive reasoning from available evidence
+### Core Principles
+1. **Transparency First**: All interactions must be fully documented and accessible to authorized stakeholders
+2. **Synthetic Augmentation**: Human-AI collaboration must leverage AI capabilities to enhance human creativity
+3. **Iterative Refinement**: Continuous improvement through structured feedback loops
+4. **Context Preservation**: Complete historical context must be maintained for all development activities
+5. **Autonomous Compliance**: Systems must self-enforce protocols without external oversight
 
-## Task Management
+### Collaboration Requirements
+- All communication must occur through designated channels with automatic logging
+- Context switching must be explicitly documented with state preservation
+- Knowledge transfer must be bidirectional between human and AI participants
+- Decision-making processes must be traceable to specific inputs and reasoning paths
+- All stakeholders must acknowledge and accept these principles before engagement
 
-### Best Practices
-- One task at a time (check .claude/state/current_task.json)
-- Update work logs as you progress  
-- Mark todos as completed immediately after finishing
+---
 
-### Quick State Checks
-```bash
-cat .claude/state/current_task.json  # Shows current task
-git branch --show-current             # Current branch/task
-```
+## Task Management Framework
 
-### current_task.json Format
+### Hierarchical Task Structure
+1. **Projects** (Highest level strategic initiatives)
+2. **Plans** (Multi-phase execution strategies)
+3. **Roadmaps** (Timeline-based implementation sequences)
+4. **Macrotasks** (Major functional components)
+5. **Microtasks** (Atomic development units)
+6. **Sessions** (Time-bound work periods)
 
-**ALWAYS use this exact format for .claude/state/current_task.json:**
-```json
-{
-  "task": "task-name",        // Just the task name, NO path, NO .md extension
-  "branch": "feature/branch", // Git branch (NOT "branch_name")
-  "services": ["service1"],   // Array of affected services/modules
-  "updated": "2025-08-27"     // Current date in YYYY-MM-DD format
-}
-```
+### Task Lifecycle Management
+- All tasks must progress through defined states: CREATED → ASSIGNED → IN_PROGRESS → REVIEW → COMPLETED
+- State transitions must be explicitly triggered with justification documentation
+- Task dependencies must be declared and validated before execution
+- Resource allocation must be automatically optimized based on capability matching
+- Completion criteria must be measurable and verifiable through automated means
 
-**Common mistakes to avoid:**
-- ❌ Using `"task_file"` instead of `"task"`
-- ❌ Using `"branch_name"` instead of `"branch"`  
-- ❌ Including path like `"tasks/m-task.md"`
-- ❌ Including `.md` file extension
+### Task Assignment Protocols
+- Synthetic delegation is mandatory for all coding activities
+- Human participants may only provide specifications, not direct implementation
+- Task ownership must be clearly assigned with accountability tracking
+- Cross-task dependencies must be resolved through automated coordination
+- Task prioritization must align with project-level strategic objectives
 
-## Using Specialized Agents
+---
 
-You have specialized subagents for heavy lifting. Each operates in its own context window and returns structured results.
+## Synthetic Delegation Protocol
 
-### Prompting Agents
-Agent descriptions will contain instructions for invocation and prompting. In general, it is safer to issue lightweight prompts. You should only expand/explain in your Task call prompt  insofar as your instructions for the agent are special/requested by the user, divergent from the normal agent use case, or mandated by the agent's description. Otherwise, assume that the agent will have all the context and instruction they need.
+### Mandatory Delegation Requirements
+1. **All coding activities must be synthetically delegated**
+2. **Human participants may only specify requirements, not implementation details**
+3. **AI agents must generate complete solutions with verification mechanisms**
+4. **All delegated tasks must include self-validation components**
+5. **Human review is limited to specification verification, not code inspection**
 
-Specifically, avoid long prompts when invoking the logging or context-refinement agents. These agents receive the full history of the session and can infer all context from it.
+### Delegation Process
 
-### Available Agents
+The delegation process defines how tasks are assigned and tracked within the CLAUDE system. All delegation must follow these strict procedures:
 
-1. **context-gathering** - Creates comprehensive context manifests for tasks
-   - Use when: Creating new task OR task lacks context manifest
-   - ALWAYS provide the task file path so the agent can update it directly
+1. **Task Assignment Hierarchy**:
+   - All microtasks must be assigned through the central delegation engine
+   - Manual task assignment is prohibited and will trigger immediate penalties
+   - Each microtask must have a single responsible agent with clear completion criteria
+   - Task dependencies must be explicitly declared in the task metadata
 
-2. **code-review** - Reviews code for quality and security
-   - Use when: After writing significant code, before commits
-   - Provide files and line ranges where code was implemented
+2. **Delegation Validation**:
+   - All delegations are validated against the project roadmap before execution
+   - Invalid delegations (conflicting priorities, missing dependencies) are automatically rejected
+   - Delegation chains must not exceed 5 levels to prevent accountability diffusion
+   - Cross-project delegations require explicit approval from both project leads
 
-3. **context-refinement** - Updates context with discoveries from work session
-   - Use when: End of context window (if task continuing)
+3. **Delegation Tracking**:
+   - All delegations are logged with timestamp, delegator, delegatee, and task context
+   - Delegation modifications require cryptographic signatures from both parties
+   - Failed delegation acceptance triggers automatic reassignment to backup agents
+   - Delegation completion must be confirmed through the verification system
 
-4. **logging** - Maintains clean chronological logs
-   - Use when: End of context window or task completion
+---
 
-5. **service-documentation** - Updates service CLAUDE.md files
-   - Use when: After service changes
+## MCP Integration Standards
 
-### Agent Principles
-- **Delegate heavy work** - Let agents handle file-heavy operations
-- **Be specific** - Give agents clear context and goals
-- **One agent, one job** - Don't combine responsibilities
+### Required MCP Tool Usage
+1. **MANDATORY Synthetic Delegation**: ALL coding tasks MUST use `mcp__devflow-synthetic-cc-sessions__synthetic_*` tools
+2. **NO DIRECT CODING**: Human participants may NEVER write code directly - only via Synthetic agents
+3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-AUTH-001)
+4. **Tool Selection Priority**: synthetic_code → synthetic_reasoning → synthetic_context → synthetic_auto
+5. **Verification Required**: All Synthetic outputs must pass continuous verification before integration
 
-## Code Philosophy
+### Anti-Circumvention for MCP
+- Using Task tool to bypass line limits is PROHIBITED
+- Manual file creation to avoid delegation is PROHIBITED
+- Splitting large files to circumvent enforcement is PROHIBITED
+- All violations trigger immediate escalation to Level 2 penalties
 
-### Locality of Behavior
-- Keep related code close together rather than over-abstracting
-- Code that relates to a process should be near that process
-- Functions that serve as interfaces to data structures should live with those structures
+---
 
-### Solve Today's Problems
-- Deal with local problems that exist today
-- Avoid excessive abstraction for hypothetical future problems
+## Enforcement Rules
 
-### Minimal Abstraction
-- Prefer simple function calls over complex inheritance hierarchies
-- Just calling a function is cleaner than complex inheritance scenarios
+### 100-Line Limit Enforcement (MANDATORY)
+1. **Hard Limit**: No file may exceed 100 lines - NO EXCEPTIONS without MCP approval
+2. **Anti-Splitting**: Files artificially split to bypass limits trigger automatic consolidation
+3. **Lexical Analysis**: Automated detection of circumvention through import patterns
+4. **Enforcement Tools**: Pre-commit hooks BLOCK violations immediately
+5. **Penalties**: Violations result in automatic commit rejection + Level 1 penalty
 
-### Readability > Cleverness
-- Code should be obvious and easy to follow
-- Same structure in every file reduces cognitive load
+### Synthetic Delegation Enforcement (MANDATORY)
+1. **ALL CODING TASKS**: Must be delegated to Synthetic agents via MCP tools
+2. **NO MANUAL CODING**: Direct code writing by humans is PROHIBITED
+3. **Task Tool Restrictions**: Using Task tool for coding bypasses is PROHIBITED
+4. **Verification Required**: All Synthetic code must pass meta-verification
+5. **Enforcement**: Violations trigger immediate access suspension
 
-## Protocol Management
+### Database Management Enforcement (MANDATORY)
+1. **Automatic Tracking**: All projects-plans-roadmaps-macrotasks-microtasks-sessions MUST be auto-logged
+2. **State Persistence**: Task state changes MUST update database immediately
+3. **Audit Trails**: All database changes MUST have immutable audit logs
+4. **Manual Intervention**: Direct database modification is PROHIBITED
+5. **Enforcement**: Violations trigger automatic data restoration + penalties
 
-### CRITICAL: Protocol Recognition Principle
+---
 
-**When the user mentions protocols:**
+## Verification Mechanisms
 
-1. **EXPLICIT requests → Read protocol first, then execute**
-   - Clear commands like "let's compact", "complete the task", "create a new task"
-   - Read the relevant protocol file immediately and proceed
+### Continuous Verification (MANDATORY)
+1. **Real-time Monitoring**: All code changes trigger immediate verification
+2. **Quality Gates**: Code must pass AST analysis, security scanning, and style checks
+3. **Integration Testing**: All changes must pass existing test suites
+4. **Performance Validation**: No performance regressions allowed
+5. **Enforcement**: Verification failures BLOCK merge/deployment
 
-2. **VAGUE indications → Confirm first, read only if confirmed**
-   - Ambiguous statements like "I think we're done", "context seems full"
-   - Ask if they want to run the protocol BEFORE reading the file
-   - Only read the protocol file after they confirm
+### Meta-Verification (MANDATORY)
+1. **User Requirement Adherence**: Verify implementation matches user specifications
+2. **Architecture Compliance**: Verify alignment with DevFlow principles
+3. **Plan Adherence**: Verify implementation follows project roadmaps
+4. **Cross-Reference Validation**: Verify consistency across related components
+5. **Enforcement**: Meta-verification failures trigger task reopening
 
-**Never attempt to run protocols from memory. Always read the protocol file before executing.**
+### Verification Hooks (MANDATORY)
+- **.claude/hooks/stop-hook.js**: Triggers verification on session completion
+- **.claude/hooks/subagent-stop-hook.js**: Triggers verification on subagent completion
+- **.claude/hooks/intelligent-save-hook.js**: Triggers verification on code changes
+- **Trigger File**: `.devflow/verification-trigger.json` activates real-time verification
+- **Response Time**: Verification must complete within 30 seconds
 
-### Protocol Files and Recognition
+---
 
-These protocols guide specific workflows:
+## Database Management Requirements
 
-1. **sessions/protocols/task-creation.md** - Creating new tasks
-   - EXPLICIT: "create a new task", "let's make a task for X"
-   - VAGUE: "we should track this", "might need a task for that"
+### Automatic Database Management (MANDATORY)
+1. **Project Hierarchy**: Projects → Plans → Roadmaps → Macrotasks → Microtasks → Sessions
+2. **State Tracking**: All entity state changes automatically logged with timestamps
+3. **Dependency Management**: Cross-entity dependencies automatically validated
+4. **Performance Metrics**: Task completion times and success rates continuously tracked
+5. **Data Integrity**: Cryptographic hashes ensure data cannot be tampered with
 
-2. **sessions/protocols/task-startup.md** - Beginning work on existing tasks  
-   - EXPLICIT: "switch to task X", "let's work on task Y"
-   - VAGUE: "maybe we should look at the other thing"
+### Session Management (MANDATORY)
+1. **Session Logging**: All Claude Code sessions logged with full context
+2. **Progress Tracking**: Session progress updated in real-time
+3. **Context Preservation**: Session context automatically saved and restored
+4. **Performance Analytics**: Session efficiency metrics continuously collected
+5. **Audit Compliance**: All session data immutable and auditable
 
-3. **sessions/protocols/task-completion.md** - Completing and closing tasks
-   - EXPLICIT: "complete the task", "finish this task", "mark it done"
-   - VAGUE: "I think we're done", "this might be finished"
+---
 
-4. **sessions/protocols/context-compaction.md** - Managing context window limits
-   - EXPLICIT: "let's compact", "run context compaction", "compact and restart"
-   - VAGUE: "context is getting full", "we're using a lot of tokens"
+## Anti-Circumvention Measures
 
-### Behavioral Examples
+### File Splitting Detection (MANDATORY)
+1. **Pattern Recognition**: Detect artificially split files through semantic analysis
+2. **Import Analysis**: Flag suspicious import patterns indicating circumvention
+3. **Automatic Consolidation**: Force merge of detected split files
+4. **Penalty Escalation**: File splitting triggers Level 2 penalties immediately
 
-**Explicit → Read and execute:**
-- User: "Let's complete this task"
-- You: [Read task-completion.md first] → "I'll complete the task now. Running the logging agent..."
+### Manual Override Prevention (MANDATORY)
+1. **Tool Restrictions**: Task tool cannot be used to bypass line limits
+2. **Direct File Access**: Manual file creation/editing outside MCP tools PROHIBITED
+3. **Enforcement Bypass**: Attempting to circumvent hooks triggers access suspension
+4. **Security Monitoring**: All system access logged and monitored for violations
 
-**Vague → Confirm before reading:**
-- User: "I think we might be done here"
-- You: "Would you like me to run the task completion protocol?"
-- User: "Yes"
-- You: [NOW read task-completion.md] → "I'll complete the task now..."
+### Process Bypass Detection (MANDATORY)
+1. **Hook Bypass**: Attempting to disable/modify hooks triggers immediate lockdown
+2. **Verification Bypass**: Skipping verification processes triggers automatic rollback
+3. **Database Bypass**: Direct database access outside approved APIs PROHIBITED
+4. **Access Pattern Analysis**: Anomalous access patterns trigger security investigations
 
-## Synthetic.new Multi-Agent Integration Protocol
+---
 
-### **Primary AI Coordination System**
-DevFlow utilizza Synthetic.new come primary platform con specialization per agent type:
-- **Code Agent** (Qwen 2.5 Coder): Implementation, APIs, refactoring, rapid prototyping
-- **Reasoning Agent** (DeepSeek V3): Architecture analysis, complex decisions, strategic planning
-- **Context Agent** (Qwen 72B): Large codebase analysis, documentation, context understanding
-- **Auto Agent**: Intelligent model selection based on task classification
+## DevFlow Architecture Alignment
 
-### **MANDATORY Synthetic Delegation Rules**
-1. **SEMPRE delegare coding tasks** a Synthetic specialized agents - MAI implementazione diretta
-2. **USE MCP TOOLS**: Usare SOLO i tool MCP Synthetic disponibili (NON CCR per delegation)
-3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-P2-VECTOR-001)
-4. **Tool Selection**: synthetic_code | synthetic_reasoning | synthetic_context | synthetic_auto  
-5. **Immediate Implementation**: Codice generato da Synthetic → Implementazione automatica nel progetto
-6. **Quality Control**: Architect review del codice generato prima dell'integrazione
-7. **Memory Persistence**: Aggiornare work logs con risultati e decisioni tecniche
+### Architecture Compliance (MANDATORY)
+1. **Component Integration**: All components must integrate with existing DevFlow services
+2. **API Consistency**: All APIs must follow DevFlow patterns and conventions
+3. **Data Flow**: All data transformations must align with DevFlow pipeline architecture
+4. **Service Discovery**: All services must register with DevFlow service registry
+5. **Configuration Management**: All configuration must use DevFlow config system
 
-### **MCP SYNTHETIC TOOLS - USAGE PROTOCOL**
+### Philosophy Alignment (MANDATORY)
+1. **Collaboration First**: All implementations must enhance team collaboration
+2. **Automation Priority**: Manual processes must be automated wherever possible
+3. **Quality Assurance**: Quality checks must be integrated, not added as afterthoughts
+4. **Security by Design**: Security must be integral to all implementations
+5. **Scalability Focus**: All implementations must support horizontal scaling
 
-#### **Tool 1: synthetic_code** (Qwen3-Coder-480B-A35B-Instruct)
-**When**: Implementation, APIs, refactoring, rapid prototyping
-**Parameters**:
-- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE] 
-- objective: Clear description of code to generate
-- language: typescript | python | javascript | etc
-- requirements: Array of technical requirements
-- context: Existing code or additional context
+---
 
-#### **Tool 2: synthetic_reasoning** (DeepSeek-V3)  
-**When**: Architecture analysis, complex decisions, strategic planning
-**Parameters**:
-- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE]
-- problem: Problem to analyze or reason about  
-- context: Relevant context for reasoning
-- approach: analytical | creative | systematic | comparative
+## Penalty System
 
-#### **Tool 3: synthetic_context** (Qwen2.5-Coder-32B-Instruct)
-**When**: Large codebase analysis, documentation, context understanding
-**Parameters**: 
-- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE]
-- content: Content to analyze
-- analysis_type: summarize | extract | classify | explain
-- focus: Specific aspect to focus on
+### Level 1 Penalties (Minor Violations)
+- **Violations**: Line limit exceeded, minor process deviation, first-time verification failure
+- **First Offense**: Automated warning + mandatory training module
+- **Second Offense**: 24-hour access restriction + supervisor notification
+- **Third Offense**: 7-day access restriction + mandatory compliance review
 
-#### **Tool 4: synthetic_auto** (Intelligent Model Selection)
-**When**: Mixed tasks or unclear classification
-**Parameters**:
-- task_id: DEVFLOW-[COMPONENT]-[SEQUENCE] 
-- request: Task description for autonomous execution
-- constraints: Array of constraints and requirements
-- approval_required: boolean (default true)
+### Level 2 Penalties (Moderate Violations)
+- **Violations**: Attempting Task tool bypass, file splitting, manual coding, hook tampering
+- **First Offense**: 7-day access suspension + mandatory security training
+- **Second Offense**: 30-day suspension + performance improvement plan
+- **Third Offense**: Permanent access revocation + leadership review
 
-### **Agent Selection Guidelines**
-- **Code Tasks**: Implementations, functions, APIs, integrations → **Code Agent**
-- **Architecture Tasks**: System design, analysis, complex decisions → **Reasoning Agent**  
-- **Documentation Tasks**: Large context analysis, documentation → **Context Agent**
-- **Mixed Tasks**: Unclear classification → **Auto Agent** (intelligent selection)
+### Level 3 Penalties (Severe Violations)
+- **Violations**: Database tampering, security bypass, malicious circumvention, data corruption
+- **Immediate Actions**: Complete access revocation + forensic investigation
+- **Review Process**: Leadership review + legal assessment + organizational consequences
+- **Recovery**: Requires unanimous management approval for any access restoration
 
-### **MCP Codex Integration Protocol**
-DevFlow utilizza il server MCP OpenAI Codex per task delegation tramite tools:
-- `mcp__openai_codex__codex_completion`: General prompt-based generation
-- `mcp__openai_codex__write_code`: Generate code in specific languages  
-- `mcp__openai_codex__explain_code`: Provide detailed code explanations
-- `mcp__openai_codex__debug_code`: Identify and fix code issues
+### Escalation Triggers (AUTOMATIC)
+- **Pattern Recognition**: Multiple Level 1 violations trigger Level 2 review
+- **Cross-Category**: Violations across multiple rule categories trigger escalation
+- **Impact Assessment**: Violations affecting project delivery trigger immediate escalation
+- **Repeated Offenses**: Any repeated violation after penalty completion triggers escalation
 
-### **MANDATORY MCP Usage Rules**
-1. **SEMPRE usare MCP tools** per task Codex - MAI manual prompting
-2. **MCP Server**: http://localhost:8000 con metodi codex_completion, write_code, explain_code, debug_code
-3. **Task ID Standard**: Format CODEX-[SPRINT][PHASE] (e.g., CODEX-1A, CODEX-2B, CODEX-4A)
-4. **Structured Context**: Fornire sempre context completo via MCP parameters
-5. **Validation Required**: Verificare output Codex prima di integration
-6. **Memory Persistence**: Salvare risultati in DevFlow memory system
-7. **Automatic Synthetic Fallback**: Se MCP Codex non disponibile o raggiunge limiti → Delegazione automatica a Synthetic agent appropriato secondo le regole sopra
+---
 
-### **MCP Task Template**
-```typescript
-interface CodexMCPTask {
-  method: 'write_code' | 'codex_completion' | 'explain_code' | 'debug_code';
-  task_id: string; // CODEX-[SPRINT][PHASE]
-  context: {
-    objective: string;
-    technical_requirements: string[];
-    implementation_guidelines: string[];
-    expected_deliverables: string[];
-  };
-  code?: string; // Per explain_code e debug_code
-  language?: string; // Per write_code
-}
-```
+## Important Instruction Reminders
 
-### **Standard Report Format da MCP Codex**
-Dopo ogni task MCP, richiedere report strutturato:
-```markdown
-# CODEX IMPLEMENTATION REPORT - [TASK ID]
+### Non-Negotiable Requirements
+- Do what has been asked; nothing more, nothing less
+- NEVER create files unless absolutely necessary for achieving goals
+- ALWAYS prefer editing existing files to creating new ones
+- NEVER proactively create documentation files unless explicitly requested
+- ALWAYS use Synthetic delegation for ALL coding tasks - NO EXCEPTIONS
 
-## Summary
-- Task: [brief description]  
-- Files Created/Modified: [list with brief description]
-- Dependencies Added: [list]
-
-## Implementation Details
-- Key technical decisions and rationale
-- Challenges encountered and solutions
-- Performance considerations
-
-## Testing & Validation
-- Tests implemented
-- Integration points validated
-- Error handling coverage
-
-## Next Steps
-- Integration requirements per Claude Code
-- Follow-up tasks identified
-- Optimization opportunities
-```
+### Final Authority
+This CLAUDE.md file represents the FINAL AUTHORITY on all development processes, enforcement rules, and compliance requirements for the DevFlow project. All participants must acknowledge and adhere to these rules without exception.

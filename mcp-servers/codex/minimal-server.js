@@ -3,6 +3,7 @@
 // Simple HTTP server implementing minimal MCP endpoints
 
 const http = require('http');
+const { authMiddleware } = require('../auth/middleware');
 
 const PORT = process.env.PORT || 3101;
 
@@ -37,25 +38,40 @@ function handleRequest(req, res) {
     return;
   }
 
-  // MCP endpoint
+  // MCP endpoint with authentication
   if (url === '/mcp' && req.method === 'POST') {
-    let body = '';
-    req.on('data', chunk => body += chunk);
-    req.on('end', () => {
-      try {
-        const request = JSON.parse(body || '{}');
-        const response = handleMCPRequest(request);
+    const authHeader = req.headers.authorization;
+    const apiKey = req.headers['x-api-key'] || process.env.MCP_AUTH_TOKEN || 'devflow-mcp-2025';
 
-        res.writeHead(200, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify(response));
-      } catch (error) {
-        res.writeHead(400, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          id: null,
-          error: { code: -32700, message: 'Parse error', data: error.message }
-        }));
+    try {
+      // Simple auth check
+      if (!authHeader && !apiKey) {
+        res.writeHead(401, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ error: 'Authentication required' }));
+        return;
       }
-    });
+
+      let body = '';
+      req.on('data', chunk => body += chunk);
+      req.on('end', () => {
+        try {
+          const request = JSON.parse(body || '{}');
+          const response = handleMCPRequest(request);
+
+          res.writeHead(200, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify(response));
+        } catch (error) {
+          res.writeHead(400, { 'Content-Type': 'application/json' });
+          res.end(JSON.stringify({
+            id: null,
+            error: { code: -32700, message: 'Parse error', data: error.message }
+          }));
+        }
+      });
+    } catch (error) {
+      res.writeHead(401, { 'Content-Type': 'application/json' });
+      res.end(JSON.stringify({ error: 'Authentication failed' }));
+    }
     return;
   }
 

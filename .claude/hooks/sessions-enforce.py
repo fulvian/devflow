@@ -137,6 +137,33 @@ if discussion_mode and tool_name in config.get("blocked_tools", DEFAULT_CONFIG["
     print(f"[DAIC: Tool Blocked] You're in discussion mode. The {tool_name} tool is not allowed. You need to seek alignment first.", file=sys.stderr)
     sys.exit(2)  # Block with feedback
 
+# Code Size Enforcement (applies in BOTH modes)
+if tool_name in ["Write", "MultiEdit"]:
+    content = tool_input.get("content", "")
+    new_string = tool_input.get("new_string", "")
+    total_content = content or new_string or ""
+
+    if total_content:
+        line_count = len(total_content.split('\n'))
+
+        if line_count > 100:
+            print(f"[Code Size Limit] File has {line_count} lines. Max 100 lines allowed. Use Task tool to delegate.", file=sys.stderr)
+            sys.exit(2)
+
+# Automation Delegation Enforcement (applies in BOTH modes)
+if tool_name in ["Write", "Edit", "MultiEdit"]:
+    file_path = tool_input.get("file_path", "")
+    if file_path and any(keyword in file_path.lower() for keyword in ["automation", "github", "startup", "daemon", "monitor"]):
+        print(f"[Automation Delegation Required] Automation code must be delegated to agents. Use Task tool.", file=sys.stderr)
+        sys.exit(2)
+
+# Manual State Update Block (applies in BOTH modes)
+if tool_name in ["Write", "Edit"] and tool_input.get("file_path", ""):
+    file_path = tool_input.get("file_path", "")
+    if "current_task.json" in file_path or ".claude/state/" in file_path:
+        print(f"[Manual State Update Blocked] Use automated systems for task state updates.", file=sys.stderr)
+        sys.exit(2)
+
 # Check if we're in a subagent context and trying to edit .claude/state files
 project_root = get_project_root()
 subagent_flag = project_root / '.claude' / 'state' / 'in_subagent_context.flag'

@@ -5,7 +5,7 @@
 import http from 'http';
 import RealDreamTeamOrchestrator from './real-dream-team-orchestrator';
 
-const PORT = parseInt(process.env.ORCHESTRATOR_PORT || '3200', 10);
+const PORT = parseInt(process.env.REAL_DREAM_TEAM_ORCHESTRATOR_PORT || '3200', 10);
 
 class OrchestratorDaemon {
   private orchestrator: RealDreamTeamOrchestrator;
@@ -52,65 +52,60 @@ class OrchestratorDaemon {
       req.on('data', chunk => body += chunk);
       req.on('end', async () => {
         try {
-          const { input, model } = JSON.parse(body || '{}');
-
-          if (!input) {
-            res.writeHead(400, { 'Content-Type': 'application/json' });
-            res.end(JSON.stringify({ error: 'Missing input parameter' }));
-            return;
-          }
-
-          const result = model
-            ? await this.orchestrator.executeModel(model, input)
-            : await this.orchestrator.executeDreamTeam(input);
-
+          const payload = JSON.parse(body);
+          const input = payload.input || payload.prompt || '';
+          const result = await this.orchestrator.executeDreamTeam(input);
           res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({ result }));
+          res.end(JSON.stringify(result));
         } catch (error) {
           res.writeHead(500, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            error: error instanceof Error ? error.message : 'Unknown error'
-          }));
+          res.end(JSON.stringify({ error: error instanceof Error ? error.message : 'Unknown error' }));
         }
       });
       return;
     }
 
-    // 404 for other paths
-    res.writeHead(404, { 'Content-Type': 'application/json' });
-    res.end(JSON.stringify({ error: 'Not found' }));
+    res.writeHead(404);
+    res.end('Not Found');
   }
 
-  public start(): void {
-    this.server.listen(PORT, '0.0.0.0', () => {
-      console.log(`🎯 Real Dream Team Orchestrator Daemon running on port ${PORT}`);
-      console.log(`📊 Health: http://localhost:${PORT}/health`);
-      console.log(`📈 Status: http://localhost:${PORT}/status`);
-      console.log(`🚀 Execute: POST http://localhost:${PORT}/execute`);
-      console.log(`🔧 PID: ${process.pid}`);
+  async start() {
+    return new Promise<void>((resolve, reject) => {
+      this.server.listen(PORT, '0.0.0.0', () => {
+        console.log(`🎯 Real Dream Team Orchestrator Daemon running on port ${PORT}`);
+        console.log(`📊 Health: http://localhost:${PORT}/health`);
+        console.log(`📈 Status: http://localhost:${PORT}/status`);
+        console.log(`🚀 Execute: POST http://localhost:${PORT}/execute`);
+        console.log(`🔧 PID: ${process.pid}`);
+        resolve();
+      });
+
+      this.server.on('error', reject);
+
+      // Start heartbeat logging
+      setInterval(() => {
+        console.log(`[${new Date().toISOString()}] Orchestrator daemon heartbeat - PID ${process.pid}`);
+      }, 30000);
     });
-
-    // Keep alive mechanism - emit periodic heartbeat
-    setInterval(() => {
-      console.log(`[${new Date().toISOString()}] Orchestrator daemon heartbeat - PID ${process.pid}`);
-    }, 30000); // Every 30 seconds
   }
 
-  private async shutdown(): Promise<void> {
+  async shutdown() {
     console.log('🛑 Shutting down Real Dream Team Orchestrator Daemon...');
-
-    if (this.server) {
-      this.server.close();
-    }
-
-    if (this.orchestrator) {
-      await this.orchestrator.shutdown();
-    }
-
+    this.server.close();
     process.exit(0);
   }
 }
 
-// Start the daemon
-const daemon = new OrchestratorDaemon();
-daemon.start();
+async function main() {
+  const daemon = new OrchestratorDaemon();
+  await daemon.start();
+}
+
+if (require.main === module) {
+  main().catch(error => {
+    console.error('Failed to start daemon:', error);
+    process.exit(1);
+  });
+}
+
+export default OrchestratorDaemon;

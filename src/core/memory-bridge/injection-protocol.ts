@@ -1,5 +1,6 @@
 import { MemoryCache, MemoryBlock } from './memory-cache';
 import { ContextCompressor } from './context-compression';
+import { ContextSanitizer } from './context-sanitizer';
 
 export interface InjectionConfig {
   enabled: boolean;
@@ -120,18 +121,25 @@ export class InjectionProtocol {
   }
 
   /**
-   * Format context for API call injection
+   * Format context for API call injection with security sanitization
    */
   formatForAPICall(payload: ContextPayload): string {
+    // Sanitize all user-controlled content to prevent injection attacks
+    const sanitizedTask = ContextSanitizer.sanitizeString(payload.taskContext.currentTask);
+    const sanitizedCompressed = ContextSanitizer.sanitizeString(payload.compressed);
+    const sanitizedArchitecture = ContextSanitizer.sanitizeString(payload.codebaseMap.architecture);
+    const sanitizedModules = ContextSanitizer.sanitizeArray(payload.codebaseMap.relevantModules).join(', ');
+    const sanitizedActions = ContextSanitizer.sanitizeArray(payload.taskContext.recentActions).join(', ');
+
     return `
 === DevFlow Context Injection ===
-Task: ${payload.taskContext.currentTask}
+Task: ${sanitizedTask}
 Relevant Context:
-${payload.compressed}
+${sanitizedCompressed}
 
-Architecture Notes: ${payload.codebaseMap.architecture}
-Relevant Modules: ${payload.codebaseMap.relevantModules.join(', ')}
-Recent Actions: ${payload.taskContext.recentActions.join(', ')}
+Architecture Notes: ${sanitizedArchitecture}
+Relevant Modules: ${sanitizedModules}
+Recent Actions: ${sanitizedActions}
 === End Context ===
 
 `;

@@ -1,66 +1,36 @@
-[2025-09-17T22:55:05.291Z] Starting DevFlow Enforcement Daemon...
-[2025-09-17T22:55:05.292Z] PID file written: /Users/fulvioventura/devflow/devflow-enforcement-daemon.pid
-[2025-09-17T22:55:05.294Z] DevFlow Enforcement Daemon started successfully
-[2025-09-17T22:55:05.294Z] PID: 76814
-[2025-09-17T22:55:05.294Z] Health check port: 8787
-[2025-09-17T22:55:05.294Z] Enforcement rules: MDR-001, MDR-002, MDR-003 loaded
-[2025-09-17T22:55:05.294Z] Health check server running on port 8787
-[2025-09-17T22:55:05.294Z] Health check endpoint: http://localhost:8787/health
-[2025-09-17T22:55:15.295Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:55:15.296Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:55:25.296Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:55:25.296Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:55:35.296Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:55:35.297Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:55:45.290Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:55:45.290Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:55:55.286Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:55:55.286Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:56:05.284Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:56:05.284Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:56:15.284Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:56:15.284Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:56:25.284Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:56:25.284Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:56:35.284Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:56:35.284Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:56:45.284Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:56:45.285Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:56:55.285Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:56:55.285Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:57:05.285Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:57:05.286Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:57:15.285Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:57:15.285Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:57:25.287Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:57:25.287Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:57:35.288Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:57:35.289Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:57:45.289Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:57:45.290Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:57:55.291Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:57:55.291Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:58:05.291Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:58:05.292Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:58:15.294Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:58:15.294Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:58:25.295Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:58:25.295Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:58:35.295Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:58:35.296Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:58:45.297Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:58:45.298Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:58:55.298Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:58:55.298Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:59:05.298Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:59:05.298Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:59:15.299Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:59:15.300Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:59:25.300Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:59:25.301Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:59:35.301Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:59:35.301Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:59:45.302Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:59:45.303Z] Enforcement cycle completed - system compliant
-[2025-09-17T22:59:55.303Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
-[2025-09-17T22:59:55.304Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:51:38.140Z] Starting DevFlow Enforcement Daemon...
+[2025-09-21T12:51:38.142Z] PID file written: /Users/fulvioventura/devflow/devflow-enforcement-daemon.pid
+[2025-09-21T12:51:38.143Z] DevFlow Enforcement Daemon started successfully
+[2025-09-21T12:51:38.143Z] PID: 79883
+[2025-09-21T12:51:38.143Z] Health check port: 8787
+[2025-09-21T12:51:38.143Z] Enforcement rules: MDR-001, MDR-002, MDR-003 loaded
+[2025-09-21T12:51:38.143Z] Health check server running on port 8787
+[2025-09-21T12:51:38.143Z] Health check endpoint: http://localhost:8787/health
+[2025-09-21T12:51:48.145Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:51:48.146Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:51:58.147Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:51:58.148Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:52:08.148Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:52:08.148Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:52:18.148Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:52:18.148Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:52:28.150Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:52:28.152Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:52:38.151Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:52:38.151Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:52:48.151Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:52:48.152Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:52:58.151Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:52:58.152Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:53:08.152Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:53:08.152Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:53:18.153Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:53:18.153Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:53:28.154Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:53:28.154Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:53:38.154Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:53:38.154Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:53:48.155Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:53:48.156Z] Enforcement cycle completed - system compliant
+[2025-09-21T12:53:58.157Z] Enforcement cycle: MDR-001, MDR-002, MDR-003 active
+[2025-09-21T12:53:58.157Z] Enforcement cycle completed - system compliant

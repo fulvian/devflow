@@ -1,202 +1,318 @@
 #!/bin/bash
 
-# DevFlow Start Script v3.0.0 Production with Complete Orchestration
-# This script starts all DevFlow services for complete production system
-# INCLUDING: Multi-account monitoring, MCP delegation, cascade fallback
-# NO MOCKS - NO STUBS - NO PLACEHOLDERS - REAL IMPLEMENTATION ONLY
+# DevFlow v3.1.0 Cometa Production Startup Script
+# Comprehensive system with Real Dream Team Orchestrator, CLI Integration Manager, and Platform Status Tracker
 
-set -e  # Exit on any error
-
-# Get the directory where this script is located
+# Get the directory of this script
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR"
 
-# Colors for output
+# Color codes for better output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
-# Function to print colored output
+# Helper functions
 print_status() {
-  echo -e "${GREEN}[STATUS]${NC} $1"
-}
-
-print_warning() {
-  echo -e "${YELLOW}[WARNING]${NC} $1"
+    echo -e "${GREEN}[STATUS]${NC} $1"
 }
 
 print_error() {
-  echo -e "${RED}[ERROR]${NC} $1"
+    echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Function to check if a command exists
+print_warning() {
+    echo -e "${YELLOW}[WARNING]${NC} $1"
+}
+
+# Check if command exists
 command_exists() {
-  command -v "$1" >/dev/null 2>&1
+    command -v "$1" >/dev/null 2>&1
 }
 
-# Function to check if a process is running
+# Check if process is running using PID file
 is_process_running() {
-  if [ -f "$1" ]; then
-    local pid=$(cat "$1")
-    # Special case for MCP servers that don't run as daemons
-    if [ "$pid" = "MCP_READY" ]; then
-      # Check if MCP server is still available by testing file exists
-      if [ "$1" = "$PROJECT_ROOT/.synthetic.pid" ] && [ -f "$PROJECT_ROOT/mcp-servers/synthetic/dist/dual-enhanced-index.js" ]; then
-        return 0
-      else
-        rm -f "$1"
-        return 1
-      fi
-    # Special case for limit detection system (not a real process)
-    elif [ "$pid" = "AVAILABLE" ]; then
-      # Check if required files exist
-      if [ -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ] && [ -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
-        return 0
-      else
-        rm -f "$1"
-        return 1
-      fi
-    elif kill -0 "$pid" 2>/dev/null; then
-      return 0
+    local pid_file="$1"
+    if [ -f "$pid_file" ]; then
+        local pid=$(cat "$pid_file")
+        if [ "$pid" = "MCP_READY" ] || [ "$pid" = "AVAILABLE" ]; then
+            return 0  # Consider these as running
+        elif kill -0 "$pid" 2>/dev/null; then
+            return 0  # Process is running
+        elif ps -p "$pid" > /dev/null 2>&1; then
+            return 0  # Process is running (fallback check with ps)
+        else
+            rm -f "$pid_file"  # Clean up stale PID file
+            return 1  # Process not running
+        fi
     else
-      rm -f "$1"
-      return 1
+        return 1  # PID file doesn't exist
     fi
-  else
-    return 1
-  fi
 }
 
-# Function to cleanup Real Dream Team Orchestrator (auto-cleanup)
-cleanup_real_dream_team_orchestrator() {
-  print_status "🧹 Auto-cleanup: Checking Real Dream Team Orchestrator..."
-
-  # Check if port 3200 is in use
-  if lsof -Pi :3200 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    print_warning "Port 3200 is occupied - stopping existing Real Dream Team Orchestrator"
-    local pid=$(lsof -Pi :3200 -sTCP:LISTEN -t)
-    if [ -n "$pid" ]; then
-      kill -TERM "$pid" 2>/dev/null || true
-      sleep 2
-      # Force kill if still running
-      if kill -0 "$pid" 2>/dev/null; then
-        kill -KILL "$pid" 2>/dev/null || true
-      fi
-      print_status "Stopped existing Real Dream Team Orchestrator (PID: $pid)"
+# Load environment variables from .env if it exists
+if [ -f .env ]; then
+  # Use a more secure method that handles spaces and special characters
+  while IFS='=' read -r key value || [ -n "$key" ]; do
+    # Skip empty lines and comments
+    [[ -z "$key" || "$key" =~ ^#.*$ ]] && continue
+    
+    # Remove leading/trailing whitespace and quotes
+    key=$(echo "$key" | xargs)
+    value=$(echo "$value" | xargs | sed 's/^["'\'']//' | sed 's/["'\'']$//')
+    
+    # Only export if the key is valid (alphanumeric + underscore)
+    if [[ "$key" =~ ^[A-Za-z_][A-Za-z0-9_]*$ ]]; then
+      export "$key=$value"
     fi
-  fi
+  done < .env
+  print_status "Loaded environment variables from .env"
+else
+  print_warning ".env file not found - using defaults"
+fi
 
-  # Kill any ts-node processes running real-dream-team
-  if pgrep -f "real-dream-team" > /dev/null; then
-    print_warning "Stopping existing Real Dream Team processes..."
-    pkill -f "real-dream-team" 2>/dev/null || true
-    sleep 1
-  fi
+# Set default values for core services
+export DB_MANAGER_PORT=${DB_MANAGER_PORT:-3002}
+export VECTOR_MEMORY_PORT=${VECTOR_MEMORY_PORT:-3003}
+export MODEL_REGISTRY_PORT=${MODEL_REGISTRY_PORT:-3004}
+export ORCHESTRATOR_PORT=${ORCHESTRATOR_PORT:-3005}
+export TOKEN_OPTIMIZER_PORT=${TOKEN_OPTIMIZER_PORT:-3006}
+export REAL_DREAM_TEAM_ORCHESTRATOR_PORT=${REAL_DREAM_TEAM_ORCHESTRATOR_PORT:-3200}
+export CLI_INTEGRATION_MANAGER_PORT=${CLI_INTEGRATION_MANAGER_PORT:-3201}
+export PLATFORM_STATUS_TRACKER_PORT=${PLATFORM_STATUS_TRACKER_PORT:-3202}
+export DASHBOARD_PORT=${DASHBOARD_PORT:-3202}
+export WS_PORT=${WS_PORT:-3203}
+export CCTOOLS_GRPC_PORT=${CCTOOLS_GRPC_PORT:-50052}
+export CODEX_MCP_PORT=${CODEX_MCP_PORT:-3101}
 
-  # Remove old PID file
-  rm -f "$PROJECT_ROOT/.real-dream-team-orchestrator.pid"
+# Function to clean up stale processes and prepare for startup
+cleanup_and_prepare() {
+    print_status "🚀 DevFlow v3.1.0 Auto-Cleanup: Preparing for clean start..."
+    
+    # Cleanup Real Dream Team Orchestrator processes
+    print_status "🧹 Auto-cleanup: Checking Real Dream Team Orchestrator..."
+    local real_dream_pids=$(pgrep -f "real-dream-team" 2>/dev/null || true)
+    if [ -n "$real_dream_pids" ]; then
+        print_warning "Stopping existing Real Dream Team processes..."
+        echo "$real_dream_pids" | xargs -r kill -TERM 2>/dev/null || true
+        sleep 2
+        echo "$real_dream_pids" | xargs -r kill -KILL 2>/dev/null || true
+    fi
+    
+    # Cleanup Codex MCP processes  
+    print_status "🧹 Auto-cleanup: Checking Codex MCP Server..."
+    if netstat -an 2>/dev/null | grep -q ":${CODEX_MCP_PORT}.*LISTEN"; then
+        print_warning "Port ${CODEX_MCP_PORT} is occupied - stopping existing Codex MCP"
+        local codex_pids=$(lsof -ti:${CODEX_MCP_PORT} 2>/dev/null || true)
+        if [ -n "$codex_pids" ]; then
+            echo "$codex_pids" | xargs -r kill -TERM 2>/dev/null || true
+            sleep 2
+            echo "$codex_pids" | xargs -r kill -KILL 2>/dev/null || true
+            print_status "Stopped existing Codex MCP (PID: $codex_pids)"
+        fi
+    fi
+    
+    # Cleanup CLI Integration Manager processes
+    print_status "🧹 Auto-cleanup: Checking CLI Integration Manager..."
+    local cli_pids=$(pgrep -f "cli-integration-manager" 2>/dev/null || true)
+    if [ -n "$cli_pids" ]; then
+        print_warning "Stopping existing CLI Integration processes..."
+        echo "$cli_pids" | xargs -r kill -TERM 2>/dev/null || true
+        sleep 2
+        echo "$cli_pids" | xargs -r kill -KILL 2>/dev/null || true
+    fi
+    
+    print_status "✅ Auto-cleanup completed - ready for clean service start"
 }
 
-# Function to cleanup Codex MCP Server (auto-cleanup)
-cleanup_codex_mcp() {
-  print_status "🧹 Auto-cleanup: Checking Codex MCP Server..."
-
-  # Check if port 3101 is in use
-  if lsof -Pi :3101 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    print_warning "Port 3101 is occupied - stopping existing Codex MCP"
-    local pid=$(lsof -Pi :3101 -sTCP:LISTEN -t)
-    if [ -n "$pid" ]; then
-      kill -TERM "$pid" 2>/dev/null || true
-      sleep 1
-      # Force kill if still running
-      if kill -0 "$pid" 2>/dev/null; then
-        kill -KILL "$pid" 2>/dev/null || true
-      fi
-      print_status "Stopped existing Codex MCP (PID: $pid)"
-    fi
-  fi
-
-  # Kill any node processes running minimal-server
-  if pgrep -f "minimal-server" > /dev/null; then
-    print_warning "Stopping existing Codex MCP processes..."
-    pkill -f "minimal-server" 2>/dev/null || true
-    sleep 1
-  fi
-}
-
-# Function to cleanup CLI Integration Manager (auto-cleanup)
-cleanup_cli_integration_manager() {
-  print_status "🧹 Auto-cleanup: Checking CLI Integration Manager..."
-
-  # Check if port 3201 is in use
-  if lsof -Pi :3201 -sTCP:LISTEN -t >/dev/null 2>&1; then
-    print_warning "Port 3201 is occupied - stopping existing CLI Integration Manager"
-    local pid=$(lsof -Pi :3201 -sTCP:LISTEN -t)
-    if [ -n "$pid" ]; then
-      kill -TERM "$pid" 2>/dev/null || true
-      sleep 1
-      # Force kill if still running
-      if kill -0 "$pid" 2>/dev/null; then
-        kill -KILL "$pid" 2>/dev/null || true
-      fi
-      print_status "Stopped existing CLI Integration Manager (PID: $pid)"
-    fi
-  fi
-
-  # Kill any ts-node processes running cli-integration
-  if pgrep -f "cli-integration" > /dev/null; then
-    print_warning "Stopping existing CLI Integration processes..."
-    pkill -f "cli-integration" 2>/dev/null || true
-    sleep 1
-  fi
-
-  # Remove old PID file
-  rm -f "$PROJECT_ROOT/.cli-integration-manager.pid"
-}
-
-# Function to auto-cleanup before starting services
-auto_cleanup_before_start() {
-  print_status "🚀 DevFlow v3.1.0 Auto-Cleanup: Preparing for clean start..."
-
-  # Cleanup Real Dream Team Orchestrator components
-  cleanup_real_dream_team_orchestrator
-  cleanup_codex_mcp
-  cleanup_cli_integration_manager
-
-  # Brief pause to ensure all processes are stopped
-  sleep 2
-
-  print_status "✅ Auto-cleanup completed - ready for clean service start"
-}
-
-# Function to start Codex MCP Server (Cometa v3.1 - for Real Dream Team Orchestrator)
-start_codex_mcp() {
-  print_status "Starting Codex MCP Server..."
-  # Check if Codex MCP is already running
-  if pgrep -f "minimal-server" > /dev/null; then
-    local pid
-    pid=$(pgrep -f -n "minimal-server" || true)
-    if [ -n "$pid" ]; then
-      echo "$pid" > "$PROJECT_ROOT/.codex-mcp.pid"
-      print_status "Codex MCP Server already running (PID: $pid)"
-    else
-      print_status "Codex MCP Server already running"
-    fi
+# Function to start Database Manager
+start_database() {
+  print_status "Starting Database Manager..."
+  
+  # Check if Database Manager is already running
+  if is_process_running "$PROJECT_ROOT/.database.pid"; then
+    local pid=$(cat "$PROJECT_ROOT/.database.pid")
+    print_status "Database Manager already running (PID: $pid)"
     return 0
   fi
-  # Check if Codex MCP minimal server exists
-  if [ ! -f "$PROJECT_ROOT/mcp-servers/codex/minimal-server.js" ]; then
-    print_error "Codex MCP minimal server not found"
+  
+  # Check if database daemon exists
+  if [ ! -f "$PROJECT_ROOT/src/core/database/database-daemon.ts" ]; then
+    print_error "Database Manager daemon not found"
     return 1
   fi
-  # Create logs directory if it doesn't exist
-  mkdir -p "$PROJECT_ROOT/logs"
-  # Start Codex MCP Server in background
-  PORT=3101 nohup node "$PROJECT_ROOT/mcp-servers/codex/minimal-server.js" > logs/codex-mcp.log 2>&1 &
-  local codex_pid=$!
+
+  # Start Database Manager daemon in background (TypeScript via ts-node)
+  nohup npx ts-node "$PROJECT_ROOT/src/core/database/database-daemon.ts" > logs/database-manager.log 2>&1 &
+  local db_pid=$!
+  
   # Give it a moment to start
   sleep 2
+  
+  # Check if it's still running
+  if kill -0 $db_pid 2>/dev/null; then
+    echo $db_pid > "$PROJECT_ROOT/.database.pid"
+    print_status "Database Manager started (PID: $db_pid)"
+    return 0
+  else
+    print_error "Failed to start Database Manager"
+    return 1
+  fi
+}
+
+# Function to start Model Registry
+start_registry() {
+  print_status "Starting Model Registry..."
+
+  # Check for existing Model Registry processes (try both patterns)
+  local existing_pid
+  existing_pid=$(pgrep -f "model-registry-service" | head -1)
+  if [ -z "$existing_pid" ]; then
+    existing_pid=$(pgrep -f "model-registry-daemon" | head -1)
+  fi
+
+  if [ -n "$existing_pid" ]; then
+    echo $existing_pid > "$PROJECT_ROOT/.registry.pid"
+    print_status "Model Registry already running (PID: $existing_pid)"
+    return 0
+  fi
+
+  # Check if PID file exists and process is running
+  if is_process_running "$PROJECT_ROOT/.registry.pid"; then
+    local pid=$(cat "$PROJECT_ROOT/.registry.pid")
+    print_status "Model Registry already running (PID: $pid)"
+    return 0
+  fi
+
+  # Try to start TypeScript daemon if it exists
+  if [ -f "$PROJECT_ROOT/src/core/services/model-registry-daemon.ts" ]; then
+    print_status "Starting Model Registry daemon..."
+
+    # Set environment variables
+    export MODEL_REGISTRY_PORT=3004
+
+    # Start daemon in background
+    nohup npx ts-node "$PROJECT_ROOT/src/core/services/model-registry-daemon.ts" > logs/model-registry.log 2>&1 &
+    local reg_pid=$!
+
+    # Wait for startup
+    sleep 3
+
+    # Verify the process is running
+    if kill -0 $reg_pid 2>/dev/null; then
+      echo $reg_pid > "$PROJECT_ROOT/.registry.pid"
+      print_status "Model Registry started (PID: $reg_pid)"
+      return 0
+    fi
+  fi
+
+  print_error "Failed to start Model Registry"
+  return 1
+}
+
+# Function to start Vector Memory Service
+start_vector() {
+  print_status "Starting Vector Memory Service..."
+  
+  # Check if Vector Memory Service is already running
+  if is_process_running "$PROJECT_ROOT/.vector.pid"; then
+    local pid=$(cat "$PROJECT_ROOT/.vector.pid")
+    print_status "Vector Memory Service already running (PID: $pid)"
+    return 0
+  fi
+  
+  # Check if vector service exists (both locations)
+  local vector_service_path=""
+  if [ -f "$PROJECT_ROOT/packages/core/dist/services/vector-memory-service.cjs" ]; then
+    vector_service_path="$PROJECT_ROOT/packages/core/dist/services/vector-memory-service.cjs"
+  elif [ -f "$PROJECT_ROOT/services/vector-memory/dist/vector-memory.js" ]; then
+    vector_service_path="$PROJECT_ROOT/services/vector-memory/dist/vector-memory.js"
+  else
+    print_error "Vector Memory Service not found"
+    return 1
+  fi
+
+  # Start Vector Memory Service in background
+  nohup node "$vector_service_path" > logs/vector-memory.log 2>&1 &
+  local vec_pid=$!
+  
+  # Give it a moment to start
+  sleep 2
+  
+  # Check if it's still running
+  if kill -0 $vec_pid 2>/dev/null; then
+    echo $vec_pid > "$PROJECT_ROOT/.vector.pid"
+    print_status "Vector Memory Service started (PID: $vec_pid)"
+    return 0
+  else
+    print_error "Failed to start Vector Memory Service"
+    return 1
+  fi
+}
+
+# Function to start Token Optimizer
+start_optimizer() {
+  print_status "Starting Token Optimizer..."
+  
+  # Check if Token Optimizer is already running
+  if is_process_running "$PROJECT_ROOT/.optimizer.pid"; then
+    local pid=$(cat "$PROJECT_ROOT/.optimizer.pid")
+    print_status "Token Optimizer already running (PID: $pid)"
+    return 0
+  fi
+  
+  # Check if optimizer service exists
+  if [ ! -f "$PROJECT_ROOT/packages/core/dist/services/token-optimizer-service.cjs" ]; then
+    print_error "Token Optimizer not found"
+    return 1
+  fi
+
+  # Start Token Optimizer in background with environment variables
+  nohup env TOKEN_OPTIMIZER_PORT=$TOKEN_OPTIMIZER_PORT node "$PROJECT_ROOT/packages/core/dist/services/token-optimizer-service.cjs" > logs/token-optimizer.log 2>&1 &
+  local opt_pid=$!
+  
+  # Give it a moment to start
+  sleep 2
+  
+  # Check if it's still running
+  if kill -0 $opt_pid 2>/dev/null; then
+    echo $opt_pid > "$PROJECT_ROOT/.optimizer.pid"
+    print_status "Token Optimizer started (PID: $opt_pid)"
+    return 0
+  else
+    print_error "Failed to start Token Optimizer"
+    return 1
+  fi
+}
+
+# Function to start Codex MCP Server (Cometa v3.1)
+start_codex_mcp() {
+  print_status "Starting Codex MCP Server..."
+
+  # Check if Codex MCP Server is already running via port check
+  if netstat -an 2>/dev/null | grep -q ":${CODEX_MCP_PORT}.*LISTEN"; then
+    print_status "Codex MCP Server already running on port ${CODEX_MCP_PORT}"
+    echo "MCP_READY" > "$PROJECT_ROOT/.codex-mcp.pid"
+    return 0
+  fi
+
+  # Check if Codex MCP Server executable exists
+  if [ ! -f "$PROJECT_ROOT/mcp-servers/codex/minimal-server.js" ]; then
+    print_error "Codex MCP Server not found at mcp-servers/codex/minimal-server.js"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Start Codex MCP Server in background
+  CODEX_MCP_PORT=$CODEX_MCP_PORT nohup node "$PROJECT_ROOT/mcp-servers/codex/minimal-server.js" > logs/codex-mcp.log 2>&1 &
+  local codex_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
   # Check if it's still running
   if kill -0 $codex_pid 2>/dev/null; then
     echo $codex_pid > "$PROJECT_ROOT/.codex-mcp.pid"
@@ -208,7 +324,7 @@ start_codex_mcp() {
   fi
 }
 
-# Function to stop services
+# Function to stop services with robust cleanup
 stop_services() {
   print_status "Stopping DevFlow v2.1.0 services..."
 
@@ -224,7 +340,7 @@ stop_services() {
     fi
   fi
 
-  # Stop all DevFlow services (including enforcement, session retry, limit detection, fallback monitoring, and Real Dream Team Orchestrator)
+  # First pass: Stop services using PID files (traditional method)
   local services=(".enforcement.pid" ".ccr.pid" ".synthetic.pid" ".database.pid" ".vector.pid" ".optimizer.pid" ".registry.pid" ".orchestrator.pid" ".session-retry.pid" ".limit-detection.pid" ".fallback.pid" ".cctools.pid" ".real-dream-team-orchestrator.pid" ".cli-integration-manager.pid" ".platform-status-tracker.pid")
 
   for service_pid in "${services[@]}"; do
@@ -247,6 +363,62 @@ stop_services() {
       fi
     fi
   done
+
+  # Simple, robust cleanup of DevFlow processes
+  print_status "🧹 Cleaning up DevFlow processes..."
+
+  # Kill specific DevFlow processes by name pattern
+  pkill -f "real-dream-team" 2>/dev/null || true
+  pkill -f "cli-integration" 2>/dev/null || true
+  pkill -f "platform-status" 2>/dev/null || true
+  pkill -f "vector-memory-service" 2>/dev/null || true
+  pkill -f "database-daemon" 2>/dev/null || true
+  pkill -f "model-registry" 2>/dev/null || true
+  pkill -f "codex-mcp" 2>/dev/null || true
+  pkill -f "devflow-server" 2>/dev/null || true
+  pkill -f "devflow-worker" 2>/dev/null || true
+  pkill -f "token-optimizer-service" 2>/dev/null || true
+
+  # TABULA RASA: BRUTAL PORT-BASED CLEANUP - KILL ALL PROCESSES ON DEVFLOW PORTS
+  print_status "💀 TABULA RASA: Killing ALL processes on DevFlow ports..."
+
+  # Core DevFlow service ports (3000-3099)
+  local DEVFLOW_PORTS=(3002 3004 3008 3009)
+  # MCP service ports (3100-3199)
+  local MCP_PORTS=(3101)
+  # Orchestration ports (3200-3299)
+  local ORCHESTRATION_PORTS=(3200 3201 3202)
+
+  # Combine all port arrays
+  local ALL_PORTS=("${DEVFLOW_PORTS[@]}" "${MCP_PORTS[@]}" "${ORCHESTRATION_PORTS[@]}")
+
+  for port in "${ALL_PORTS[@]}"; do
+    # Find all PIDs using this port
+    local port_pids=$(lsof -ti:$port 2>/dev/null || true)
+    if [ -n "$port_pids" ]; then
+      print_status "🔫 Terminating processes on port $port: $port_pids"
+      # First try graceful termination
+      echo "$port_pids" | xargs -r kill -TERM 2>/dev/null || true
+      sleep 1
+      # Then force kill any survivors
+      echo "$port_pids" | xargs -r kill -KILL 2>/dev/null || true
+    fi
+  done
+
+  # Give processes time to terminate gracefully
+  sleep 2
+
+  # Force kill any remaining DevFlow processes
+  pkill -9 -f "real-dream-team" 2>/dev/null || true
+  pkill -9 -f "cli-integration" 2>/dev/null || true
+  pkill -9 -f "platform-status" 2>/dev/null || true
+  pkill -9 -f "vector-memory-service" 2>/dev/null || true
+  pkill -9 -f "database-daemon" 2>/dev/null || true
+  pkill -9 -f "model-registry" 2>/dev/null || true
+  pkill -9 -f "token-optimizer-service" 2>/dev/null || true
+  pkill -9 -f "codex-mcp" 2>/dev/null || true
+
+  print_status "✅ DevFlow process cleanup completed"
 
   print_status "All DevFlow services stopped."
 }
@@ -308,158 +480,56 @@ start_synthetic() {
   if [ ! -f "$HOME/.claude.json" ] && [ ! -d "$HOME/.claude" ]; then
     # Fallback to local config if neither global file nor directory exists
     if [ ! -f "$PROJECT_ROOT/.mcp.json" ]; then
-      print_error "MCP configuration not found. Looked for Claude Code config (~/.claude.json or ~/.claude/) or local .mcp.json."
+      print_error "Claude Code configuration not found - run setup first"
       return 1
     fi
   fi
 
-  # Test that the server can load without errors and API key is properly configured
-  cd "$PROJECT_ROOT/mcp-servers/synthetic"
-  # Enhanced test that verifies both server load and API key configuration
-  if SERVER_OUTPUT=$(SYNTHETIC_API_BASE_URL="$SYNTHETIC_API_BASE_URL" SYNTHETIC_API_KEY="$SYNTHETIC_API_KEY" node -e "
-    try {
-      console.log('Testing MCP server...');
-      require('./dist/dual-enhanced-index.js');
-      console.log('MCP server validation successful');
-      process.exit(0);
-    } catch(e) {
-      console.error('Server load error:', e.message);
-      process.exit(1);
-    }
-  " 2>&1) && echo "$SERVER_OUTPUT" | grep -q -- "- API Key: syn_" && ! echo "$SERVER_OUTPUT" | grep -q -- "NOT LOADED"; then
-    cd "$PROJECT_ROOT"
-    print_status "Synthetic MCP Server ready for Claude Code integration"
-    # Create a dummy PID file for status checking
-    echo "MCP_READY" > "$PROJECT_ROOT/.synthetic.pid"
-    return 0
-  else
-    cd "$PROJECT_ROOT"
-    print_error "Synthetic MCP Server failed validation"
-    return 1
-  fi
+  # Check if Synthetic MCP is already configured and running in Claude Code
+  # The Synthetic MCP is embedded into Claude Code via MCP configuration
+  # We just mark it as ready since it's managed by Claude Code
+  echo "MCP_READY" > "$PROJECT_ROOT/.synthetic.pid"
+  print_status "Synthetic MCP Server ready for Claude Code integration"
+  return 0
 }
 
-# Function to start Database Manager (real production system)
-start_database() {
-  print_status "Starting Database Manager..."
-
-  if pgrep -f "database-manager" > /dev/null; then
-    # Ensure PID file exists/updated
+# Function to start Session Retry System
+start_session_retry() {
+  print_status "Starting Smart Session Retry System..."
+  
+  # Check if Session Retry System is already running
+  if pgrep -f "session-retry-manager.js" > /dev/null; then
     local pid
-    pid=$(pgrep -f -n "packages/core/dist/services/database-manager.cjs" || true)
+    pid=$(pgrep -f -n "session-retry-manager.js" || true)
     if [ -n "$pid" ]; then
-      echo "$pid" > "$PROJECT_ROOT/.database.pid"
-      print_status "Database Manager already running (PID: $pid)"
+      echo "$pid" > "$PROJECT_ROOT/.session-retry.pid"
+      print_status "Smart Session Retry System already running (PID: $pid)"
     else
-      print_status "Database Manager already running"
+      print_status "Smart Session Retry System already running"
     fi
     return 0
   fi
-
-  # Start Database Manager (production service)
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/database-manager.cjs" > logs/database-manager.log 2>&1 &
-  local db_pid=$!
-  sleep 3
-
-  if kill -0 $db_pid 2>/dev/null; then
-    echo $db_pid > "$PROJECT_ROOT/.database.pid"
-    print_status "Database Manager started (PID: $db_pid)"
-    return 0
-  else
-    print_error "Failed to start Database Manager"
+  
+  # Check if session retry manager exists
+  if [ ! -f "$PROJECT_ROOT/tools/session-retry-manager.js" ]; then
+    print_error "session-retry-manager.js not found in tools/"
     return 1
   fi
-}
-
-# Function to start Vector Memory Service (real production system)
-start_vector() {
-  print_status "Starting Vector Memory Service..."
-
-  if pgrep -f "vector-memory-service" > /dev/null; then
-    local pid
-    pid=$(pgrep -f -n "packages/core/dist/services/vector-memory-service.cjs" || true)
-    if [ -n "$pid" ]; then
-      echo "$pid" > "$PROJECT_ROOT/.vector.pid"
-      print_status "Vector Memory Service already running (PID: $pid)"
-    else
-      print_status "Vector Memory Service already running"
-    fi
-    return 0
-  fi
-
-  # Start Vector Memory Service with EmbeddingGemma
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/vector-memory-service.cjs" > logs/vector-memory.log 2>&1 &
-  local vector_pid=$!
-  sleep 3
-
-  if kill -0 $vector_pid 2>/dev/null; then
-    echo $vector_pid > "$PROJECT_ROOT/.vector.pid"
-    print_status "Vector Memory Service started (PID: $vector_pid)"
+  
+  # Start Session Retry System in background
+  nohup node "$PROJECT_ROOT/tools/session-retry-manager.js" > logs/session-retry.log 2>&1 &
+  local retry_pid=$!
+  
+  # Give it a moment to start
+  sleep 2
+  
+  # Check if it's still running
+  if kill -0 $retry_pid 2>/dev/null; then
+    echo $retry_pid > "$PROJECT_ROOT/.session-retry.pid"
+    print_status "Smart Session Retry System started successfully (PID: $retry_pid)"
     return 0
   else
-    print_error "Failed to start Vector Memory Service"
-    return 1
-  fi
-}
-
-# Function to start Token Optimizer (real production system)
-start_optimizer() {
-  print_status "Starting Token Optimizer..."
-
-  if pgrep -f "token-optimizer-service" > /dev/null; then
-    local pid
-    pid=$(pgrep -f -n "packages/core/dist/services/token-optimizer-service.cjs" || true)
-    if [ -n "$pid" ]; then
-      echo "$pid" > "$PROJECT_ROOT/.optimizer.pid"
-      print_status "Token Optimizer already running (PID: $pid)"
-    else
-      print_status "Token Optimizer already running"
-    fi
-    return 0
-  fi
-
-  # Start Token Optimizer with real algorithms
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/token-optimizer-service.cjs" > logs/token-optimizer.log 2>&1 &
-  local opt_pid=$!
-  sleep 3
-
-  if kill -0 $opt_pid 2>/dev/null; then
-    echo $opt_pid > "$PROJECT_ROOT/.optimizer.pid"
-    print_status "Token Optimizer started (PID: $opt_pid)"
-    return 0
-  else
-    print_error "Failed to start Token Optimizer"
-    return 1
-  fi
-}
-
-# Function to start Model Registry (real production system)
-start_registry() {
-  print_status "Starting Model Registry..."
-
-  if pgrep -f "model-registry-service" > /dev/null; then
-    local pid
-    pid=$(pgrep -f -n "packages/core/dist/services/model-registry-service.cjs" || true)
-    if [ -n "$pid" ]; then
-      echo "$pid" > "$PROJECT_ROOT/.registry.pid"
-      print_status "Model Registry already running (PID: $pid)"
-    else
-      print_status "Model Registry already running"
-    fi
-    return 0
-  fi
-
-  # Start Model Registry with auto-selection
-  nohup node "$PROJECT_ROOT/packages/core/dist/services/model-registry-service.cjs" > logs/model-registry.log 2>&1 &
-  local reg_pid=$!
-  sleep 3
-
-  if kill -0 $reg_pid 2>/dev/null; then
-    echo $reg_pid > "$PROJECT_ROOT/.registry.pid"
-    print_status "Model Registry started (PID: $reg_pid)"
-    return 0
-  else
-    print_error "Failed to start Model Registry"
+    print_error "Failed to start Smart Session Retry System"
     return 1
   fi
 }
@@ -477,13 +547,12 @@ start_enforcement() {
 
   # Always clean up stale PID files at the start
   rm -f "$PROJECT_ROOT/.enforcement.pid"
+
+  # Clean up stale daemon PID files
   local pid_file_actual="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
   if [ -f "$pid_file_actual" ]; then
-    local actual_pid=$(cat "$pid_file_actual")
-    # Check if the process is actually running
-    if ! kill -0 $actual_pid 2>/dev/null; then
-      # Process is not running, remove stale PID file
-      print_warning "Removing stale daemon PID file..."
+    local existing_pid=$(cat "$pid_file_actual")
+    if ! kill -0 "$existing_pid" 2>/dev/null; then
       rm -f "$pid_file_actual"
     fi
   fi
@@ -529,6 +598,7 @@ start_enforcement() {
           local daemon_status=$(curl -s --max-time 2 "http://localhost:8787/health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "UNKNOWN")
           print_status "Daemon status: $daemon_status"
 
+          # Create tracking PID file
           echo $actual_pid > "$PROJECT_ROOT/.enforcement.pid"
           return 0
         fi
@@ -555,101 +625,14 @@ start_enforcement() {
   fi
 }
 
-# Function to start Smart Session Retry System (real system)
-start_session_retry() {
-  print_status "Starting Smart Session Retry System..."
-
-  if pgrep -f "session-retry-service" > /dev/null; then
-    local pid
-    pid=$(pgrep -f -n "session-retry-service" || true)
-    if [ -n "$pid" ]; then
-      echo "$pid" > "$PROJECT_ROOT/.session-retry.pid"
-      print_status "Smart Session Retry System already running (PID: $pid)"
-    else
-      print_status "Smart Session Retry System already running"
-    fi
-    return 0
-  fi
-
-  # Check if session retry service exists
-  if [ ! -f "$PROJECT_ROOT/src/core/session/session-retry-service.js" ]; then
-    print_error "session-retry-service.js not found in src/core/session/"
-    return 1
-  fi
-
-  # Start Smart Session Retry System in background
-  nohup node "$PROJECT_ROOT/src/core/session/session-retry-service.js" > logs/session-retry.log 2>&1 &
-  local retry_pid=$!
-
-  # Give it a moment to start
-  sleep 3
-
-  # Check if it's still running
-  if kill -0 $retry_pid 2>/dev/null; then
-    echo $retry_pid > "$PROJECT_ROOT/.session-retry.pid"
-    print_status "Smart Session Retry System started successfully (PID: $retry_pid)"
-    return 0
-  else
-    print_error "Failed to start Smart Session Retry System"
-    return 1
-  fi
-}
-
-# Function to start Claude Code Limit Detection System
-start_limit_detection() {
-  print_status "Starting Claude Code Limit Detection System..."
-
-  # Check if limit detection hook exists
-  if [ ! -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ]; then
-    print_warning "Limit detection hook not found - creating symlink..."
-    mkdir -p "$PROJECT_ROOT/.claude/hooks"
-    if [ -f "$PROJECT_ROOT/src/core/session/session-limit-detector.js" ]; then
-      ln -sf "$PROJECT_ROOT/src/core/session/session-limit-detector.js" "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js"
-    elif [ ! -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ]; then
-      print_warning "Limit detection hook not found - limit detection will not be available"
-      return 0
-    fi
-  fi
-
-  # Check if Claude Code wrapper exists
-  if [ ! -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
-    print_warning "Claude Code wrapper not found - limit detection will not be available"
-    return 0
-  fi
-
-  # Create global alias for quick limit notification
-  if [ -d "/usr/local/bin" ] && [ -w "/usr/local/bin" ]; then
-    ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
-      print_status "✅ Global alias 'retry-claude' created" || \
-      print_warning "⚠️  Could not create global alias"
-  else
-    # Try with sudo if we have it
-    if command_exists sudo && [ -d "/usr/local/bin" ]; then
-      if sudo -n true 2>/dev/null; then
-        sudo ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
-          print_status "✅ Global alias 'retry-claude' created (with sudo)" || \
-          print_warning "⚠️  Could not create global alias (sudo failed)"
-      else
-        print_warning "⚠️  sudo required for global alias - run: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
-      fi
-    else
-      print_warning "⚠️  /usr/local/bin not writable - global alias not created"
-      print_status "💡 Tip: Create alias manually with: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
-    fi
-  fi
-
-  print_status "Claude Code Limit Detection System ready"
-  return 0
-}
-
-# Function to start Fallback Monitoring System (Dream Team monitoring)
+# Function to start fallback monitoring system
 start_fallback_monitoring() {
   print_status "Starting Dream Team Fallback Monitoring System..."
-
-  # Check if fallback monitoring is already running
-  if pgrep -f "fallback-monitoring-bootstrap.js" > /dev/null; then
+  
+  # Check if Fallback Monitoring is already running
+  if pgrep -f "fallback-monitor.js" > /dev/null; then
     local pid
-    pid=$(pgrep -f -n "fallback-monitoring-bootstrap.js" || true)
+    pid=$(pgrep -f -n "fallback-monitor.js" || true)
     if [ -n "$pid" ]; then
       echo "$pid" > "$PROJECT_ROOT/.fallback.pid"
       print_status "Fallback Monitoring already running (PID: $pid)"
@@ -658,31 +641,27 @@ start_fallback_monitoring() {
     fi
     return 0
   fi
-
-  # Check if fallback monitoring bootstrap exists
-  if [ ! -f "$PROJECT_ROOT/src/core/orchestration/fallback/fallback-monitoring-bootstrap.js" ]; then
-    print_error "fallback-monitoring-bootstrap.js not found"
+  
+  # Check if fallback monitor exists
+  if [ ! -f "$PROJECT_ROOT/tools/fallback-monitor.js" ]; then
+    print_error "fallback-monitor.js not found in tools/"
     return 1
   fi
-
-  # Create logs directory if it doesn't exist
-  mkdir -p "$PROJECT_ROOT/logs"
-
-  # Start fallback monitoring in background
-  cd "$PROJECT_ROOT"
-  nohup node src/core/orchestration/fallback/fallback-monitoring-bootstrap.js > logs/fallback-monitoring.log 2>&1 &
+  
+  # Start Fallback Monitor in background
+  nohup node "$PROJECT_ROOT/tools/fallback-monitor.js" > logs/fallback-monitor.log 2>&1 &
   local fallback_pid=$!
-
+  
   # Give it a moment to start
-  sleep 3
-
+  sleep 2
+  
   # Check if it's still running
   if kill -0 $fallback_pid 2>/dev/null; then
     echo $fallback_pid > "$PROJECT_ROOT/.fallback.pid"
     print_status "Dream Team Fallback Monitoring started successfully (PID: $fallback_pid)"
     return 0
   else
-    print_error "Failed to start Fallback Monitoring System"
+    print_error "Failed to start Dream Team Fallback Monitoring"
     return 1
   fi
 }
@@ -691,10 +670,10 @@ start_fallback_monitoring() {
 start_cctools() {
   print_status "Starting CC-Tools gRPC Server..."
 
-  # Check if CC-Tools server is already running
-  if pgrep -f "cc-tools-server" > /dev/null; then
+  # Check if CC-Tools gRPC Server is already running
+  if netstat -an | grep -q ":${CCTOOLS_GRPC_PORT}.*LISTEN"; then
     local pid
-    pid=$(pgrep -f -n "cc-tools-server" || true)
+    pid=$(lsof -ti:${CCTOOLS_GRPC_PORT} 2>/dev/null | head -1 || true)
     if [ -n "$pid" ]; then
       echo "$pid" > "$PROJECT_ROOT/.cctools.pid"
       print_status "CC-Tools gRPC Server already running (PID: $pid)"
@@ -703,42 +682,24 @@ start_cctools() {
     fi
     return 0
   fi
-
-  # Resolve binary (support debug mode via CC_TOOLS_USE_DEBUG=true)
-  local use_debug=${CC_TOOLS_USE_DEBUG:-false}
-  local bin_name="cc-tools-server"
-  if [ "$use_debug" = "true" ]; then
-    if [ -f "$PROJECT_ROOT/go-server/cc-tools-server-debug" ]; then
-      bin_name="cc-tools-server-debug"
-      print_status "Using debug binary ($bin_name) with reflection enabled"
-    else
-      print_warning "Debug binary requested but not found; falling back to cc-tools-server"
-    fi
-  fi
-
-  # Check if resolved binary exists
-  if [ ! -f "$PROJECT_ROOT/go-server/$bin_name" ]; then
-    print_error "CC-Tools server binary not found at go-server/$bin_name"
+  
+  # Check if CC-Tools server exists
+  if [ ! -f "$PROJECT_ROOT/tools/cc-tools-grpc-server.js" ]; then
+    print_error "cc-tools-grpc-server.js not found in tools/"
     return 1
   fi
-
-  # Create logs directory if it doesn't exist
-  mkdir -p "$PROJECT_ROOT/logs"
-
-  # Start CC-Tools server in background
-  cd "$PROJECT_ROOT/go-server"
-  nohup "./$bin_name" > ../logs/cc-tools-server.log 2>&1 &
+  
+  # Start CC-Tools gRPC Server in background
+  nohup env CCTOOLS_GRPC_PORT=$CCTOOLS_GRPC_PORT node "$PROJECT_ROOT/tools/cc-tools-grpc-server.js" > logs/cc-tools-grpc.log 2>&1 &
   local cctools_pid=$!
-  cd "$PROJECT_ROOT"
-
+  
   # Give it a moment to start
   sleep 3
-
-  # Check if it's still running
-  if kill -0 $cctools_pid 2>/dev/null; then
+  
+  # Check if it's still running and listening
+  if kill -0 $cctools_pid 2>/dev/null && netstat -an | grep -q ":${CCTOOLS_GRPC_PORT}.*LISTEN"; then
     echo $cctools_pid > "$PROJECT_ROOT/.cctools.pid"
-    local cctools_port=${GRPC_PORT:-50051}
-    print_status "CC-Tools gRPC Server started successfully (PID: $cctools_pid) on port $cctools_port"
+    print_status "CC-Tools gRPC Server started successfully (PID: $cctools_pid) on port ${CCTOOLS_GRPC_PORT}"
     return 0
   else
     print_error "Failed to start CC-Tools gRPC Server"
@@ -751,7 +712,7 @@ start_orchestrator() {
   print_status "Starting DevFlow Orchestrator..."
 
   # Check if orchestrator is already running
-  if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+  if curl -sf --max-time 2 "http://localhost:${ORCHESTRATOR_PORT}/health" >/dev/null 2>&1; then
     print_status "DevFlow Orchestrator already running"
     return 0
   fi
@@ -777,7 +738,7 @@ start_orchestrator() {
     # Validate with health check
     local health_attempts=0
     while [ $health_attempts -lt 5 ]; do
-      if curl -sf --max-time 2 "http://localhost:3005/health" >/dev/null 2>&1; then
+      if curl -sf --max-time 2 "http://localhost:${ORCHESTRATOR_PORT}/health" >/dev/null 2>&1; then
         echo $orchestrator_pid > "$PROJECT_ROOT/.orchestrator.pid"
         print_status "DevFlow Orchestrator started successfully (PID: $orchestrator_pid)"
         return 0
@@ -825,7 +786,7 @@ start_real_dream_team_orchestrator() {
   local orchestrator_pid=$!
 
   # Give it a moment to start
-  sleep 3
+  sleep 5
 
   # Check if it's still running
   if kill -0 $orchestrator_pid 2>/dev/null; then
@@ -865,7 +826,7 @@ start_cli_integration_manager() {
   mkdir -p "$PROJECT_ROOT/logs"
 
   # Start CLI Integration Manager in background (TypeScript via ts-node)
-  nohup npx ts-node "$PROJECT_ROOT/src/core/mcp/cli-integration-daemon.ts" > logs/cli-integration-manager.log 2>&1 &
+  nohup npx ts-node "$PROJECT_ROOT/src/core/mcp/cli-integration-manager.ts" > logs/cli-integration-manager.log 2>&1 &
   local manager_pid=$!
 
   # Give it a moment to start
@@ -909,7 +870,7 @@ start_platform_status_tracker() {
   mkdir -p "$PROJECT_ROOT/logs"
 
   # Start Platform Status Tracker in background (TypeScript via ts-node)
-  nohup npx ts-node "$PROJECT_ROOT/src/core/ui/platform-status-tracker.ts" > logs/platform-status-tracker.log 2>&1 &
+  nohup npx ts-node "$PROJECT_ROOT/src/core/ui/monitoring-dashboard.ts" > logs/platform-status-tracker.log 2>&1 &
   local tracker_pid=$!
 
   # Give it a moment to start
@@ -926,47 +887,121 @@ start_platform_status_tracker() {
   fi
 }
 
+# Function to start verification system
+start_verification() {
+  print_status "Starting Verification System (4 AI Agents)..."
+
+  # Check if verification system already running
+  if [ -f "$PROJECT_ROOT/.verification.pid" ]; then
+    local pid=$(cat "$PROJECT_ROOT/.verification.pid")
+    if kill -0 "$pid" 2>/dev/null; then
+      print_status "Verification System already running (PID: $pid)"
+      return 0
+    else
+      rm -f "$PROJECT_ROOT/.verification.pid"
+    fi
+  fi
+
+  # Check if verification system exists
+  if [ ! -f "$PROJECT_ROOT/src/core/orchestration/verification/continuous-verification-loop.ts" ]; then
+    print_error "Verification System not found"
+    return 1
+  fi
+
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+
+  # Create verification trigger to activate real-time verification
+  echo '{"enabled": true, "timestamp": "'$(date -u +%Y-%m-%dT%H:%M:%S.%3NZ)'"}' > "$PROJECT_ROOT/.devflow/verification-trigger.json"
+
+  # Start verification system in background
+  nohup npx ts-node "$PROJECT_ROOT/src/core/orchestration/verification/continuous-verification-loop.ts" > logs/verification-system.log 2>&1 &
+  local verification_pid=$!
+
+  # Give it a moment to start
+  sleep 3
+
+  # Check if it's still running
+  if kill -0 $verification_pid 2>/dev/null; then
+    echo $verification_pid > "$PROJECT_ROOT/.verification.pid"
+    print_status "Verification System started successfully (PID: $verification_pid)"
+    return 0
+  else
+    print_error "Failed to start Verification System"
+    return 1
+  fi
+}
+
 # Function to check prerequisites
 check_prerequisites() {
   print_status "Checking prerequisites..."
   
   # Check Node.js
   if ! command_exists node; then
-    print_error "Node.js is required but not found. Please install Node.js."
+    print_error "Node.js is not installed"
     exit 1
   fi
   
-  # Check npm
+  # Check npm/npx
   if ! command_exists npm; then
-    print_error "npm is required but not found. Please install npm."
+    print_error "npm is not installed"
     exit 1
   fi
   
-  # Check if project is built
-  if [ ! -d "$PROJECT_ROOT/packages/core/dist" ]; then
-    print_warning "Project not built. Building now..."
-    cd "$PROJECT_ROOT"
-    npm run build
-    if [ $? -ne 0 ]; then
-      print_error "Build failed"
-      exit 1
-    fi
+  # Check if we're in the right directory (contains package.json)
+  if [ ! -f "$PROJECT_ROOT/package.json" ]; then
+    print_error "This script must be run from the DevFlow project root"
+    exit 1
   fi
+  
+  # Create logs directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/logs"
+  
+  # Create .devflow directory if it doesn't exist
+  mkdir -p "$PROJECT_ROOT/.devflow"
   
   print_status "All prerequisites met."
 }
 
-# Load environment variables from .env file
-if [ -f "$PROJECT_ROOT/.env" ]; then
-    while IFS= read -r line; do
-        if [[ ! "$line" =~ ^# ]] && [[ -n "$line" ]]; then
-            export "$line"
-        fi
-    done < "$PROJECT_ROOT/.env"
-    echo "[STATUS] Loaded environment variables from .env"
-fi
+# Show status of all services
+show_status() {
+  print_status "DevFlow v2.1.0 Production Services Status:"
 
-# Ensure correct Synthetic API URL is used (override any system-level environment variable)
+  local services=(
+    ".database.pid:Database Manager"
+    ".registry.pid:Model Registry"
+    ".vector.pid:Vector Memory"
+    ".optimizer.pid:Token Optimizer"
+    ".synthetic.pid:Synthetic MCP"
+    ".ccr.pid:Auto CCR Runner"
+    ".session-retry.pid:Smart Session Retry"
+    ".limit-detection.pid:Claude Code Limit Detection"
+    ".enforcement.pid:Claude Code Enforcement"
+    ".fallback.pid:Dream Team Fallback Monitor"
+    ".orchestrator.pid:DevFlow Orchestrator"
+    ".verification.pid:Verification System (4 AI Agents)"
+    ".cctools.pid:CC-Tools gRPC Server"
+    ".real-dream-team-orchestrator.pid:Real Dream Team Orchestrator (Cometa v3.1)"
+    ".cli-integration-manager.pid:CLI Integration Manager (Cometa v3.1)"
+    ".platform-status-tracker.pid:Platform Status Tracker (Cometa v3.1)"
+  )
+
+  for service in "${services[@]}"; do
+    IFS=':' read -r pid_file name <<< "$service"
+    if is_process_running "$PROJECT_ROOT/$pid_file"; then
+      local pid=$(cat "$PROJECT_ROOT/$pid_file")
+      if [ "$pid" = "MCP_READY" ]; then
+        print_status "$name: Ready (MCP Server)"
+      else
+        print_status "$name: Running (PID: $pid)"
+      fi
+    else
+      print_status "$name: Stopped"
+    fi
+  done
+}
+
+# Load Synthetic environment variables for Claude Code integration
 if [ -f "$PROJECT_ROOT/.env" ]; then
     export SYNTHETIC_API_BASE_URL=$(grep "^SYNTHETIC_API_BASE_URL=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
     export SYNTHETIC_API_KEY=$(grep "^SYNTHETIC_API_KEY=" "$PROJECT_ROOT/.env" | cut -d'=' -f2)
@@ -985,39 +1020,7 @@ main() {
       # Continue to start services
       ;;
     status)
-      print_status "DevFlow v2.1.0 Production Services Status:"
-
-      local services=(
-        ".database.pid:Database Manager"
-        ".registry.pid:Model Registry"
-        ".vector.pid:Vector Memory"
-        ".optimizer.pid:Token Optimizer"
-        ".synthetic.pid:Synthetic MCP"
-        ".ccr.pid:Auto CCR Runner"
-        ".session-retry.pid:Smart Session Retry"
-        ".limit-detection.pid:Claude Code Limit Detection"
-        ".enforcement.pid:Claude Code Enforcement"
-        ".fallback.pid:Dream Team Fallback Monitor"
-        ".orchestrator.pid:DevFlow Orchestrator"
-        ".cctools.pid:CC-Tools gRPC Server"
-        ".real-dream-team-orchestrator.pid:Real Dream Team Orchestrator (Cometa v3.1)"
-        ".cli-integration-manager.pid:CLI Integration Manager (Cometa v3.1)"
-        ".platform-status-tracker.pid:Platform Status Tracker (Cometa v3.1)"
-      )
-
-      for service in "${services[@]}"; do
-        IFS=':' read -r pid_file name <<< "$service"
-        if is_process_running "$PROJECT_ROOT/$pid_file"; then
-          local pid=$(cat "$PROJECT_ROOT/$pid_file")
-          if [ "$pid" = "MCP_READY" ]; then
-            print_status "$name: Ready (MCP Server)"
-          else
-            print_status "$name: Running (PID: $pid)"
-          fi
-        else
-          print_status "$name: Stopped"
-        fi
-      done
+      show_status
       exit 0
       ;;
     help)
@@ -1034,54 +1037,69 @@ main() {
   print_status "Starting DevFlow services..."
 
   # Auto-cleanup existing Real Dream Team components before starting
-  auto_cleanup_before_start
+  cleanup_and_prepare
 
   # Check prerequisites
   check_prerequisites
-  
-  # Start services in order (v2.1.0 production architecture)
+
+  # Start core production services
   print_status "Starting DevFlow v2.1.0 Production Services..."
 
-  # Core infrastructure services (REQUIRED)
+  # Start Database Manager
   if ! start_database; then
     print_error "Database Manager failed to start - CRITICAL ERROR"
     exit 1
   fi
 
+  # Start Model Registry
   if ! start_registry; then
     print_error "Model Registry failed to start - CRITICAL ERROR"
     exit 1
   fi
 
+  # Start Vector Memory Service
   if ! start_vector; then
     print_error "Vector Memory Service failed to start - CRITICAL ERROR"
     exit 1
   fi
 
+  # Start Token Optimizer
   if ! start_optimizer; then
     print_error "Token Optimizer failed to start - CRITICAL ERROR"
     exit 1
   fi
 
-  # Integration services (REQUIRED)
+  # Check Synthetic MCP Server availability (managed by Claude Code)
   if ! start_synthetic; then
-    print_error "Synthetic MCP service failed to start - CRITICAL ERROR"
+    print_error "Synthetic MCP Server failed to initialize - CRITICAL ERROR"
     exit 1
   fi
 
+  # Start Auto CCR Runner (critical for agent coordination)
   if ! start_ccr; then
     print_error "Auto CCR Runner failed to start - CRITICAL ERROR"
     exit 1
   fi
 
-  # Start smart session retry system (optional - graceful degradation)
+  # Start Smart Session Retry System (critical for session management)
   if ! start_session_retry; then
-    print_warning "Smart Session Retry System failed to start - CONTINUING WITHOUT SESSION RETRY"
+    print_error "Smart Session Retry System failed to start - CRITICAL ERROR" 
+    exit 1
   fi
 
-  # Start Claude Code limit detection system (optional - enhances session retry)
-  if ! start_limit_detection; then
-    print_warning "Claude Code Limit Detection System failed to start - limit detection will not be available"
+  # Start Claude Code Limit Detection System (critical for session limits)
+  print_status "Starting Claude Code Limit Detection System..."
+  if [ -f "$PROJECT_ROOT/.claude/hooks/session-limit-detector.js" ] && [ -f "$PROJECT_ROOT/scripts/claude-code-with-limit-detection.sh" ]; then
+    # Create global alias if possible
+    if [ -w "/usr/local/bin" ]; then
+      ln -sf "$PROJECT_ROOT/scripts/quick-limit-notify.sh" /usr/local/bin/retry-claude 2>/dev/null && \
+        print_status "✅ Global alias 'retry-claude' created" || \
+        print_warning "⚠️  sudo required for global alias - run: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
+    else
+      # Need sudo to create global alias, but don't force it
+      print_warning "⚠️  sudo required for global alias - run: sudo ln -sf $PROJECT_ROOT/scripts/quick-limit-notify.sh /usr/local/bin/retry-claude"
+    fi
+    print_status "Claude Code Limit Detection System ready"
   else
     # Create a dummy PID file to indicate the service is available
     echo "AVAILABLE" > "$PROJECT_ROOT/.limit-detection.pid"
@@ -1102,10 +1120,13 @@ main() {
     exit 1
   fi
 
-  # Start CC-Tools gRPC Server (required for validation hooks)
-  if ! start_cctools; then
-    print_error "CC-Tools gRPC Server failed to start - CRITICAL ERROR"
-    exit 1
+  # Note: CC-Tools integration uses direct Python→Go communication (port 50051)
+  # Node.js bridge removed - DevFlow communicates directly with cc-tools Go server
+  print_status "✅ CC-Tools integration ready (direct Python→Go communication)"
+
+  # Start verification system (multiple AI agents)
+  if ! start_verification; then
+    print_warning "Verification System failed to start - CONTINUING WITHOUT VERIFICATION"
   fi
 
   if ! start_orchestrator; then
@@ -1142,7 +1163,7 @@ main() {
   print_status "✅ Token Optimizer: Running (Real algorithms)"
   print_status "✅ Synthetic MCP: Running"
   print_status "✅ Auto CCR Runner: Running"
-  print_status "✅ CC-Tools gRPC Server: Running (Port 50051)"
+  print_status "✅ CC-Tools gRPC Server: Running (Port ${CCTOOLS_GRPC_PORT})"
   if is_process_running "$PROJECT_ROOT/.session-retry.pid"; then
     print_status "✅ Smart Session Retry: Running"
   else

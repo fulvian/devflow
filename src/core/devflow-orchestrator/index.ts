@@ -11,6 +11,8 @@ import { IntelligentRouter } from '../intelligent-router';
 import { MemoryCache } from '../memory-bridge/memory-cache';
 import { ContextCompressor } from '../memory-bridge/context-compression';
 import { VectorDatabase } from '../semantic-memory/vector-database';
+import { CodeRealityCheckAgent } from '../orchestration/verification/code-reality-check-agent';
+import { ContinuousVerificationLoop } from '../orchestration/verification/continuous-verification-loop';
 
 // Core interfaces
 interface DevFlowConfig {
@@ -39,6 +41,11 @@ interface DevFlowConfig {
   activityRegistry: {
     enabled: boolean;
   };
+  verification: {
+    enabled: boolean;
+    checkInterval?: number;
+    inactivityThreshold?: number;
+  };
 }
 
 interface SystemStatus {
@@ -50,6 +57,7 @@ interface SystemStatus {
     semanticMemory: boolean;
     activityRegistry: boolean;
     router: boolean;
+    verification: boolean;
   };
   errors?: string[];
   uptime: number;
@@ -72,6 +80,10 @@ export class DevFlowOrchestrator {
   private contextCompressor?: ContextCompressor;
   private vectorDb?: VectorDatabase;
 
+  // Verification components
+  private codeRealityCheckAgent?: CodeRealityCheckAgent;
+  private continuousVerificationLoop?: ContinuousVerificationLoop;
+
   constructor(config: DevFlowConfig) {
     this.config = config;
     this.startTime = Date.now();
@@ -83,7 +95,8 @@ export class DevFlowOrchestrator {
         memoryBridge: false,
         semanticMemory: false,
         activityRegistry: false,
-        router: false
+        router: false,
+        verification: false
       },
       uptime: 0
     };
@@ -151,6 +164,18 @@ export class DevFlowOrchestrator {
       this.status.components.router = true;
       console.log('✅ Intelligent Router initialized');
 
+      // Initialize verification system
+      if (this.config.verification.enabled) {
+        this.codeRealityCheckAgent = new CodeRealityCheckAgent({
+          gitRepoPath: process.cwd(),
+          currentTaskPath: '.claude/state/current_task.json'
+        });
+        this.continuousVerificationLoop = new ContinuousVerificationLoop();
+        await this.continuousVerificationLoop.start();
+        this.status.components.verification = true;
+        console.log('✅ Verification System initialized');
+      }
+
       this.status.status = 'ready';
       console.log('🎯 DevFlow Orchestrator ready!');
       
@@ -212,15 +237,21 @@ export class DevFlowOrchestrator {
    */
   async shutdown(): Promise<void> {
     console.log('🛑 Shutting down DevFlow Orchestrator...');
-    
+
+    // Shutdown verification system first
+    if (this.continuousVerificationLoop) {
+      await this.continuousVerificationLoop.stop();
+      console.log('✅ Verification System shutdown');
+    }
+
     if (this.cognitiveMapping) {
       await this.cognitiveMapping.shutdown();
     }
-    
+
     if (this.vectorDb) {
       await this.vectorDb.close();
     }
-    
+
     if (this.memoryCache) {
       this.memoryCache.clear();
     }
@@ -248,6 +279,27 @@ export class DevFlowOrchestrator {
 
   getVectorDatabase(): VectorDatabase | undefined {
     return this.vectorDb;
+  }
+
+  // Verification component getters
+  getCodeRealityCheckAgent(): CodeRealityCheckAgent | undefined {
+    return this.codeRealityCheckAgent;
+  }
+
+  getContinuousVerificationLoop(): ContinuousVerificationLoop | undefined {
+    return this.continuousVerificationLoop;
+  }
+
+  /**
+   * Get verification system status
+   */
+  getVerificationStatus(): {
+    running: boolean;
+    lastActivity: number;
+    currentTaskName: string | null;
+    activeAgents: number;
+  } | null {
+    return this.continuousVerificationLoop?.getStatus() || null;
   }
 }
 

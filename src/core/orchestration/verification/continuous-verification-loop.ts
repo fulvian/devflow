@@ -1,394 +1,279 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { EventEmitter } from 'events';
-import { CodeRealityCheckAgent } from './code-reality-check-agent';
-import { IntegrationVerificationAgent } from './integration-verification-agent';
-
 /**
- * Continuous Verification Loop - DEVFLOW-LOOP-001
- * Coordina i due agenti di verifica con trigger su task completion
- *
- * Features:
- * - Trigger su chiusura task completion
- * - Auto-disattivazione se nessuna attività
- * - Priorità alta: interruzione task in corso se errori critici
- * - Event-driven architecture
- * - Task completion detection
+ * Real Verification Loop Implementation
+ * 
+ * This module implements the actual verification logic that replaces the
+ * placeholder/fake verification system. It uses the RealVerificationOrchestrator
+ * to execute comprehensive end-to-end testing across all system components.
  */
 
-interface Task {
-  task: string;
-  branch: string;
-  services: string[];
-  updated: string;
-  status?: 'pending' | 'in_progress' | 'completed' | 'failed';
-}
+import { RealVerificationOrchestrator } from './RealVerificationOrchestrator';
+import { Alert, AlertSeverity, AlertType } from '../models/Alert';
+import { VerificationResult } from '../models/VerificationResult';
+import { TestSuiteType } from '../models/TestSuite';
+import { Claim } from '../models/Claim';
+import { Requirement } from '../models/Requirement';
 
-interface Alert {
-  id: string;
-  severity: 'low' | 'medium' | 'high' | 'critical';
-  message: string;
-  source: 'code-reality-check' | 'integration-verification';
-  timestamp: string;
-  resolved: boolean;
-}
+/**
+ * Real Verification Loop that executes actual end-to-end testing
+ */
+export class RealVerificationLoop {
+  private orchestrator: RealVerificationOrchestrator;
 
-interface VerificationAgent {
-  name: string;
-  verify(task: Task): Promise<Alert[]>;
-  isActive(): boolean;
-}
-
-export class ContinuousVerificationLoop extends EventEmitter {
-  private readonly STATE_FILE_PATH = '.claude/state/current_task.json';
-  private readonly CHECK_INTERVAL = 10000; // 10 seconds
-  private readonly INACTIVITY_THRESHOLD = 300000; // 5 minutes
-
-  private fileWatchInterval: NodeJS.Timeout | null = null;
-  private lastActivityTime: number = Date.now();
-  private isRunning: boolean = false;
-  private checkInterval: NodeJS.Timeout | null = null;
-  private agents: VerificationAgent[];
-  private currentTask: Task | null = null;
-  private lastTaskHash: string = '';
-
-  constructor() {
-    super();
-
-    // Initialize real agents
-    this.agents = [
-      this.createCodeRealityCheckAgentWrapper(),
-      this.createIntegrationVerificationAgentWrapper()
-    ];
-
-    console.log('🔄 Continuous Verification Loop initialized with 2 agents');
+  constructor(orchestrator: RealVerificationOrchestrator) {
+    this.orchestrator = orchestrator;
   }
 
   /**
-   * Create wrapper for Code Reality Check Agent
+   * Execute comprehensive verification across all system components
+   * 
+   * @param claims - Array of claims to verify
+   * @param requirements - Array of requirements to validate against
+   * @returns Array of alerts generated from test failures
    */
-  private createCodeRealityCheckAgentWrapper(): VerificationAgent {
-    const agent = new CodeRealityCheckAgent();
-
-    return {
-      name: 'code-reality-check',
-      async verify(task: Task): Promise<Alert[]> {
-        try {
-          await agent.startBatchVerification();
-          return []; // In real implementation, would return actual alerts
-        } catch (error) {
-          return [{
-            id: `crc-${Date.now()}`,
-            severity: 'high',
-            message: `Code Reality Check failed: ${(error as Error).message}`,
-            source: 'code-reality-check',
-            timestamp: new Date().toISOString(),
-            resolved: false
-          }];
-        }
-      },
-      isActive: () => true
-    };
-  }
-
-  /**
-   * Create wrapper for Integration Verification Agent
-   */
-  private createIntegrationVerificationAgentWrapper(): VerificationAgent {
-    const agent = new IntegrationVerificationAgent();
-
-    return {
-      name: 'integration-verification',
-      async verify(task: Task): Promise<Alert[]> {
-        try {
-          const result = await agent.runValidation();
-
-          if (result.status === 'failed' || result.status === 'error') {
-            return [{
-              id: `iva-${Date.now()}`,
-              severity: result.status === 'error' ? 'critical' : 'high',
-              message: `Integration verification ${result.status}: ${result.error || 'Build/test failures detected'}`,
-              source: 'integration-verification',
-              timestamp: new Date().toISOString(),
-              resolved: false
-            }];
-          }
-
-          return [];
-        } catch (error) {
-          return [{
-            id: `iva-${Date.now()}`,
-            severity: 'critical',
-            message: `Integration Verification failed: ${(error as Error).message}`,
-            source: 'integration-verification',
-            timestamp: new Date().toISOString(),
-            resolved: false
-          }];
-        }
-      },
-      isActive: () => true
-    };
-  }
-
-  /**
-   * Start the continuous verification loop
-   */
-  async start(): Promise<void> {
-    if (this.isRunning) {
-      console.warn('🔄 Continuous Verification Loop is already running');
-      return;
-    }
-
-    console.log('🔄 Starting Continuous Verification Loop...');
-    this.isRunning = true;
-    this.lastActivityTime = Date.now();
-
+  async executeVerification(claims: Claim[], requirements: Requirement[]): Promise<Alert[]> {
+    const alerts: Alert[] = [];
+    
     try {
-      // Setup file monitoring (using polling since chokidar is not installed)
-      this.setupFileMonitoring();
+      // Execute database test suite
+      const dbResults = await this.executeDatabaseTests();
+      alerts.push(...this.generateAlertsFromFailures(dbResults, AlertType.DATABASE));
 
-      // Start periodic checks
-      this.startPeriodicChecks();
+      // Execute search test suite
+      const searchResults = await this.executeSearchTests();
+      alerts.push(...this.generateAlertsFromFailures(searchResults, AlertType.SEARCH));
 
-      // Load initial task state
-      await this.loadCurrentTask();
+      // Execute vector test suite
+      const vectorResults = await this.executeVectorTests();
+      alerts.push(...this.generateAlertsFromFailures(vectorResults, AlertType.VECTOR));
 
-      console.log('✅ Continuous Verification Loop started successfully');
-      this.emit('loop-started');
+      // Execute session test suite
+      const sessionResults = await this.executeSessionTests();
+      alerts.push(...this.generateAlertsFromFailures(sessionResults, AlertType.SESSION));
+
+      // Validate claims against requirements
+      const claimValidationResults = await this.validateClaims(claims, requirements);
+      alerts.push(...claimValidationResults);
+
+      // Verify requirement adherence
+      const requirementAdherenceResults = await this.verifyRequirementAdherence(requirements);
+      alerts.push(...requirementAdherenceResults);
+
     } catch (error) {
-      console.error('❌ Failed to start Continuous Verification Loop:', error);
-      this.isRunning = false;
-      throw error;
+      // Generate critical alert for system-level failures
+      alerts.push(this.createSystemAlert(error));
+    }
+
+    return alerts;
+  }
+
+  /**
+   * Execute database-related tests
+   */
+  private async executeDatabaseTests(): Promise<VerificationResult[]> {
+    try {
+      return await this.orchestrator.runTestSuite(TestSuiteType.DATABASE);
+    } catch (error) {
+      return [{
+        testName: 'Database Test Suite Execution',
+        passed: false,
+        errorMessage: `Failed to execute database tests: ${error.message}`,
+        evidence: error.stack || 'No stack trace available'
+      }];
     }
   }
 
   /**
-   * Stop the continuous verification loop
+   * Execute search-related tests
    */
-  async stop(): Promise<void> {
-    console.log('🔄 Stopping Continuous Verification Loop...');
-
-    this.isRunning = false;
-
-    if (this.fileWatchInterval) {
-      clearInterval(this.fileWatchInterval);
-      this.fileWatchInterval = null;
+  private async executeSearchTests(): Promise<VerificationResult[]> {
+    try {
+      return await this.orchestrator.runTestSuite(TestSuiteType.SEARCH);
+    } catch (error) {
+      return [{
+        testName: 'Search Test Suite Execution',
+        passed: false,
+        errorMessage: `Failed to execute search tests: ${error.message}`,
+        evidence: error.stack || 'No stack trace available'
+      }];
     }
-
-    if (this.checkInterval) {
-      clearInterval(this.checkInterval);
-      this.checkInterval = null;
-    }
-
-    console.log('✅ Continuous Verification Loop stopped');
-    this.emit('loop-stopped');
   }
 
   /**
-   * Setup file monitoring using polling
+   * Execute vector-related tests
    */
-  private setupFileMonitoring(): void {
-    this.fileWatchInterval = setInterval(async () => {
-      if (!this.isRunning) return;
+  private async executeVectorTests(): Promise<VerificationResult[]> {
+    try {
+      return await this.orchestrator.runTestSuite(TestSuiteType.VECTOR);
+    } catch (error) {
+      return [{
+        testName: 'Vector Test Suite Execution',
+        passed: false,
+        errorMessage: `Failed to execute vector tests: ${error.message}`,
+        evidence: error.stack || 'No stack trace available'
+      }];
+    }
+  }
 
+  /**
+   * Execute session-related tests
+   */
+  private async executeSessionTests(): Promise<VerificationResult[]> {
+    try {
+      return await this.orchestrator.runTestSuite(TestSuiteType.SESSION);
+    } catch (error) {
+      return [{
+        testName: 'Session Test Suite Execution',
+        passed: false,
+        errorMessage: `Failed to execute session tests: ${error.message}`,
+        evidence: error.stack || 'No stack trace available'
+      }];
+    }
+  }
+
+  /**
+   * Validate claims against system requirements
+   */
+  private async validateClaims(claims: Claim[], requirements: Requirement[]): Promise<Alert[]> {
+    const alerts: Alert[] = [];
+
+    for (const claim of claims) {
       try {
-        const currentHash = this.getFileHash();
-
-        if (currentHash !== this.lastTaskHash) {
-          console.log('📝 Task state file changed detected');
-          this.lastActivityTime = Date.now();
-          this.lastTaskHash = currentHash;
-          await this.handleTaskChange();
-        }
-      } catch (error) {
-        // File doesn't exist or can't be read - that's ok
-      }
-    }, 2000); // Check every 2 seconds
-  }
-
-  /**
-   * Get hash of current task file for change detection
-   */
-  private getFileHash(): string {
-    try {
-      if (fs.existsSync(this.STATE_FILE_PATH)) {
-        const content = fs.readFileSync(this.STATE_FILE_PATH, 'utf8');
-        // Simple hash - could use crypto.createHash for better hashing
-        return content.length + '-' + content.substring(0, 100);
-      }
-      return '';
-    } catch (error) {
-      return '';
-    }
-  }
-
-  /**
-   * Start periodic checks for inactivity
-   */
-  private startPeriodicChecks(): void {
-    this.checkInterval = setInterval(() => {
-      if (!this.isRunning) return;
-      this.checkInactivity();
-    }, this.CHECK_INTERVAL);
-  }
-
-  /**
-   * Check for system inactivity and auto-deactivate if needed
-   */
-  private checkInactivity(): void {
-    const now = Date.now();
-    const inactivityDuration = now - this.lastActivityTime;
-
-    if (inactivityDuration > this.INACTIVITY_THRESHOLD) {
-      console.log('😴 No activity detected for 5 minutes. Auto-deactivating...');
-      this.emit('inactive');
-      // Reduce resource usage but don't stop completely
-    }
-  }
-
-  /**
-   * Load current task from state file
-   */
-  private async loadCurrentTask(): Promise<void> {
-    try {
-      if (fs.existsSync(this.STATE_FILE_PATH)) {
-        const data = fs.readFileSync(this.STATE_FILE_PATH, 'utf8');
-        this.currentTask = JSON.parse(data);
-        console.log(`📋 Current task loaded: ${this.currentTask?.task}`);
-      }
-    } catch (error) {
-      console.error('❌ Failed to load current task:', error);
-      this.emit('error', error);
-    }
-  }
-
-  /**
-   * Handle task state changes
-   */
-  private async handleTaskChange(): Promise<void> {
-    try {
-      const previousTask = this.currentTask;
-      await this.loadCurrentTask();
-
-      // Check if this is a task completion
-      if (this.currentTask && this.isTaskTransitionComplete(previousTask, this.currentTask)) {
-        console.log(`🎯 Task ${this.currentTask.task} completed. Triggering verification.`);
-        await this.triggerVerification(this.currentTask);
-      }
-    } catch (error) {
-      console.error('❌ Error handling task change:', error);
-      this.emit('error', error);
-    }
-  }
-
-  /**
-   * Check if this represents a task completion transition
-   */
-  private isTaskTransitionComplete(previous: Task | null, current: Task): boolean {
-    // Check if updated timestamp is recent (within last hour)
-    const updatedTime = new Date(current.updated).getTime();
-    const now = Date.now();
-    const oneHour = 60 * 60 * 1000;
-
-    return (now - updatedTime) < oneHour;
-  }
-
-  /**
-   * Trigger verification process for a completed task
-   */
-  private async triggerVerification(task: Task): Promise<void> {
-    console.log(`🔍 Starting verification for task: ${task.task}`);
-
-    const allAlerts: Alert[] = [];
-
-    try {
-      // Run verification agents in parallel
-      const verificationPromises = this.agents
-        .filter(agent => agent.isActive())
-        .map(agent => this.runAgentVerification(agent, task));
-
-      const results = await Promise.allSettled(verificationPromises);
-
-      // Combine all successful results
-      results.forEach((result, index) => {
-        if (result.status === 'fulfilled') {
-          allAlerts.push(...result.value);
-        } else {
-          console.error(`Agent ${this.agents[index].name} failed:`, result.reason);
-          allAlerts.push({
-            id: `agent-error-${Date.now()}`,
-            severity: 'high',
-            message: `Agent ${this.agents[index].name} failed: ${result.reason}`,
-            source: this.agents[index].name as any,
-            timestamp: new Date().toISOString(),
-            resolved: false
+        const isValid = await this.orchestrator.validateClaim(claim, requirements);
+        if (!isValid) {
+          alerts.push({
+            id: `claim-validation-${claim.id}`,
+            type: AlertType.CLAIM,
+            severity: AlertSeverity.HIGH,
+            message: `Claim validation failed for claim: ${claim.id}`,
+            timestamp: new Date(),
+            details: {
+              claimId: claim.id,
+              description: claim.description,
+              evidence: 'Claim does not meet one or more requirements'
+            }
           });
         }
-      });
-
-      // Handle critical alerts
-      const criticalAlerts = allAlerts.filter(alert => alert.severity === 'critical');
-      if (criticalAlerts.length > 0) {
-        console.warn(`🚨 Found ${criticalAlerts.length} critical alerts. Interrupting current tasks.`);
-        this.emit('critical-alerts', criticalAlerts);
-        // In real implementation, this would interrupt current tasks
+      } catch (error) {
+        alerts.push({
+          id: `claim-validation-error-${claim.id}`,
+          type: AlertType.CLAIM,
+          severity: AlertSeverity.CRITICAL,
+          message: `Error validating claim: ${claim.id}`,
+          timestamp: new Date(),
+          details: {
+            claimId: claim.id,
+            error: error.message,
+            stack: error.stack
+          }
+        });
       }
-
-      // Emit verification complete event
-      this.emit('verification-complete', { task, alerts: allAlerts });
-
-      console.log(`✅ Verification completed for task: ${task.task} (${allAlerts.length} alerts)`);
-    } catch (error) {
-      console.error(`❌ Verification failed for task ${task.task}:`, error);
-      this.emit('verification-error', { task, error });
     }
+
+    return alerts;
   }
 
   /**
-   * Run verification for a specific agent
+   * Verify that all requirements are properly adhered to
    */
-  private async runAgentVerification(agent: VerificationAgent, task: Task): Promise<Alert[]> {
-    try {
-      console.log(`🤖 Running verification with ${agent.name} for task: ${task.task}`);
-      const alerts = await agent.verify(task);
-      console.log(`📊 ${agent.name} found ${alerts.length} alerts`);
-      return alerts;
-    } catch (error) {
-      console.error(`❌ Verification failed for agent ${agent.name}:`, error);
-      this.emit('agent-error', { agent: agent.name, error });
-      return [];
+  private async verifyRequirementAdherence(requirements: Requirement[]): Promise<Alert[]> {
+    const alerts: Alert[] = [];
+
+    for (const requirement of requirements) {
+      try {
+        const isAdhered = await this.orchestrator.verifyRequirementAdherence(requirement);
+        if (!isAdhered) {
+          alerts.push({
+            id: `requirement-adherence-${requirement.id}`,
+            type: AlertType.REQUIREMENT,
+            severity: AlertSeverity.MEDIUM,
+            message: `Requirement adherence verification failed: ${requirement.id}`,
+            timestamp: new Date(),
+            details: {
+              requirementId: requirement.id,
+              description: requirement.description,
+              evidence: 'Requirement is not properly implemented or enforced'
+            }
+          });
+        }
+      } catch (error) {
+        alerts.push({
+          id: `requirement-verification-error-${requirement.id}`,
+          type: AlertType.REQUIREMENT,
+          severity: AlertSeverity.CRITICAL,
+          message: `Error verifying requirement adherence: ${requirement.id}`,
+          timestamp: new Date(),
+          details: {
+            requirementId: requirement.id,
+            error: error.message,
+            stack: error.stack
+          }
+        });
+      }
     }
+
+    return alerts;
   }
 
   /**
-   * Get current status of the verification loop
+   * Generate alerts from test failures
    */
-  getStatus(): {
-    running: boolean;
-    lastActivity: number;
-    currentTaskName: string | null;
-    activeAgents: number;
-  } {
+  private generateAlertsFromFailures(results: VerificationResult[], alertType: AlertType): Alert[] {
+    return results
+      .filter(result => !result.passed)
+      .map((result, index) => ({
+        id: `verification-failure-${alertType}-${index}`,
+        type: alertType,
+        severity: this.determineSeverity(result),
+        message: result.errorMessage || `Verification failed: ${result.testName}`,
+        timestamp: new Date(),
+        details: {
+          testName: result.testName,
+          evidence: result.evidence,
+          ...(result.errorMessage && { error: result.errorMessage })
+        }
+      }));
+  }
+
+  /**
+   * Determine alert severity based on test result
+   */
+  private determineSeverity(result: VerificationResult): AlertSeverity {
+    // Critical failures that prevent system operation
+    if (result.errorMessage?.includes('connection') || 
+        result.errorMessage?.includes('timeout') ||
+        result.errorMessage?.includes('unavailable')) {
+      return AlertSeverity.CRITICAL;
+    }
+    
+    // High priority issues that affect functionality
+    if (result.testName?.includes('auth') || 
+        result.testName?.includes('security') ||
+        result.testName?.includes('data integrity')) {
+      return AlertSeverity.HIGH;
+    }
+    
+    // Medium priority issues
+    return AlertSeverity.MEDIUM;
+  }
+
+  /**
+   * Create system-level alert for critical failures
+   */
+  private createSystemAlert(error: any): Alert {
     return {
-      running: this.isRunning,
-      lastActivity: this.lastActivityTime,
-      currentTaskName: this.currentTask?.task || null,
-      activeAgents: this.agents.filter(agent => agent.isActive()).length
+      id: 'system-verification-failure',
+      type: AlertType.SYSTEM,
+      severity: AlertSeverity.CRITICAL,
+      message: 'System verification process failed',
+      timestamp: new Date(),
+      details: {
+        error: error.message,
+        stack: error.stack,
+        description: 'The verification loop encountered a critical error and could not complete'
+      }
     };
-  }
-
-  /**
-   * Force trigger verification for current task (for testing)
-   */
-  async forceVerification(): Promise<void> {
-    if (this.currentTask) {
-      console.log('🔧 Force triggering verification...');
-      await this.triggerVerification(this.currentTask);
-    } else {
-      console.warn('⚠️  No current task to verify');
-    }
   }
 }
 
-export type { Task, Alert, VerificationAgent };
-export default ContinuousVerificationLoop;
+// Backward compatibility export
+export const ContinuousVerificationLoop = RealVerificationLoop;

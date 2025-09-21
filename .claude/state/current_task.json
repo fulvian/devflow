@@ -1,6 +1,13 @@
 {
-  "task": null,
-  "branch": null,
-  "services": [],
-  "updated": "2025-09-18"
+  "task": "devflow-cometa-real-integration",
+  "branch": "feature/co-me-ta_to_real_world",
+  "services": [
+    "ui",
+    "real-time-platform-visibility",
+    "footer",
+    "session-recovery",
+    "github-automation"
+  ],
+  "updated": "2025-09-20",
+  "progress_percentage": 75
 }

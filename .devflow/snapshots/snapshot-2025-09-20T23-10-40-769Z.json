@@ -1,0 +1,11 @@
+{
+  "timestamp": "2025-09-20T23:10:40.769Z",
+  "codeBlocks": [
+    {
+      "language": "javascript",
+      "code": "function calculateFactorial(n) {\n  if (n < 0) {\n    throw new Error('Il fattoriale non è definito per numeri negativi');\n  }\n  if (n === 0 || n === 1) {\n    return 1;\n  }\n  let result = 1;\n  for (let i = 2; i <= n; i++) {\n    result *= i;\n  }\n  return result;\n}"
+    }
+  ],
+  "filePaths": [],
+  "transcriptLength": 373
+}
