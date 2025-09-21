@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3');
 
 // Test Configuration
 const TEST_CONFIG = {
-  dbPath: '/Users/fulvioventura/devflow/data/devflow.sqlite',
+  dbPath: '/Users/fulvioventura/devflow/data/devflow_unified.sqlite',
   testDataPath: './.devflow',
   timeout: 30000,
   performanceThresholds: {

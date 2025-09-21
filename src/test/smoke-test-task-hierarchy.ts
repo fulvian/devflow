@@ -19,7 +19,7 @@ import {
 
 // Test configuration
 const TEST_TIMEOUT = 200; // 200ms performance threshold for smoke test
-const TEST_DB_PATH = './devflow.sqlite'; // Use production database for smoke test
+const TEST_DB_PATH = './data/devflow_unified.sqlite'; // Use production database for smoke test
 
 /**
  * Simple smoke test runner

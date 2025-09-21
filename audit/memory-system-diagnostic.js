@@ -5,7 +5,7 @@ const sqlite3 = require('sqlite3');
 
 class MemorySystemDiagnostic {
   constructor() {
-    this.dbPath = './data/devflow.sqlite';
+    this.dbPath = './data/devflow_unified.sqlite';
     this.vectorDbPath = './data/vector.sqlite';
   }
   

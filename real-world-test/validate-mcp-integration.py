@@ -34,7 +34,7 @@ def test_devflow_database():
     """Test connection to DevFlow SQLite database"""
     print("\n🗄️  Testing DevFlow database connectivity...")
 
-    db_path = "/Users/fulvioventura/devflow/data/devflow.sqlite"
+    db_path = "/Users/fulvioventura/devflow/data/devflow_unified.sqlite"
 
     try:
         conn = sqlite3.connect(db_path)
@@ -149,7 +149,7 @@ def test_memory_system_integration():
 
     try:
         # Test semantic memory by creating a test task
-        db_path = "/Users/fulvioventura/devflow/data/devflow.sqlite"
+        db_path = "/Users/fulvioventura/devflow/data/devflow_unified.sqlite"
         conn = sqlite3.connect(db_path)
         cursor = conn.cursor()
 

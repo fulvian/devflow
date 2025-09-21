@@ -179,7 +179,7 @@ export class EnhancedSyntheticMCPServer {
 
   private async initDatabase(): Promise<void> {
     try {
-      const dbPath = resolve(DEVFLOW_PROJECT_ROOT, 'data/devflow.sqlite');
+      const dbPath = resolve(DEVFLOW_PROJECT_ROOT, 'data/devflow_unified.sqlite');
       this.db = await open({
         filename: dbPath,
         driver: sqlite3.Database

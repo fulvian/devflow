@@ -12,7 +12,7 @@ const sqlite3 = require('sqlite3').verbose();
 
 // Configuration
 const SESSIONS_DIR = './sessions/tasks'; // Directory containing session files
-const DB_PATH = './devflow.sqlite'; // Database path
+const DB_PATH = './data/devflow_unified.sqlite'; // Database path
 
 /**
  * Simple embedding generator

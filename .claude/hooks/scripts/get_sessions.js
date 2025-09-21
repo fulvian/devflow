@@ -5,7 +5,7 @@ const path = require('path');
 let db;
 
 try {
-    const dbPath = path.resolve(__dirname, '..' , '..' , '..' , 'devflow.sqlite');
+    const dbPath = path.resolve(__dirname, '..' , '..' , '..' , 'data/devflow_unified.sqlite');
     db = new Database(dbPath, { readonly: true });
 
     const stmt = db.prepare(`

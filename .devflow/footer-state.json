@@ -1,50 +1,6 @@
 {
-  "timestamp": "2025-09-21T14:53:11.225348",
-  "version": "3.1",
-  "progress": {
-    "percentage": 75,
-    "current_task": "devflow-cometa-real-integration",
-    "token_count": 0
-  },
-  "system": {
-    "status": "PRODUCTION",
-    "services_active": 6,
-    "services_total": 8
-  },
-  "mode": "DEV",
-  "last_tool": "unknown",
-  "services": [
-    {
-      "name": "Database",
-      "status": "active"
-    },
-    {
-      "name": "Registry",
-      "status": "active"
-    },
-    {
-      "name": "Vector",
-      "status": "active"
-    },
-    {
-      "name": "Optimizer",
-      "status": "active"
-    },
-    {
-      "name": "CCR",
-      "status": "active"
-    },
-    {
-      "name": "Enforcement",
-      "status": "active"
-    },
-    {
-      "name": "Orchestrator",
-      "status": "inactive"
-    },
-    {
-      "name": "Synthetic",
-      "status": "inactive"
-    }
-  ]
+  "progress": "0%",
+  "completed": 0,
+  "total": 107,
+  "timestamp": "2025-09-21T22:59:34.321Z"
 }

@@ -23,7 +23,7 @@ import {
   TokenBudgetExceededError
 } from '../core/memory-bridge/memory-bridge-service';
 
-const TEST_DB_PATH = './devflow.sqlite';
+const TEST_DB_PATH = './data/devflow_unified.sqlite';
 const TEST_MODEL_ID = 'integration-test-model';
 
 class FullIntegrationSmokeTestRunner {

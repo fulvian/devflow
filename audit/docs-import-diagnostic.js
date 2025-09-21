@@ -90,7 +90,7 @@ class DocsImportDiagnostic {
     
     // Check if docs are in semantic index
     const semanticPaths = [
-      './data/devflow.sqlite',
+      './data/devflow_unified.sqlite',
       './data/vector.sqlite',
       './real-world-test/.devflow/memory/semantic-index.json'
     ];

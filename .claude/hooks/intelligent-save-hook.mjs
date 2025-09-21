@@ -80,9 +80,9 @@ async function main() {
 
     const { TaskHierarchyService, TaskStatus, SemanticMemoryService, UnifiedDatabaseManager, HarvestingProtocol, MemoryCache } = await loadCore();
 
-    const tasks = new TaskHierarchyService(path.resolve(root, 'devflow.sqlite'));
+    const tasks = new TaskHierarchyService(path.resolve(root, 'data/devflow_unified.sqlite'));
     await tasks.initialize();
-    const semantic = new SemanticMemoryService(tasks, path.resolve(root, 'data/devflow.sqlite'));
+    const semantic = new SemanticMemoryService(tasks, path.resolve(root, 'data/devflow_unified.sqlite'));
     semantic.registerEmbeddingModel(new LocalEmbeddingModel());
 
     // Extract knowledge and store basic memory blocks (optional)
@@ -106,7 +106,7 @@ async function main() {
 
     // Optionally store raw memory block for transcript
     try {
-      const udb = new UnifiedDatabaseManager(path.resolve(root, 'data/devflow.sqlite'));
+      const udb = new UnifiedDatabaseManager(path.resolve(root, 'data/devflow_unified.sqlite'));
       const mbId = `hook_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
       udb.storeMemoryBlock(mbId, summary, 'episodic', new Date().toISOString(), null);
       udb.close();

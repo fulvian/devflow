@@ -56,7 +56,7 @@ export class SemanticMemoryService {
 
   constructor(
     private taskHierarchyService: TaskHierarchyService,
-    dbPath: string = './data/devflow.sqlite'
+    dbPath: string = './data/devflow_unified.sqlite'
   ) {
     this.unifiedDB = new UnifiedDatabaseManager(dbPath);
   }

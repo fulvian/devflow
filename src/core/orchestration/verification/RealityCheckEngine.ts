@@ -52,4 +52,4 @@ class RealityCheckEngine {
   }
 }
 
-export default RealityCheckEngine;
+export { RealityCheckEngine };

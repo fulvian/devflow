@@ -145,7 +145,7 @@ start_automatic_ccr_trigger() {
     CCR_AUTO_TRIGGER="true" \
     CCR_TRIGGER_LEVEL="critical" \
     CCR_POLL_INTERVAL_MS="5000" \
-    DEVFLOW_DB_PATH="devflow.sqlite" \
+    DEVFLOW_DB_PATH="./data/devflow_unified.sqlite" \
     CLAUDE_LIMIT_LOG="${CLAUDE_LIMIT_LOG:-logs/claude-usage.log}" \
     nohup node tools/auto-ccr-runner.js > logs/automatic-ccr-trigger.log 2>&1 &
     

@@ -10,7 +10,7 @@ export class SearchTestSuite implements TestSuite {
   private dbPath: string;
 
   constructor() {
-    this.dbPath = path.join(process.cwd(), 'data/devflow.sqlite');
+    this.dbPath = path.join(process.cwd(), 'data/devflow_unified.sqlite');
   }
 
   getName(): string {

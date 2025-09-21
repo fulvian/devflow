@@ -275,4 +275,4 @@ export class UnifiedVerificationOrchestrator {
 }
 
 // Export types for external use
-export * from './types/verification-types';
+export * from './types';

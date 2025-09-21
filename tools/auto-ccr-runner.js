@@ -5,7 +5,7 @@
 
 const { spawn } = await import('child_process');
 
-const DB_PATH = process.env.DEVFLOW_DB_PATH || 'devflow.sqlite';
+const DB_PATH = process.env.DEVFLOW_DB_PATH || './data/devflow_unified.sqlite';
 const LIMIT_LOG = process.env.CLAUDE_LIMIT_LOG || '';
 const POLL_MS = parseInt(process.env.CCR_POLL_INTERVAL_MS || '5000', 10);
 const TRIGGER_LEVEL = (process.env.CCR_TRIGGER_LEVEL || 'critical').toLowerCase();

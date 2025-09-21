@@ -1,5 +1,5 @@
 // aspect-verifiers.ts
-import { RealityCheckEngine } from './reality-check-engine';
+import { RealityCheckEngine } from './RealityCheckEngine';
 
 /**
  * Represents the result of an aspect verification
@@ -348,5 +348,57 @@ export class MultiAgentVerification {
       total: results.length,
       details: results
     };
+  }
+}
+
+/**
+ * Main AspectVerifiersSystem class that orchestrates all aspect verifications
+ */
+export class AspectVerifiersSystem {
+  private verifiers: AspectVerifier[] = [];
+  private multiAgentVerification: MultiAgentVerification;
+
+  constructor() {
+    const realityCheckEngine = new RealityCheckEngine();
+
+    // Initialize all verifiers
+    this.verifiers = [
+      new SecurityVerifier(realityCheckEngine),
+      new CorrectnessVerifier(realityCheckEngine),
+      new PerformanceVerifier(realityCheckEngine),
+      new MaintainabilityVerifier(realityCheckEngine)
+    ];
+
+    this.multiAgentVerification = new MultiAgentVerification(realityCheckEngine);
+  }
+
+  async verifyAspects(code: string, level: any): Promise<{ findings: any[] }> {
+    const findings: any[] = [];
+
+    // Run all aspect verifiers
+    for (const verifier of this.verifiers) {
+      try {
+        const result = await verifier.verify(code, {});
+        if (!result.approved) {
+          findings.push({
+            id: result.aspectId,
+            type: 'ASPECT_VERIFICATION',
+            severity: 'MEDIUM',
+            message: result.evidence,
+            location: 'CODE'
+          });
+        }
+      } catch (error) {
+        findings.push({
+          id: 'ASPECT_ERROR',
+          type: 'SYSTEM_ERROR',
+          severity: 'HIGH',
+          message: `Aspect verification failed: ${error}`,
+          location: 'SYSTEM'
+        });
+      }
+    }
+
+    return { findings };
   }
 }

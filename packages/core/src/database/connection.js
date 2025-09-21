@@ -5,7 +5,7 @@ import { loadCoreEnv } from '@devflow/shared';
 const pool = new Map();
 export function getDB(config = {}) {
     const env = loadCoreEnv();
-    const dbPath = config.path ?? env.DEVFLOW_DB_PATH ?? resolve(process.cwd(), 'devflow.sqlite');
+    const dbPath = config.path ?? env.DEVFLOW_DB_PATH ?? resolve(process.cwd(), 'data/devflow_unified.sqlite');
     if (pool.has(dbPath))
         return pool.get(dbPath);
     const dir = dirname(dbPath);
@@ -24,7 +24,7 @@ export function getDB(config = {}) {
     return db;
 }
 export function closeDB(path) {
-    const dbPath = path ?? process.env['DEVFLOW_DB_PATH'] ?? resolve(process.cwd(), 'devflow.sqlite');
+    const dbPath = path ?? process.env['DEVFLOW_DB_PATH'] ?? resolve(process.cwd(), 'data/devflow_unified.sqlite');
     const db = pool.get(dbPath);
     if (db) {
         db.close();

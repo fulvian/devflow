@@ -128,7 +128,7 @@ export class TaskHierarchyService {
   private db: SQLiteDatabase | null = null;
   private readonly dbPath: string;
 
-  constructor(dbPath: string = './devflow.sqlite') {
+  constructor(dbPath: string = './data/devflow_unified.sqlite') {
     this.dbPath = dbPath;
   }
 

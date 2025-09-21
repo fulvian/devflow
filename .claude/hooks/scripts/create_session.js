@@ -2,7 +2,7 @@
 const Database = require('better-sqlite3');
 const path = require('path');
 
-const dbPath = path.resolve(__dirname, '..' , '..' , '..' , 'devflow.sqlite');
+const dbPath = path.resolve(__dirname, '..' , '..' , '..' , 'data/devflow_unified.sqlite');
 let db;
 
 try {

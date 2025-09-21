@@ -130,7 +130,7 @@ except:
 
 # Function to get platform limits data from DevFlow database
 get_platform_limits() {
-    db_path="$cwd/data/devflow.sqlite"
+    db_path="$cwd/data/devflow_unified.sqlite"
     
     # Get real data for Qwen and Synthetic API from database
     local qwen_used=0
@@ -224,7 +224,7 @@ get_current_task() {
         progress_percentage=${progress_percentage:-0}
         
         # Override with database data if available
-        db_path="$cwd/data/devflow.sqlite"
+        db_path="$cwd/data/devflow_unified.sqlite"
         if [[ -f "$db_path" ]]; then
             db_task_count=$(sqlite3 "$db_path" "SELECT COUNT(*) FROM task_contexts;" 2>/dev/null || echo "0")
             db_active_tasks=$(sqlite3 "$db_path" "SELECT COUNT(*) FROM task_contexts WHERE status = 'active';" 2>/dev/null || echo "0")
@@ -372,7 +372,7 @@ count_open_tasks() {
     tasks_dir="$cwd/sessions/tasks"
     
     # First try to get tasks from database
-    db_path="$cwd/data/devflow.sqlite"
+    db_path="$cwd/data/devflow_unified.sqlite"
     if [[ -f "$db_path" ]]; then
         # Get active tasks from database
         active_tasks=$(sqlite3 "$db_path" "SELECT title FROM task_contexts WHERE status = 'active' LIMIT 3;" 2>/dev/null || echo "")

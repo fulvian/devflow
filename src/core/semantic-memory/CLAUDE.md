@@ -44,7 +44,7 @@ This service bridges the TaskHierarchy foundation with vector-based semantic sea
 - Vector serialization/deserialization for SQLite storage
 
 ## Configuration
-- Database path: Configurable SQLite file location (default: './devflow.sqlite')
+- Database path: Configurable SQLite file location (default: './data/devflow_unified.sqlite')
 - Batch size: 5 tasks per batch for embedding generation
 - Embedding models: Registered via `registerEmbeddingModel()`
 

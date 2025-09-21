@@ -6,7 +6,7 @@ import { SecurityRule, SecurityIssue, SecurityReport, LanguageSupport, SecurityM
  * Static Application Security Testing (SAST) Engine
  * Analyzes source code for security vulnerabilities and anti-patterns
  */
-export class SASTEngine {
+export class SecurityAnalysisEngine {
   private rules: SecurityRule[] = [];
   private languageSupport: LanguageSupport[] = [];
   private aspectVerifiers: AspectVerifiersSystem;

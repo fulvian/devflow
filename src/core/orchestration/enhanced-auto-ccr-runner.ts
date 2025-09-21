@@ -134,7 +134,7 @@ export class EnhancedAutoCCRRunner extends EventEmitter {
       pollingInterval: parseInt(process.env.CCR_POLL_INTERVAL_MS || '5000', 10),
       maxRetries: parseInt(process.env.MAX_RETRIES || '3', 10),
       retryDelay: parseInt(process.env.RETRY_DELAY || '1000', 10),
-      dbPath: process.env.DEVFLOW_DB_PATH || 'devflow.sqlite',
+      dbPath: process.env.DEVFLOW_DB_PATH || './data/devflow_unified.sqlite',
       limitLog: process.env.CLAUDE_LIMIT_LOG || '',
       triggerLevel: triggerLevel in THRESHOLDS ? triggerLevel : 'critical',
       maxDurationMs: 5 * 60 * 60 * 1000, // 5h Sonnet limit

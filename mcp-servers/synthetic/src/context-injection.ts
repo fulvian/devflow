@@ -91,10 +91,10 @@ export async function prepareContextForPrompt(prompt: string, sessionId?: string
     if (!CONTEXT_INJECTION_ENABLED) return '';
     const { TaskHierarchyService, TaskStatus, SemanticMemoryService, ContextCompressor } = await loadCore();
 
-    const tasks = new TaskHierarchyService(resolve(__dirname, '../../../devflow.sqlite'));
+    const tasks = new TaskHierarchyService(resolve(__dirname, '../../../data/devflow_unified.sqlite'));
     await tasks.initialize();
 
-    const semantic = new SemanticMemoryService(tasks, resolve(__dirname, '../../../data/devflow.sqlite'));
+    const semantic = new SemanticMemoryService(tasks, resolve(__dirname, '../../../data/devflow_unified.sqlite'));
 
     // Register embedding model: prefer Ollama if healthy, else local deterministic
     const OllamaEmbeddingModel = await loadEmbeddingModel();

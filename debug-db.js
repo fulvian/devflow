@@ -5,7 +5,7 @@ async function testDb() {
   console.log('Testing database connection...');
   try {
     const db = await open({
-      filename: './data/devflow.sqlite',
+      filename: './data/devflow_unified.sqlite',
       driver: sqlite3.Database
     });
 

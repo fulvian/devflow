@@ -453,7 +453,6 @@ export async function runUnifiedVerificationTests(): Promise<boolean> {
 }
 
 // Export the test class for external use
-export { EndToEndVerificationTest };
 
 // Run if executed directly
 if (require.main === module) {

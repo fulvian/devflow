@@ -43,7 +43,7 @@ This service replaces in-memory task management with persistent SQLite storage, 
 ## Integration Points
 ### Consumes
 - SQLite database: Persistent storage with foreign key constraints
-- Configuration: Database path (default: './devflow.sqlite')
+- Configuration: Database path (default: './data/devflow_unified.sqlite')
 
 ### Provides
 - TaskContext CRUD operations
@@ -53,7 +53,7 @@ This service replaces in-memory task management with persistent SQLite storage, 
 - Row-to-object mapping with JSON deserialization
 
 ## Configuration
-- Database file path: Configurable (default: './devflow.sqlite')
+- Database file path: Configurable (default: './data/devflow_unified.sqlite')
 - Foreign key constraints: Enabled for referential integrity
 - Transaction support: Available for complex operations
 

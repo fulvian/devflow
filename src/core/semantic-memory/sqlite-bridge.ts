@@ -38,7 +38,7 @@ export class SQLiteBridge {
   private metadata: Map<string, MetadataRecord> = new Map();
   private fallbackFile: string;
 
-  constructor(dbPath: string = './devflow.sqlite') {
+  constructor(dbPath: string = './data/devflow_unified.sqlite') {
     this.dbPath = dbPath;
     this.fallbackFile = path.join(path.dirname(dbPath), 'metadata-fallback.json');
     this.initializeStorage();

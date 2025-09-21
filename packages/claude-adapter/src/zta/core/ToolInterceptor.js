@@ -26,9 +26,9 @@ export class ZTAToolInterceptor {
                 // Information retrieval
                 'WebFetch', 'WebSearch',
                 // MCP tools (synthetic agents)
-                'mcp__ctir-router-mcp__openrouter_chat',
-                'mcp__ctir-router-mcp__route_task',
-                'mcp__ctir-router-mcp__health',
+                'mcp__codex-cli__codex',
+                'mcp__gemini-cli__ask-gemini',
+                'mcp__qwen-code__ask-qwen',
                 // Bash output monitoring
                 'BashOutput', 'KillBash'
             ]),

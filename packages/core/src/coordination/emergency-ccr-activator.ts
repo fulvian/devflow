@@ -44,7 +44,7 @@ export class EmergencyCCRActivator {
     this.config = {
       ccrPath: 'npx @musistudio/claude-code-router',
       configPath: join(process.env.HOME!, '.claude-code-router', 'config.json'),
-      memoryDbPath: './packages/core/devflow.sqlite',
+      memoryDbPath: './data/devflow_unified.sqlite',
       activationTimeout: 30000,
       ...config
     };

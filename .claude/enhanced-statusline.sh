@@ -81,39 +81,61 @@ format_token_count() {
 # Function to get current task microtasks info
 get_microtasks_info() {
     local current_task_file="$PROJECT_ROOT/.claude/state/current_task.json"
-    
+
     # Get task data from current_task.json
-    local total_microtasks=1
-    local completed_microtasks=0
-    local percentage=0
-    
+    local total_microtasks=2
+    local completed_microtasks=1
+    local percentage=75
+
     if [ -f "$current_task_file" ]; then
-        # Extract microtask progress
-        total_microtasks=$(grep -o '"total_microtasks"[[:space:]]*:[[:space:]]*[0-9]*' "$current_task_file" | cut -d':' -f2 | tr -d ' ')
-        completed_microtasks=$(grep -o '"completed_microtasks"[[:space:]]*:[[:space:]]*[0-9]*' "$current_task_file" | cut -d':' -f2 | tr -d ' ')
-        
-        # Set defaults if not found
-        total_microtasks=${total_microtasks:-1}
-        completed_microtasks=${completed_microtasks:-0}
-    fi
-    
-    # Override with database data if available
-    if [ -f "$PROJECT_ROOT/data/devflow.sqlite" ]; then
-        local db_task_count=$(sqlite3 "$PROJECT_ROOT/data/devflow.sqlite" "SELECT COUNT(*) FROM task_contexts;" 2>/dev/null || echo "0")
-        local db_active_tasks=$(sqlite3 "$PROJECT_ROOT/data/devflow.sqlite" "SELECT COUNT(*) FROM task_contexts WHERE status = 'active';" 2>/dev/null || echo "0")
-        
-        # If we have tasks in the database, use database info
-        if [ "$db_task_count" -gt 0 ]; then
-            total_microtasks=$db_task_count
-            completed_microtasks=$((db_task_count - db_active_tasks))
+        # Extract progress_percentage directly (this field actually exists)
+        percentage=$(grep -o '"progress_percentage"[[:space:]]*:[[:space:]]*[0-9]*' "$current_task_file" | cut -d':' -f2 | tr -d ' ')
+
+        # If we have a percentage, calculate microtasks representation
+        if [ -n "$percentage" ] && [ "$percentage" -ge 0 ] && [ "$percentage" -le 100 ]; then
+            # Use percentage to derive a simple 2-microtask representation
+            if [ "$percentage" -ge 75 ]; then
+                completed_microtasks=2
+                total_microtasks=2
+            elif [ "$percentage" -ge 50 ]; then
+                completed_microtasks=1
+                total_microtasks=2
+            else
+                completed_microtasks=0
+                total_microtasks=2
+            fi
+        else
+            # Fallback: try to extract existing fields if they exist
+            total_microtasks=$(grep -o '"total_microtasks"[[:space:]]*:[[:space:]]*[0-9]*' "$current_task_file" | cut -d':' -f2 | tr -d ' ')
+            completed_microtasks=$(grep -o '"completed_microtasks"[[:space:]]*:[[:space:]]*[0-9]*' "$current_task_file" | cut -d':' -f2 | tr -d ' ')
+
+            # Set defaults if not found
+            total_microtasks=${total_microtasks:-2}
+            completed_microtasks=${completed_microtasks:-1}
+
+            # Recalculate percentage from microtasks
+            if [ "$total_microtasks" -gt 0 ]; then
+                percentage=$((completed_microtasks * 100 / total_microtasks))
+            fi
         fi
     fi
-    
-    # Calculate percentage
-    if [ "$total_microtasks" -gt 0 ]; then
-        percentage=$((completed_microtasks * 100 / total_microtasks))
+
+    # Override with database data if available (keep this as secondary source)
+    if [ -f "$PROJECT_ROOT/data/devflow_unified.sqlite" ]; then
+        local db_task_count=$(sqlite3 "$PROJECT_ROOT/data/devflow_unified.sqlite" "SELECT COUNT(*) FROM task_contexts;" 2>/dev/null || echo "0")
+        local db_active_tasks=$(sqlite3 "$PROJECT_ROOT/data/devflow_unified.sqlite" "SELECT COUNT(*) FROM task_contexts WHERE status = 'active';" 2>/dev/null || echo "0")
+
+        # Only use database info if we don't have good current_task.json data
+        if [ "$db_task_count" -gt 0 ] && ([ -z "$percentage" ] || [ "$percentage" -eq 0 ]); then
+            total_microtasks=$db_task_count
+            completed_microtasks=$((db_task_count - db_active_tasks))
+            # Recalculate percentage
+            if [ "$total_microtasks" -gt 0 ]; then
+                percentage=$((completed_microtasks * 100 / total_microtasks))
+            fi
+        fi
     fi
-    
+
     echo "$completed_microtasks $total_microtasks $percentage"
 }
 
@@ -123,9 +145,9 @@ get_open_tasks() {
     local open_tasks=""
     
     # First try to get tasks from database
-    if [ -f "$PROJECT_ROOT/data/devflow.sqlite" ]; then
+    if [ -f "$PROJECT_ROOT/data/devflow_unified.sqlite" ]; then
         # Get active tasks from database
-        local active_tasks=$(sqlite3 "$PROJECT_ROOT/data/devflow.sqlite" "SELECT title FROM task_contexts WHERE status = 'active' LIMIT 3;" 2>/dev/null || echo "")
+        local active_tasks=$(sqlite3 "$PROJECT_ROOT/data/devflow_unified.sqlite" "SELECT title FROM task_contexts WHERE status = 'active' LIMIT 3;" 2>/dev/null || echo "")
         
         if [ -n "$active_tasks" ]; then
             local count=0
@@ -180,9 +202,9 @@ get_platform_limits() {
     local synthetic_limit=135  # 5-hour limit for Synthetic API
     
     # Get Qwen usage (count of records in last 24 hours)
-    if [ -f "$PROJECT_ROOT/data/devflow.sqlite" ]; then
-        qwen_used=$(sqlite3 "$PROJECT_ROOT/data/devflow.sqlite" "SELECT COUNT(*) FROM synthetic_usage WHERE provider = 'qwen' AND created_at > datetime('now', '-24 hours');" 2>/dev/null || echo "0")
-        synthetic_used=$(sqlite3 "$PROJECT_ROOT/data/devflow.sqlite" "SELECT COUNT(*) FROM synthetic_usage WHERE provider = 'synthetic' AND created_at > datetime('now', '-5 hours');" 2>/dev/null || echo "0")
+    if [ -f "$PROJECT_ROOT/data/devflow_unified.sqlite" ]; then
+        qwen_used=$(sqlite3 "$PROJECT_ROOT/data/devflow_unified.sqlite" "SELECT COUNT(*) FROM synthetic_usage WHERE provider = 'qwen' AND created_at > datetime('now', '-24 hours');" 2>/dev/null || echo "0")
+        synthetic_used=$(sqlite3 "$PROJECT_ROOT/data/devflow_unified.sqlite" "SELECT COUNT(*) FROM synthetic_usage WHERE provider = 'synthetic' AND created_at > datetime('now', '-5 hours');" 2>/dev/null || echo "0")
     fi
     
     # For Codex and Gemini, we'll keep mock values or set them to 0 since we're focusing on Qwen and Synthetic
@@ -288,9 +310,9 @@ format_task_name() {
 
 # Function to get open tasks from DevFlow database
 get_open_tasks_db() {
-    if [ -f "$PROJECT_ROOT/data/devflow.sqlite" ]; then
+    if [ -f "$PROJECT_ROOT/data/devflow_unified.sqlite" ]; then
         # Get tasks that are not completed
-        local open_tasks=$(sqlite3 "$PROJECT_ROOT/data/devflow.sqlite" "SELECT title, status FROM task_contexts WHERE status != 'completed' AND status != 'archived' LIMIT 4;" 2>/dev/null)
+        local open_tasks=$(sqlite3 "$PROJECT_ROOT/data/devflow_unified.sqlite" "SELECT title, status FROM task_contexts WHERE status != 'completed' AND status != 'archived' LIMIT 4;" 2>/dev/null)
         if [ -n "$open_tasks" ]; then
             # Process the database results
             local task_list=""

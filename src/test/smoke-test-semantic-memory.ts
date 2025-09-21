@@ -22,7 +22,7 @@ import {
 
 // Test configuration
 const TEST_TIMEOUT = 500; // 500ms for embedding operations
-const TEST_DB_PATH = './devflow.sqlite';
+const TEST_DB_PATH = './data/devflow_unified.sqlite';
 const TEST_MODEL_ID = 'test-embedding-model';
 
 /**

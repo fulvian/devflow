@@ -4,7 +4,7 @@ const fs = require('fs');
 
 class DatabaseDiagnostic {
   constructor() {
-    this.dbPath = './data/devflow.sqlite';
+    this.dbPath = './data/devflow_unified.sqlite';
   }
   
   async runDiagnostic() {

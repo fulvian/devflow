@@ -103,7 +103,7 @@ export class DatabaseFixRunner {
 /**
  * Run database fixes as part of startup validation
  */
-export async function runDatabaseFixes(dbPath: string = 'devflow.sqlite'): Promise<void> {
+export async function runDatabaseFixes(dbPath: string = './data/devflow_unified.sqlite'): Promise<void> {
   const fixRunner = new DatabaseFixRunner(dbPath);
   
   try {

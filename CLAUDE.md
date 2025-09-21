@@ -1,6 +1,7 @@
 # CLAUDE.md - Comprehensive DevFlow Enforcement Protocol
 
 ## Table of Contents
+0. [Database Architecture - CRITICAL](#database-architecture---critical)
 1. [Collaboration Philosophy](#collaboration-philosophy)
 2. [Task Management Framework](#task-management-framework)
 3. [Synthetic Delegation Protocol](#synthetic-delegation-protocol)
@@ -11,6 +12,38 @@
 8. [Anti-Circumvention Measures](#anti-circumvention-measures)
 9. [DevFlow Architecture Alignment](#devflow-architecture-alignment)
 10. [Penalty System](#penalty-system)
+
+---
+
+## Database Architecture - CRITICAL
+
+### ✅ CURRENT DATABASE (Use This ONLY)
+- **Database**: `./data/devflow_unified.sqlite`
+- **Environment**: `DEVFLOW_DB_PATH=./data/devflow_unified.sqlite`
+- **Migration Completed**: 2025-09-22
+- **Records Migrated**: 161 total records from 3 legacy databases
+
+### ❌ DEPRECATED DATABASES (Do NOT Use - BLOCKED)
+- `./devflow.sqlite.DEPRECATED` - Migrated to unified DB
+- `./data/devflow.sqlite.DEPRECATED` - Migrated to unified DB
+- `./data/vector.sqlite.DEPRECATED` - Migrated to unified DB
+
+### 🔒 ENFORCEMENT MECHANISMS
+1. **Pre-commit Hook**: `.claude/hooks/pre-commit-legacy-db-check.sh` - BLOCKS commits with legacy DB references
+2. **Validation Script**: `scripts/validate_no_legacy_db.sh` - Detects legacy references in codebase
+3. **Deprecation Markers**: `*.DEPRECATED.txt` files - Clear warning documentation
+4. **Environment Protection**: All services configured for unified database only
+
+### 📊 UNIFIED DATABASE BENEFITS
+- **Single Source of Truth**: No database fragmentation
+- **Context7 Compliant**: Data organized in `data/` folder
+- **Referential Integrity**: Full foreign key enforcement
+- **Performance Optimized**: Strategic indexes and audit triggers
+- **Vector Integration**: Unified embeddings with project contexts
+
+**ANY CODE REFERENCING DEPRECATED DATABASES WILL BE BLOCKED AT COMMIT**
+
+For rollback information: `./backups/20250922_010603/`
 
 ---
 

@@ -5,7 +5,7 @@
 export const defaultDevFlowConfig = {
   taskHierarchy: {
     enabled: false,
-    databasePath: './data/devflow.sqlite'
+    databasePath: './data/devflow_unified.sqlite'
   },
   cognitiveMapping: {
     enabled: false

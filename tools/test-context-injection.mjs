@@ -58,9 +58,9 @@ async function run() {
   const sessionId = process.argv[3] || `sess_${Date.now()}`;
 
   const { TaskHierarchyService, TaskStatus, SemanticMemoryService, ContextCompressor } = await loadCore();
-  const tasks = new TaskHierarchyService(path.resolve(root, 'devflow.sqlite'));
+  const tasks = new TaskHierarchyService(path.resolve(root, 'data/devflow_unified.sqlite'));
   await tasks.initialize();
-  const semantic = new SemanticMemoryService(tasks, path.resolve(root, 'data/devflow.sqlite'));
+  const semantic = new SemanticMemoryService(tasks, path.resolve(root, 'data/data/devflow_unified.sqlite'));
   semantic.registerEmbeddingModel(new LocalEmbeddingModel());
 
   const temp = await tasks.createTask({

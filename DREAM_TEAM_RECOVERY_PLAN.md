@@ -148,7 +148,7 @@ interface BatchTask {
 ```typescript
 // Primary MCP Servers
 const dreamTeamServers = {
-  codex: 'mcp__ctir-router-mcp__route_task', // OpenRouter GPT-5
+  codex: 'mcp__codex-cli__codex',            // Codex CLI
   gemini: 'mcp__gemini-cli__ask-gemini',     // Gemini CLI
   qwen: 'mcp__qwen-code__ask-qwen',          // Qwen CLI
   synthetic: 'mcp__devflow-synthetic-cc-sessions__synthetic_auto' // Fallback
