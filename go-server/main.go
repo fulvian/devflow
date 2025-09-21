@@ -15,7 +15,10 @@ import (
 )
 
 func main() {
-    port := os.Getenv("GRPC_PORT")
+    port := os.Getenv("GO_GRPC_PORT")
+    if port == "" {
+        port = os.Getenv("GRPC_PORT")
+    }
     if port == "" {
         port = "50051"
     }

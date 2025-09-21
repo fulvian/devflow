@@ -194,7 +194,7 @@ module.exports = CCToolsGRPCServer;
 // Entry point for direct execution
 if (require.main === module) {
   const server = new CCToolsGRPCServer({
-    port: process.env.GRPC_PORT || process.env.CCTOOLS_GRPC_PORT || 50052,
+    port: process.env.CCTOOLS_GRPC_PORT || 50052,
     enableValidation: true,
     enableDebugging: process.env.NODE_ENV !== 'production'
   });
