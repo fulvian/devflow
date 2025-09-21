@@ -29,9 +29,9 @@ def try_import_stubs():
 
 
 def test_connection() -> Optional[grpc.Channel]:
-    """Test basic gRPC connection to localhost:50051"""
+    """Test basic gRPC connection to localhost:50052"""
     try:
-        channel = grpc.insecure_channel('localhost:50051')
+        channel = grpc.insecure_channel('localhost:50052')
         grpc.channel_ready_future(channel).result(timeout=5)
         print("✅ gRPC channel connected successfully")
         return channel
@@ -108,4 +108,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     sys.exit(main())
-

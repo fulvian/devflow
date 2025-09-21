@@ -6,6 +6,10 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/user-messages.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/project-lifecycle-automation.py"
           }
         ]
       }
@@ -35,6 +39,10 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-transcript-link.py"
+          },
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/orchestration-hook.js"
           }
         ]
       },
@@ -53,6 +61,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
+          },
+          {
+            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use.py"
           },
           {
@@ -61,11 +73,11 @@
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use-footer.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-limit-detector.js"
           }
         ]
       }
@@ -81,11 +93,19 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
+          },
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/cometa-activation.js"
           }
         ]
       },
       {
         "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
+          },
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-monitor.py"
@@ -116,7 +136,7 @@
   },
   "statusLine": {
     "type": "command",
-    "command": "$CLAUDE_PROJECT_DIR/.claude/enhanced-statusline.sh",
+    "command": "$CLAUDE_PROJECT_DIR/.claude/cometa-footer.sh",
     "padding": 0
   },
   "devflow": {
