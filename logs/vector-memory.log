@@ -8,32 +8,6 @@ PRAGMA synchronous = NORMAL
 [VectorMemory] Unified database schema validated successfully
 SELECT name FROM sqlite_master WHERE type='table' AND name='vector_memories'
 [VectorMemory] Initializing EmbeddingGemma model...
-
-      INSERT OR IGNORE INTO vector_memories
-      (id, content, type, embedding_vector, dimensions, model_id, metadata)
-      VALUES ('vec_001', 'DevFlow vector memory system ope'/*+8 bytes*/, 'system_status', x'000000002a36c7bbb9c5b93b2c96e33c6ef6043d6ea3573b4d9a27bdf73a71bd'/*+3040 bytes*/, 768.0, 'gemma-7b-embedding', '{"source":"production_init"}')
-    
-
-      INSERT OR IGNORE INTO vector_memories
-      (id, content, type, embedding_vector, dimensions, model_id, metadata)
-      VALUES ('vec_002', 'EmbeddingGemma model loaded succ'/*+8 bytes*/, 'model_status', x'00000000906208bd9b7e373cb0f92e3d11d5bebad703a5bc6521053ddb24433d'/*+3040 bytes*/, 768.0, 'gemma-7b-embedding', '{"source":"production_init"}')
-    
-
-      INSERT OR IGNORE INTO vector_memories
-      (id, content, type, embedding_vector, dimensions, model_id, metadata)
-      VALUES ('vec_003', 'Production vector search functio'/*+13 bytes*/, 'feature_status', x'000000002f592dbcec905a3cb216f3bcd04dba3ca15030bd196bce3ce01c46bd'/*+3040 bytes*/, 768.0, 'gemma-7b-embedding', '{"source":"production_init"}')
-    
-
-      INSERT OR IGNORE INTO vector_memories
-      (id, content, type, embedding_vector, dimensions, model_id, metadata)
-      VALUES ('vec_004', 'SQLite vector storage initialize'/*+1 bytes*/, 'storage_status', x'00000000422382bd12e655bd884c4b3cbfe6453da3cfc83c51e428bcee2e35bc'/*+3040 bytes*/, 768.0, 'gemma-7b-embedding', '{"source":"production_init"}')
-    
-
-      INSERT OR IGNORE INTO vector_memories
-      (id, content, type, embedding_vector, dimensions, model_id, metadata)
-      VALUES ('vec_005', '768-dimension embeddings generat'/*+2 bytes*/, 'technical_spec', x'0000000055a259bda0b1903db7752abd219b57bc1af2663d8fbe77bd81a6d33c'/*+3040 bytes*/, 768.0, 'gemma-7b-embedding', '{"source":"production_init"}')
-    
-[VectorMemory] Sample production vectors inserted
 [VectorMemory] EmbeddingGemma model initialized
 [VectorMemory] Vector memory initialized successfully
 [VectorMemory] Production service running on port 3008

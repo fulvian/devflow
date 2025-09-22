@@ -575,49 +575,151 @@ class DevFlowIntegration:
         except Exception as e:
             self.log(f"Error recording platform metrics: {str(e)}", 'WARN')
     
+    # UNIFIED ORCHESTRATOR v1.0 API FUNCTIONS
+
+    async def call_unified_orchestrator_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Submit task to Unified Orchestrator v1.0 with fallback chain support"""
+        return await self.call_devflow_orchestrator_api("POST", "/api/tasks", task_data)
+
+    async def get_orchestrator_mode(self) -> Dict[str, Any]:
+        """Get current operational mode from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/api/mode")
+
+    async def switch_orchestrator_mode(self, mode: str) -> Dict[str, Any]:
+        """Switch Unified Orchestrator operational mode"""
+        if mode not in ['claude-only', 'all-mode', 'cli-only', 'synthetic-only']:
+            return {"error": f"Invalid mode: {mode}. Valid modes: claude-only, all-mode, cli-only, synthetic-only"}
+        return await self.call_devflow_orchestrator_api("POST", f"/mode/switch/{mode}")
+
+    async def get_agents_performance(self) -> Dict[str, Any]:
+        """Get agents performance metrics from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/agents/performance")
+
+    async def get_orchestrator_metrics(self) -> Dict[str, Any]:
+        """Get performance metrics from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/api/metrics")
+
+    async def get_orchestrator_platforms(self) -> Dict[str, Any]:
+        """Get registered platforms from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/api/platforms")
+
+    async def route_task_intelligently(self, task_characteristics: Dict[str, Any]) -> Dict[str, Any]:
+        """Use intelligent routing system of Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("POST", "/api/route", {"taskCharacteristics": task_characteristics})
+
     async def call_real_dream_team_orchestrator(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
-        """Call the Real Dream Team Orchestrator API to delegate complex tasks"""
-        url = "http://localhost:3200/execute"
-        
-        try:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    url,
-                    json=task_data,
-                    timeout=aiohttp.ClientTimeout(total=30)
-                ) as response:
-                    if response.status == 200:
-                        result = await response.json()
-                        self.log(f"Orchestrator task executed successfully")
-                        return result
-                    else:
-                        error_text = await response.text()
-                        self.log(f"Orchestrator API error {response.status}: {error_text}", 'ERROR')
-                        return {
-                            "error": f"Orchestrator API error {response.status}",
-                            "details": error_text
-                        }
-        except aiohttp.ClientError as e:
-            self.log(f"Failed to connect to orchestrator: {e}", 'ERROR')
-            return {"error": "Failed to connect to orchestrator", "details": str(e)}
-        except asyncio.TimeoutError as e:
-            self.log(f"Orchestrator request timeout: {e}", 'ERROR')
-            return {"error": "Orchestrator request timeout", "details": str(e)}
-        except Exception as e:
-            self.log(f"Unexpected error calling orchestrator: {e}", 'ERROR')
-            return {"error": "Unexpected error calling orchestrator", "details": str(e)}
+        """LEGACY: Redirect to Unified Orchestrator v1.0 with intelligent routing"""
+        # Convert legacy call to new architecture
+        task_characteristics = {
+            "type": task_data.get("type", "general"),
+            "complexity": task_data.get("complexity", "medium"),
+            "domain": task_data.get("domain", "general")
+        }
+
+        # First get intelligent routing decision
+        routing_result = await self.route_task_intelligently(task_characteristics)
+        if "error" in routing_result:
+            return routing_result
+
+        # Then submit task with routing information
+        enhanced_task_data = {
+            **task_data,
+            "routing": routing_result,
+            "orchestrator_version": "v1.0"
+        }
+
+        return await self.call_unified_orchestrator_task(enhanced_task_data)
 
     async def check_orchestrator_health(self) -> bool:
-        """Check if the Real Dream Team Orchestrator is healthy"""
-        url = "http://localhost:3200/health"
-        
+        """Check if the Unified Orchestrator v1.0 is healthy"""
         try:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(url, timeout=aiohttp.ClientTimeout(total=5)) as response:
-                    return response.status == 200
+            health_response = await self.call_devflow_orchestrator_api("GET", "/health")
+            return "status" in health_response and health_response["status"] in ["healthy", "unhealthy"]
         except Exception as e:
             self.log(f"Orchestrator health check failed: {e}", 'WARN')
             return False
+
+    async def handle_orchestrator_command(self, command: str) -> Dict[str, Any]:
+        """Handle natural language orchestrator commands and convert to API calls"""
+        command_lower = command.lower().strip()
+
+        try:
+            # Mode switching commands
+            if "modalità" in command_lower or "mode" in command_lower:
+                if "claude-only" in command_lower or "solo claude" in command_lower:
+                    result = await self.switch_orchestrator_mode("claude-only")
+                    return {"output": f"🎯 Modalità Claude-Only attivata: {result.get('message', 'OK')}", "success": True}
+                elif "all-mode" in command_lower or "tutte modalità" in command_lower:
+                    result = await self.switch_orchestrator_mode("all-mode")
+                    return {"output": f"🌟 Modalità All-Mode attivata: {result.get('message', 'OK')}", "success": True}
+                elif "cli-only" in command_lower or "solo cli" in command_lower:
+                    result = await self.switch_orchestrator_mode("cli-only")
+                    return {"output": f"💻 Modalità CLI-Only attivata: {result.get('message', 'OK')}", "success": True}
+                elif "synthetic-only" in command_lower or "solo synthetic" in command_lower:
+                    result = await self.switch_orchestrator_mode("synthetic-only")
+                    return {"output": f"🤖 Modalità Synthetic-Only attivata: {result.get('message', 'OK')}", "success": True}
+                elif "stato modalità" in command_lower or "current mode" in command_lower:
+                    result = await self.get_orchestrator_mode()
+                    mode = result.get('data', {}).get('mode', 'unknown')
+                    return {"output": f"📊 Modalità corrente: {mode}", "success": True}
+
+            # Performance and metrics commands
+            elif "prestazioni" in command_lower or "performance" in command_lower:
+                if "agenti" in command_lower or "agents" in command_lower:
+                    result = await self.get_agents_performance()
+                    agents_data = result.get('data', {})
+                    output = "📈 Prestazioni Agenti:\n"
+                    for agent, metrics in agents_data.items():
+                        success_rate = metrics.get('successRate', 0)
+                        avg_time = metrics.get('averageResponseTime', 0)
+                        output += f"• {agent}: {success_rate:.1%} successo, {avg_time:.1f}ms media\n"
+                    return {"output": output, "success": True}
+                else:
+                    result = await self.get_orchestrator_metrics()
+                    metrics = result.get('data', {})
+                    return {"output": f"📊 Metriche Orchestratore: {metrics}", "success": True}
+
+            # Platform status commands
+            elif "piattaforme" in command_lower or "platforms" in command_lower:
+                result = await self.get_orchestrator_platforms()
+                platforms = result.get('data', {})
+                output = "🌐 Piattaforme Registrate:\n"
+                for platform, info in platforms.items():
+                    status = info.get('status', 'unknown')
+                    output += f"• {platform}: {status}\n"
+                return {"output": output, "success": True}
+
+            # Health check commands
+            elif "salute" in command_lower or "health" in command_lower or "stato orchestratore" in command_lower:
+                is_healthy = await self.check_orchestrator_health()
+                status = "🟢 Sano" if is_healthy else "🔴 Non risponde"
+                return {"output": f"💚 Stato Orchestratore: {status}", "success": True}
+
+            # Task routing commands
+            elif "instrada" in command_lower or "route" in command_lower:
+                # Extract task characteristics from command
+                task_chars = {"type": "general", "complexity": "medium", "domain": "general"}
+
+                if "complesso" in command_lower or "complex" in command_lower:
+                    task_chars["complexity"] = "high"
+                elif "semplice" in command_lower or "simple" in command_lower:
+                    task_chars["complexity"] = "low"
+
+                if "codice" in command_lower or "code" in command_lower:
+                    task_chars["domain"] = "coding"
+                elif "architettura" in command_lower or "architecture" in command_lower:
+                    task_chars["domain"] = "architecture"
+
+                result = await self.route_task_intelligently(task_chars)
+                routing = result.get('data', {})
+                return {"output": f"🎯 Instradamento: {routing}", "success": True}
+
+            else:
+                return {"output": f"❓ Comando orchestratore non riconosciuto: {command}", "success": False}
+
+        except Exception as e:
+            self.log(f"Error handling orchestrator command: {str(e)}", 'ERROR')
+            return {"output": f"❌ Errore nell'esecuzione comando orchestratore: {str(e)}", "success": False}
 
     def assess_task_complexity(self, tool_response: str, tool_name: str) -> str:
         """Assess the complexity of a task based on tool response and name"""
@@ -837,10 +939,44 @@ storeMemory().catch(console.error);
 
         # Check if user message contains project management commands
         project_commands = ['crea progetto', 'stato progetto', 'completa task', 'avanza piano', 'aggiorna avanzamento']
+        orchestrator_commands = ['modalità', 'mode', 'prestazioni', 'performance', 'piattaforme', 'platforms', 'salute', 'health', 'stato orchestratore', 'instrada', 'route']
         user_message_lower = user_message.lower()
 
+        # Check if any orchestrator command is present (higher priority)
+        if any(cmd in user_message_lower for cmd in orchestrator_commands):
+            try:
+                self.log(f"Processing orchestrator command: {user_message}")
+
+                # Use handle_orchestrator_command to process the command
+                result = await self.handle_orchestrator_command(user_message)
+
+                if result and 'output' in result:
+                    self.log(f"Orchestrator command result: {result['output']}")
+                    return {
+                        "status": "success",
+                        "message": result['output'],
+                        "command": user_message,
+                        "command_type": "orchestrator"
+                    }
+                else:
+                    self.log("Orchestrator command returned no output")
+                    return {
+                        "status": "processed",
+                        "command": user_message,
+                        "command_type": "orchestrator"
+                    }
+
+            except Exception as e:
+                self.log(f"Error processing orchestrator command: {str(e)}", 'ERROR')
+                return {
+                    "status": "error",
+                    "error": f"Si è verificato un errore durante l'esecuzione del comando dell'orchestratore.",
+                    "details": str(e),
+                    "command_type": "orchestrator"
+                }
+
         # Check if any project command is present
-        if any(cmd in user_message_lower for cmd in project_commands):
+        elif any(cmd in user_message_lower for cmd in project_commands):
             try:
                 self.log(f"Processing project command: {user_message}")
 
