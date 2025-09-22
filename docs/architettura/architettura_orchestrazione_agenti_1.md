@@ -201,32 +201,41 @@ packages/orchestrator/unified/src/
 ## 🎯 STATO IMPLEMENTAZIONE - AGGIORNAMENTO 2025-09-23
 
 ### ✅ IMPLEMENTATO
-- **Hook di Routing Intelligente**: `.claude/hooks/intelligent-task-router.js`
+- **Hook di Routing Intelligente**: `.claude/hooks/intelligent-task-router.js` (Refactored v2.0)
+- **Architettura Centralizzata**: Hook come bridge leggero → Unified Orchestrator backend
 - **Intercettazione Automatica**: Cattura tutti i tool call `mcp__codex-cli__*`, `mcp__gemini-cli__*`, `mcp__qwen-code__*`
-- **Analisi Dimensione Task**: < 100 righe → Claude diretto, > 100 righe → routing CLI
-- **Classificazione Tipologia**: frontend/backend/AI/database/mobile
-- **Routing Specializzato**:
-  - Codex → Implementation generali, refactoring, debugging
-  - Gemini → Analytics, context analysis, reasoning complesso
-  - Qwen → Codice specialistico, performance optimization
-- **Timeout Detection + Fallback Automatico**:
-  - Codex timeout → synthetic_code (Qwen3 Coder)
-  - Gemini timeout → synthetic_reasoning (Kimi K2)
-  - Qwen timeout → synthetic_auto (GLM 4.5)
-- **Circuit Breaker Pattern**: Resilienza per agenti che falliscono ripetutamente
-- **Logging e Metriche**: Sistema completo di tracking decisioni routing
+- **Analisi Dimensione Task**: < 100 righe → Claude diretto, > 100 righe → delegazione Orchestrator
+- **Routing Centralizzato**: Tutte le decisioni gestite dall'Unified Orchestrator (porta 3005)
+- **Eliminazione Duplicazioni**: Logica di routing unificata, nessuna duplicazione tra hook e Orchestrator
+- **Fallback Automatico Verificato**:
+  - CLI → Synthetic funziona automaticamente (testato in produzione)
+  - Gemini timeout → Qwen CLI → Synthetic Qwen3 Coder ✅
+  - Logging completo delle catene di fallback
+- **HTTP Bridge Pattern**: Hook comunica via REST API con Orchestrator
+- **Fail-Open Design**: Errori di comunicazione → execuzione diretta (resilienza)
 
 ### 🔄 FUNZIONALITÀ ATTIVE
-- **Routing Trasparente**: Claude non è consapevole del routing
-- **Fallback Automatico**: Zero intervento manuale required
-- **Performance Monitoring**: Metriche salvate in `.claude/logs/routing-metrics.json`
-- **Configurazione Dinamica**: Environment variables per tuning
+- **Architettura Centralizzata**: Hook → Orchestrator → Agenti (Single Source of Truth)
+- **Routing Trasparente**: Claude non è consapevole del routing automatico
+- **Fallback Automatico**: CLI → Synthetic con timeout detection (30s CLI, fallback immediato)
+- **Performance Monitoring Unificato**:
+  - Hook metrics: `.claude/logs/routing-metrics.json`
+  - Orchestrator metrics: `/api/metrics` endpoint
+  - Logs centralizzati: `/logs/unified-orchestrator.log`
+- **Configurazione Dinamica**: Environment variables + API endpoints per tuning
+- **Bridge Pattern**: Hook leggero (< 50 righe logic) + Orchestrator completo
 
 ### 📋 REQUISITI ATTIVAZIONE
-- [ ] Riavvio Claude Code per attivazione hook
-- [ ] Test routing automatico con task > 100 righe
-- [ ] Monitoring metriche performance
-- [ ] Fine-tuning soglie e classificatori
+- [ ] Riavvio Claude Code per attivazione hook refactored
+- [x] **Test routing automatico completato**: ✅ Gemini → Qwen → Qwen3 Coder → Kimi K2 (fallback a catena)
+- [x] **Monitoring metriche attivo**: Hook + Orchestrator logging funzionante
+- [ ] Fine-tuning soglie timeout per environment production
+
+### 🎯 ARCHITETTURA FINALE RAGGIUNTA
+- **Single Source of Truth**: Unified Orchestrator (porta 3005) gestisce tutto il routing
+- **Zero Duplicazioni**: Hook come bridge leggero, logica centralizzata
+- **Fallback Automatico Verificato**: CLI → Synthetic funziona end-to-end
+- **Resilienza Totale**: Fail-open + timeout detection + multiple fallback levels
 
 ## 📈 Metriche di Successo
 
