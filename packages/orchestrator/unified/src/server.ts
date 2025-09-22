@@ -16,6 +16,7 @@ import { UnifiedOrchestrator } from './core/unified-orchestrator.js';
 import { IntelligentRoutingSystem, Platform, TaskType, TaskComplexity } from './routing/intelligent-router.js';
 import { CrossPlatformHandoffSystem, PlatformType } from './handoff/cross-platform-handoff.js';
 import { OperationalModesManager, ModeCommandInterface } from './modes/operational-modes-manager.js';
+import { MCPFallbackSystem, MCPToolCall, MCPResponse } from './fallback/mcp-fallback-system.js';
 
 // Configurazione server
 const PORT = process.env.ORCHESTRATOR_PORT || 3005;
@@ -40,6 +41,9 @@ const handoffSystem = new CrossPlatformHandoffSystem();
 const modesManager = new OperationalModesManager();
 const modeInterface = new ModeCommandInterface(modesManager);
 
+// MCP Fallback System with proper CLI → Synthetic mapping
+const mcpFallbackSystem = new MCPFallbackSystem();
+
 // Middleware base
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -51,53 +55,228 @@ app.use((req, res, next) => {
   next();
 });
 
-// Registrazione piattaforme di default
-function initializePlatforms() {
-  // Registrazione piattaforme nell'orchestratore unificato
-  unifiedOrchestrator.registerPlatform({
-    id: 'gemini',
-    name: 'Gemini',
-    endpoint: process.env.GEMINI_ENDPOINT || 'http://localhost:3001',
-    apiKey: process.env.GEMINI_API_KEY,
-    enabled: true,
-    weight: 1.0,
-    capabilities: ['analysis', 'reasoning', 'creative']
-  });
+// REAL MCP call function using Bridge Executor - Architecture v1.0 Compliant
+async function callMCPTool(call: MCPToolCall): Promise<MCPResponse> {
+  const startTime = Date.now();
 
-  unifiedOrchestrator.registerPlatform({
-    id: 'codex',
-    name: 'Codex',
-    endpoint: process.env.CODEX_ENDPOINT || 'http://localhost:3002',
-    apiKey: process.env.CODEX_API_KEY,
-    enabled: true,
-    weight: 1.0,
-    capabilities: ['code', 'generation']
-  });
+  try {
+    // Validate tool name
+    if (!call.tool) {
+      return {
+        success: false,
+        error: 'Tool name is undefined or empty',
+        executionTime: Date.now() - startTime
+      };
+    }
 
-  unifiedOrchestrator.registerPlatform({
-    id: 'qwen',
-    name: 'Qwen',
-    endpoint: process.env.QWEN_ENDPOINT || 'http://localhost:3003',
-    apiKey: process.env.QWEN_API_KEY,
-    enabled: true,
-    weight: 1.0,
-    capabilities: ['generation', 'creative', 'analysis']
-  });
+    console.log(`[MCP-REAL] Executing real tool: ${call.tool}`);
+    console.log(`[MCP-REAL] Parameters:`, JSON.stringify(call.parameters, null, 2));
 
-  // Registrazione agenti per modes manager
+    // Path to the MCP Bridge Executor
+    const bridgeExecutorPath = process.env.DEVFLOW_PROJECT_ROOT
+      ? `${process.env.DEVFLOW_PROJECT_ROOT}/tools/mcp-bridge-executor.js`
+      : '../../../tools/mcp-bridge-executor.js'; // Fix relative path from packages/orchestrator/unified
+
+    // Import required modules dynamically
+    const { spawn } = await import('child_process');
+    const { promisify } = await import('util');
+    const fs = await import('fs');
+
+    // Prepare parameters for bridge executor
+    const parametersJson = JSON.stringify(call.parameters);
+
+    // Execute bridge with timeout
+    const executeWithTimeout = async (timeout: number = 30000): Promise<MCPResponse> => {
+      return new Promise((resolve, reject) => {
+        const bridgeProcess = spawn('node', [bridgeExecutorPath, call.tool, parametersJson], {
+          stdio: ['pipe', 'pipe', 'pipe'],
+          timeout: timeout
+        });
+
+        let stdout = '';
+        let stderr = '';
+
+        bridgeProcess.stdout.on('data', (data) => {
+          stdout += data.toString();
+        });
+
+        bridgeProcess.stderr.on('data', (data) => {
+          stderr += data.toString();
+        });
+
+        bridgeProcess.on('close', (code) => {
+          try {
+            if (code === 0 && stdout.trim()) {
+              // Parse the JSON response from bridge executor
+              const result = JSON.parse(stdout.trim());
+              resolve({
+                success: result.success || false,
+                result: result.result || result.error || 'No result',
+                error: result.success ? undefined : (result.error || 'Unknown error'),
+                executionTime: Date.now() - startTime,
+                metadata: {
+                  bridgeExecutor: true,
+                  toolType: result.toolType || 'unknown',
+                  taskId: result.taskId || undefined,
+                  authRequired: result.authRequired || false
+                }
+              });
+            } else {
+              resolve({
+                success: false,
+                error: `Bridge executor failed with code ${code}. stderr: ${stderr}`,
+                executionTime: Date.now() - startTime
+              });
+            }
+          } catch (parseError) {
+            resolve({
+              success: false,
+              error: `Failed to parse bridge response: ${parseError.message}. Raw output: ${stdout}`,
+              executionTime: Date.now() - startTime
+            });
+          }
+        });
+
+        bridgeProcess.on('error', (error) => {
+          reject(new Error(`Bridge executor spawn error: ${error.message}`));
+        });
+
+        // Handle timeout
+        setTimeout(() => {
+          bridgeProcess.kill('SIGTERM');
+          resolve({
+            success: false,
+            error: `Tool execution timeout after ${timeout}ms`,
+            executionTime: Date.now() - startTime
+          });
+        }, timeout);
+      });
+    };
+
+    // Execute with dynamic timeout based on tool type
+    const timeout = (call.tool && call.tool.includes('synthetic')) ? 45000 : 30000; // Synthetic tools get more time
+    const result = await executeWithTimeout(timeout);
+
+    console.log(`[MCP-REAL] Tool ${call.tool} completed:`, {
+      success: result.success,
+      executionTime: result.executionTime,
+      hasError: !!result.error
+    });
+
+    return result;
+
+  } catch (error) {
+    console.error(`[MCP-REAL] Error executing ${call.tool}:`, error);
+    return {
+      success: false,
+      error: error instanceof Error ? error.message : String(error),
+      executionTime: Date.now() - startTime
+    };
+  }
+}
+
+// Initialize MCP Fallback System and agents
+function initializeMCPFallbackSystem() {
+  // Configure MCP fallback system with MCP call function
+  mcpFallbackSystem.setMCPCallFunction(callMCPTool);
+
+  // Set initial operational mode (sync with modes manager)
+  mcpFallbackSystem.setOperationalMode(modeInterface.getCurrentMode());
+
+  // Register CLI and Synthetic agents in the modes manager
+  // CLI Agents
   modesManager.registerAgent({
-    id: 'claude-agent-1',
-    name: 'Claude Sonnet',
-    capabilities: ['reasoning', 'analysis', 'code', 'creative'],
+    id: 'codex-cli',
+    name: 'Codex CLI',
+    capabilities: ['code', 'reasoning', 'tools', 'heavy-computation'],
+    performanceMetrics: {
+      tasksCompleted: 0,
+      avgResponseTime: 2000,
+      errorRate: 0.3
+    },
+    isActive: true
+  });
+
+  modesManager.registerAgent({
+    id: 'gemini-cli',
+    name: 'Gemini CLI',
+    capabilities: ['frontend', 'refactoring', 'analysis', 'creative'],
+    performanceMetrics: {
+      tasksCompleted: 0,
+      avgResponseTime: 1500,
+      errorRate: 0.2
+    },
+    isActive: true
+  });
+
+  modesManager.registerAgent({
+    id: 'qwen-cli',
+    name: 'Qwen CLI',
+    capabilities: ['backend', 'automation', 'fast-patching', 'generation'],
     performanceMetrics: {
       tasksCompleted: 0,
       avgResponseTime: 1000,
+      errorRate: 0.1
+    },
+    isActive: true
+  });
+
+  // Synthetic Fallback Agents
+  modesManager.registerAgent({
+    id: 'qwen3-coder',
+    name: 'Qwen3 Coder (Synthetic)',
+    capabilities: ['code', 'reasoning', 'tools', 'heavy-computation'],
+    performanceMetrics: {
+      tasksCompleted: 0,
+      avgResponseTime: 3000,
+      errorRate: 0.05
+    },
+    isActive: true
+  });
+
+  modesManager.registerAgent({
+    id: 'kimi-k2',
+    name: 'Kimi K2 (Synthetic)',
+    capabilities: ['frontend', 'refactoring', 'robust-processing'],
+    performanceMetrics: {
+      tasksCompleted: 0,
+      avgResponseTime: 2500,
+      errorRate: 0.05
+    },
+    isActive: true
+  });
+
+  modesManager.registerAgent({
+    id: 'glm-4.5',
+    name: 'GLM 4.5 (Synthetic)',
+    capabilities: ['backend', 'automation', 'fast-patching'],
+    performanceMetrics: {
+      tasksCompleted: 0,
+      avgResponseTime: 2000,
+      errorRate: 0.05
+    },
+    isActive: true
+  });
+
+  // Claude as supreme orchestrator and emergency fallback
+  modesManager.registerAgent({
+    id: 'claude-sonnet',
+    name: 'Claude Sonnet (Supreme Orchestrator)',
+    capabilities: ['reasoning', 'analysis', 'code', 'creative', 'emergency', 'orchestration'],
+    performanceMetrics: {
+      tasksCompleted: 0,
+      avgResponseTime: 1200,
       errorRate: 0.01
     },
     isActive: true
   });
 
-  console.log('✅ Platforms and agents initialized');
+  console.log('✅ MCP Fallback System initialized with CLI → Synthetic mapping');
+  console.log('✅ Agents registered:', {
+    cli: ['codex-cli', 'gemini-cli', 'qwen-cli'],
+    synthetic: ['qwen3-coder', 'kimi-k2', 'glm-4.5'],
+    orchestrator: ['claude-sonnet']
+  });
 }
 
 // Health check endpoint
@@ -152,15 +331,25 @@ app.post('/mode/switch/:mode', (req, res) => {
     const previousMode = modeInterface.getCurrentMode();
     const result = modeInterface.changeMode(mode as any);
 
+    // Sync operational mode with MCP fallback system
+    if (result.success) {
+      mcpFallbackSystem.setOperationalMode(mode as any);
+      console.log(`[MCP] Fallback system mode synchronized to: ${mode}`);
+    }
+
     // Log mode change per audit trail
     console.log(`[AUDIT] Mode switched from ${previousMode} to ${mode} at ${new Date().toISOString()}`);
+
+    // Get fallback configuration for the new mode
+    const fallbackConfig = mcpFallbackSystem.getConfiguration();
 
     // Emit WebSocket event per modeChange
     io.emit('modeChange', {
       from: previousMode,
       to: mode,
       timestamp: new Date().toISOString(),
-      success: result.success
+      success: result.success,
+      fallbackChains: fallbackConfig.fallbackChains[mode as keyof typeof fallbackConfig.fallbackChains]
     });
 
     res.json({
@@ -168,7 +357,12 @@ app.post('/mode/switch/:mode', (req, res) => {
       message: result.message,
       previousMode,
       newMode: mode,
-      timestamp: new Date().toISOString()
+      timestamp: new Date().toISOString(),
+      fallbackConfiguration: {
+        operationalMode: mode,
+        fallbackChain: fallbackConfig.fallbackChains[mode as keyof typeof fallbackConfig.fallbackChains],
+        cliToSyntheticMapping: fallbackConfig.cliToSyntheticMapping
+      }
     });
   } catch (error) {
     res.status(400).json({
@@ -211,25 +405,66 @@ app.get('/agents/performance', (req, res) => {
   }
 });
 
-// Task submission endpoint
+// Task submission endpoint - uses MCP Fallback System
 app.post('/api/tasks', async (req, res) => {
   try {
-    const { id, type, payload, priority } = req.body;
+    const { id, type, payload, priority, description, preferredAgent } = req.body;
 
-    const task = {
-      id: id || `task-${Date.now()}`,
-      type: type || 'general',
-      payload: payload || {},
-      priority: priority || 'medium'
-    };
+    const taskId = id || `task-${Date.now()}`;
+    const taskType = type || 'general';
+    const taskDescription = description || payload?.description || `Execute ${taskType} task`;
 
-    const result = await unifiedOrchestrator.submitTask(task);
-    res.json(result);
+    console.log(`[TASK] Submitting task ${taskId} (${taskType}): ${taskDescription}`);
+    console.log(`[TASK] Current mode: ${modeInterface.getCurrentMode()}, Preferred agent: ${preferredAgent || 'auto'}`);
+
+    // Execute task using MCP fallback system with proper CLI → Synthetic fallback chains
+    const fallbackResult = await mcpFallbackSystem.executeWithFallback(
+      taskDescription,
+      taskType,
+      preferredAgent
+    );
+
+    // Update agent performance metrics if task was successful
+    if (fallbackResult.success && fallbackResult.agentUsed !== 'claude-emergency') {
+      modesManager.updatePerformanceMetrics(1, 0, fallbackResult.totalExecutionTime);
+    } else if (!fallbackResult.success) {
+      modesManager.updatePerformanceMetrics(0, 1, fallbackResult.totalExecutionTime);
+    }
+
+    // Emit WebSocket event for real-time task monitoring
+    io.emit('taskCompleted', {
+      taskId,
+      success: fallbackResult.success,
+      agentUsed: fallbackResult.agentUsed,
+      fallbacksUsed: fallbackResult.fallbacksUsed,
+      executionTime: fallbackResult.totalExecutionTime,
+      timestamp: new Date().toISOString(),
+      mode: modeInterface.getCurrentMode()
+    });
+
+    // Return result in unified orchestrator format for compatibility
+    res.json({
+      taskId,
+      platformId: fallbackResult.agentUsed,
+      success: fallbackResult.success,
+      result: fallbackResult.result,
+      error: fallbackResult.error,
+      executionTime: fallbackResult.totalExecutionTime,
+      metadata: {
+        type: taskType,
+        operationalMode: modeInterface.getCurrentMode(),
+        fallbacksUsed: fallbackResult.fallbacksUsed,
+        fallbackChainActivated: fallbackResult.fallbacksUsed.length > 0
+      }
+    });
+
   } catch (error) {
     console.error('Task submission error:', error);
     res.status(500).json({
       error: 'Task submission failed',
-      message: error instanceof Error ? error.message : String(error)
+      message: error instanceof Error ? error.message : String(error),
+      taskId: req.body.id || `task-${Date.now()}`,
+      success: false
     });
   }
 });
@@ -250,13 +485,69 @@ app.get('/api/metrics', (req, res) => {
   }
 });
 
-// Platforms endpoint
+// Platforms endpoint - shows MCP agents and fallback configuration
 app.get('/api/platforms', (req, res) => {
   try {
-    const platforms = unifiedOrchestrator.listPlatforms();
-    res.json(platforms);
+    const fallbackConfig = mcpFallbackSystem.getConfiguration();
+    const agentsStatus = modesManager.getSystemStatus();
+
+    res.json({
+      operationalMode: fallbackConfig.operationalMode,
+      fallbackChains: fallbackConfig.fallbackChains,
+      cliToSyntheticMapping: fallbackConfig.cliToSyntheticMapping,
+      agentsStatus: {
+        currentMode: agentsStatus.currentMode,
+        activeAgents: agentsStatus.activeAgents,
+        queuedTasks: agentsStatus.queuedTasks,
+        performance: agentsStatus.performance
+      },
+      mcpTools: {
+        cli: {
+          codex: 'mcp__codex-cli__codex',
+          gemini: 'mcp__gemini-cli__ask-gemini',
+          qwen: 'mcp__qwen-code__ask-qwen'
+        },
+        synthetic: {
+          'qwen3-coder': 'mcp__devflow-synthetic-cc-sessions__synthetic_auto',
+          'kimi-k2': 'mcp__devflow-synthetic-cc-sessions__synthetic_auto',
+          'glm-4.5': 'mcp__devflow-synthetic-cc-sessions__synthetic_auto'
+        }
+      }
+    });
   } catch (error) {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+// Fallback system test endpoint
+app.post('/api/test-fallback', async (req, res) => {
+  try {
+    const { taskDescription, preferredAgent } = req.body;
+
+    const testTask = taskDescription || "Generate a simple hello world function in TypeScript";
+    console.log(`[TEST] Testing fallback system with task: ${testTask}`);
+    console.log(`[TEST] Current mode: ${modeInterface.getCurrentMode()}, Preferred agent: ${preferredAgent || 'auto'}`);
+
+    const testResult = await mcpFallbackSystem.executeWithFallback(
+      testTask,
+      'code-generation',
+      preferredAgent
+    );
+
+    res.json({
+      testTask,
+      mode: modeInterface.getCurrentMode(),
+      preferredAgent: preferredAgent || 'auto',
+      result: testResult,
+      fallbackConfiguration: mcpFallbackSystem.getConfiguration(),
+      timestamp: new Date().toISOString()
+    });
+
+  } catch (error) {
+    res.status(500).json({
+      error: 'Fallback test failed',
+      message: error instanceof Error ? error.message : String(error)
+    });
   }
 });
 
@@ -342,20 +633,27 @@ async function startServer() {
   try {
     console.log('🚀 Starting DevFlow Unified Orchestrator...');
 
-    // Inizializza piattaforme
-    initializePlatforms();
+    // Initialize MCP Fallback System with CLI → Synthetic mapping
+    initializeMCPFallbackSystem();
 
-    // Avvia orchestratore unificato
+    // Start unified orchestrator for compatibility
     await unifiedOrchestrator.start();
     console.log('✅ Unified Orchestrator started');
 
-    // Avvia server HTTP
+    // Start HTTP server
     server.listen(PORT, () => {
       console.log(`🌐 DevFlow Unified Orchestrator listening on port ${PORT}`);
       console.log(`📊 Health check: http://localhost:${PORT}/health`);
-      console.log(`🎛️  Mode management: http://localhost:${PORT}/api/mode`);
+      console.log(`🎛️  Mode management: http://localhost:${PORT}/mode/switch/:mode`);
       console.log(`📈 Metrics: http://localhost:${PORT}/api/metrics`);
+      console.log(`🔧 Platforms: http://localhost:${PORT}/api/platforms`);
+      console.log(`🧪 Test fallback: http://localhost:${PORT}/api/test-fallback`);
       console.log(`🔄 Current mode: ${modeInterface.getCurrentMode()}`);
+      console.log(`⚡ MCP Fallback System: ACTIVE with CLI → Synthetic mapping`);
+
+      // Log current fallback configuration
+      const fallbackConfig = mcpFallbackSystem.getConfiguration();
+      console.log(`📋 Fallback chains:`, JSON.stringify(fallbackConfig.fallbackChains, null, 2));
     });
 
   } catch (error) {
