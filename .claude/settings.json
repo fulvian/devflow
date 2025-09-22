@@ -46,6 +46,10 @@
         "hooks": [
           {
             "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/devflow-enforcement-guard.js"
+          },
+          {
+            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
           }
         ]
