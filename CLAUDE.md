@@ -91,14 +91,24 @@ For rollback information: `./backups/20250922_010603/`
 
 ---
 
-## Synthetic Delegation Protocol
+## Unified Orchestrator Protocol (UPDATED 2025-09-22)
 
-### Mandatory Delegation Requirements
-1. **All coding activities must be synthetically delegated**
-2. **Human participants may only specify requirements, not implementation details**
-3. **AI agents must generate complete solutions with verification mechanisms**
-4. **All delegated tasks must include self-validation components**
-5. **Human review is limited to specification verification, not code inspection**
+### Orchestration Hierarchy (MANDATORY)
+1. **Claude Sonnet**: Supremo orchestratore - unico responsabile di tutte le decisioni strategiche
+2. **Unified Orchestrator**: Sistema centrale di routing e coordinamento agenti
+3. **CLI Agents (Primary)**: Codex, Gemini, Qwen Code - esecuzione diretta task
+4. **Synthetic Agents (Fallback)**: Qwen3 Coder, Kimi K2, GLM 4.5 - solo se CLI fallisce
+5. **Cross-Verification**: Nessun agente può verificare il proprio lavoro
+
+### Mandatory Task Flow
+1. **Claude Sonnet** riceve task e specifica requisiti
+2. **Unified Orchestrator** analizza task e seleziona CLI Agent ottimale
+3. **CLI Agent** esegue task (Codex/Gemini/Qwen) con timeout dinamico
+4. **Fallback automatico** a Synthetic specifico se CLI fallisce:
+   - Codex CLI → Qwen3 Coder (Synthetic)
+   - Gemini CLI → Kimi K2 (Synthetic)
+   - Qwen CLI → GLM 4.5 (Synthetic)
+5. **Cross-Verification** da agente diverso (no auto-verifica)
 
 ### Delegation Process
 
@@ -124,14 +134,25 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 
 ---
 
-## MCP Integration Standards
+## MCP Integration Standards (UPDATED 2025-09-22)
 
-### Required MCP Tool Usage
-1. **MANDATORY Synthetic Delegation**: ALL coding tasks MUST use `mcp__devflow-synthetic-cc-sessions__synthetic_*` tools
-2. **NO DIRECT CODING**: Human participants may NEVER write code directly - only via Synthetic agents
+### Required Orchestrator Usage
+1. **MANDATORY Unified Orchestrator**: ALL coding tasks MUST go through Unified Orchestrator system
+2. **NO DIRECT AGENT CALLS**: Never call CLI or Synthetic agents directly - only via Orchestrator
 3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-AUTH-001)
-4. **Tool Selection Priority**: synthetic_code → synthetic_reasoning → synthetic_context → synthetic_auto
-5. **Verification Required**: All Synthetic outputs must pass continuous verification before integration
+4. **Orchestrator Flow**: Task submission → CLI selection → Execution → Fallback (if needed)
+5. **Verification Required**: All outputs must pass cross-verification before integration
+
+### Operational Mode Compliance
+- **all-mode**: Full stack (CLI + Synthetic + Cross-verification)
+- **claude-only**: Solo Claude (bypass enforcement 100 righe)
+- **cli-only**: CLI + Claude (no Synthetic)
+- **synthetic-only**: Synthetic + Claude (no CLI)
+
+### Unified Orchestrator Endpoints
+- **Task Submission**: POST `/api/tasks` to Unified Orchestrator
+- **Mode Management**: POST `/api/mode/:modeName` for operational mode switching
+- **Performance Monitoring**: GET `/api/metrics` for real-time system metrics
 
 ### Anti-Circumvention for MCP
 - Using Task tool to bypass line limits is PROHIBITED
@@ -150,12 +171,13 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 4. **Enforcement Tools**: Pre-commit hooks BLOCK violations immediately
 5. **Penalties**: Violations result in automatic commit rejection + Level 1 penalty
 
-### Synthetic Delegation Enforcement (MANDATORY)
-1. **ALL CODING TASKS**: Must be delegated to Synthetic agents via MCP tools
+### Unified Orchestrator Enforcement (MANDATORY)
+1. **ALL CODING TASKS**: Must be submitted to Unified Orchestrator system
 2. **NO MANUAL CODING**: Direct code writing by humans is PROHIBITED
-3. **Task Tool Restrictions**: Using Task tool for coding bypasses is PROHIBITED
-4. **Verification Required**: All Synthetic code must pass meta-verification
-5. **Enforcement**: Violations trigger immediate access suspension
+3. **NO DIRECT AGENT CALLS**: Bypassing orchestrator via direct CLI/Synthetic calls is PROHIBITED
+4. **Operational Mode Compliance**: Must respect current mode (all-mode, claude-only, cli-only, synthetic-only)
+5. **Verification Required**: All agent outputs must pass cross-verification
+6. **Enforcement**: Violations trigger immediate access suspension
 
 ### Database Management Enforcement (MANDATORY)
 1. **Automatic Tracking**: All projects-plans-roadmaps-macrotasks-microtasks-sessions MUST be auto-logged

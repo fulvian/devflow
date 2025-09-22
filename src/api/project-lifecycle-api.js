@@ -36,7 +36,7 @@ const logger = winston.createLogger({
 });
 
 // Database connection
-const dbPath = path.resolve(__dirname, '../../devflow.sqlite');
+const dbPath = path.resolve(__dirname, '../../data/devflow_unified.sqlite');
 const db = new sqlite3.Database(dbPath, (err) => {
   if (err) {
     logger.error('Database connection error:', err);
@@ -106,16 +106,30 @@ const errorHandler = (err, req, res, next) => {
 app.post('/projects', async (req, res, next) => {
   try {
     const { name, description, startDate, endDate } = req.body;
-    
+
     if (!name) {
       return res.status(400).json({ error: 'Project name is required' });
     }
-    
+
+    // Check if project with same name already exists (case-insensitive)
+    const existingProject = await allQuery(
+      'SELECT id, name FROM projects WHERE LOWER(name) = LOWER(?)',
+      [name]
+    );
+
+    if (existingProject.length > 0) {
+      return res.status(409).json({
+        error: 'Project already exists',
+        message: `Un progetto con nome "${existingProject[0].name}" esiste già`,
+        existingProject: existingProject[0]
+      });
+    }
+
     const query = `
       INSERT INTO projects (name, description, start_date, end_date, status, progress)
       VALUES (?, ?, ?, ?, 'active', 0)
     `;
-    
+
     const result = await runQuery(query, [name, description, startDate, endDate]);
     
     res.status(201).json({
