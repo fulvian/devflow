@@ -77,10 +77,29 @@ load_environment() {
 }
 
 # Set default values for core services
+#
+# IMPORTANTE: PROTOCOLLO GESTIONE PORTE PER SVILUPPATORI
+# =======================================================
+# REGOLA 1: Nessuna porta deve mai essere hardcoded nel codice
+# REGOLA 2: Tutte le porte devono essere configurabili tramite .env
+# REGOLA 3: Ogni porta deve avere un valore di default ragionevole
+# REGOLA 4: Le porte di default devono evitare conflitti comuni
+# REGOLA 5: Documentare ogni porta con commento esplicativo
+#
+# Convenzioni porte DevFlow:
+# - 3000-3999: Servizi core DevFlow
+# - 8000-8999: Servizi esterni/bridge (MCP servers, etc.)
+# - Evitare: 3000, 8000, 8080 (porte comuni in conflitto)
+#
 set_defaults() {
-    export ORCHESTRATOR_PORT=${ORCHESTRATOR_PORT:-3005}
-    export DB_MANAGER_PORT=${DB_MANAGER_PORT:-3002}
-    export VECTOR_MEMORY_PORT=${VECTOR_MEMORY_PORT:-3008}
+    # Core DevFlow Services (range 3000-3999)
+    export ORCHESTRATOR_PORT=${ORCHESTRATOR_PORT:-3005}        # Unified Orchestrator
+    export DB_MANAGER_PORT=${DB_MANAGER_PORT:-3002}            # Database Manager
+    export VECTOR_MEMORY_PORT=${VECTOR_MEMORY_PORT:-3008}      # Vector Memory Service
+
+    # External Bridge Services (range 8000-8999)
+    export CODEX_SERVER_PORT=${CODEX_SERVER_PORT:-8013}        # OpenAI Codex MCP Server
+    export ENFORCEMENT_DAEMON_PORT=${ENFORCEMENT_DAEMON_PORT:-8787}  # Claude Code Enforcement
 
     # Set DevFlow defaults
     export DEVFLOW_ENABLED=${DEVFLOW_ENABLED:-true}
@@ -91,6 +110,7 @@ set_defaults() {
     export DEVFLOW_PROJECT_ROOT=${DEVFLOW_PROJECT_ROOT:-$(pwd)}
 
     print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Vector Memory: $VECTOR_MEMORY_PORT"
+    print_info "Bridge services - Codex Server: $CODEX_SERVER_PORT, Enforcement: $ENFORCEMENT_DAEMON_PORT"
     print_info "DevFlow config - DB: $DEVFLOW_DB_PATH, Project Root: $DEVFLOW_PROJECT_ROOT"
 }
 
@@ -98,8 +118,8 @@ set_defaults() {
 cleanup_services() {
     print_status "🧹 Cleaning up existing DevFlow processes..."
 
-    # Clean up PID files first
-    local pid_files=(".orchestrator.pid" ".database.pid" ".vector.pid")
+    # Clean up PID files first (including enforcement and codex)
+    local pid_files=(".orchestrator.pid" ".database.pid" ".vector.pid" ".enforcement.pid" ".codex.pid")
     for pid_file in "${pid_files[@]}"; do
         if [ -f "$PROJECT_ROOT/$pid_file" ]; then
             local pid=$(cat "$PROJECT_ROOT/$pid_file")
@@ -113,13 +133,28 @@ cleanup_services() {
         fi
     done
 
+    # Clean up enforcement daemon PID file
+    local enforcement_pid_file="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
+    if [ -f "$enforcement_pid_file" ]; then
+        local pid=$(cat "$enforcement_pid_file")
+        if kill -0 "$pid" 2>/dev/null; then
+            print_status "Stopping enforcement daemon (PID: $pid)"
+            kill -TERM "$pid" 2>/dev/null || true
+            sleep 2
+            kill -KILL "$pid" 2>/dev/null || true
+        fi
+        rm -f "$enforcement_pid_file"
+    fi
+
     # Force kill processes by pattern
     pkill -f "unified-orchestrator" 2>/dev/null || true
     pkill -f "database-daemon" 2>/dev/null || true
     pkill -f "vector-memory-service" 2>/dev/null || true
+    pkill -f "enforcement-daemon" 2>/dev/null || true
+    pkill -f "codex_server" 2>/dev/null || true
 
-    # Clean up ports brutally
-    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $VECTOR_MEMORY_PORT)
+    # Clean up ports brutally (all configurable ports from .env)
+    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $VECTOR_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
 
     for port in "${DEVFLOW_PORTS[@]}"; do
         local port_pids=$(lsof -ti:$port 2>/dev/null || true)
@@ -132,6 +167,97 @@ cleanup_services() {
     done
 
     print_status "✅ Cleanup completed"
+}
+
+# Start Claude Code Enforcement System (daemon-based production system)
+start_enforcement() {
+    print_status "Starting Claude Code Enforcement Daemon..."
+
+    # Check if daemon binary exists
+    local daemon_path="$PROJECT_ROOT/dist/enforcement-daemon.js"
+    if [ ! -f "$daemon_path" ]; then
+        print_warning "Enforcement daemon not found at $daemon_path - skipping enforcement"
+        return 0
+    fi
+
+    # Always clean up stale PID files at the start
+    rm -f "$PROJECT_ROOT/.enforcement.pid"
+
+    # Clean up stale daemon PID files
+    local pid_file_actual="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
+    if [ -f "$pid_file_actual" ]; then
+        local existing_pid=$(cat "$pid_file_actual")
+        if ! kill -0 "$existing_pid" 2>/dev/null; then
+            rm -f "$pid_file_actual"
+        fi
+    fi
+
+    # Check if already running via health check
+    if curl -sf --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" >/dev/null 2>&1; then
+        # Health check passed, ensure PID file exists
+        if [ -f "$pid_file_actual" ]; then
+            local actual_pid=$(cat "$pid_file_actual")
+            echo $actual_pid > "$PROJECT_ROOT/.enforcement.pid"
+            print_status "Claude Code Enforcement Daemon already running (PID: $actual_pid)"
+        else
+            print_status "Claude Code Enforcement Daemon already running"
+        fi
+        return 0
+    fi
+
+    # Create logs directory if it doesn't exist
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start enforcement daemon in daemon mode
+    nohup node "$daemon_path" --daemon > logs/enforcement-daemon.log 2>&1 &
+    local daemon_pid=$!
+
+    # Wait for daemon to initialize
+    print_status "Waiting for enforcement daemon to initialize..."
+    sleep 5
+
+    # Validate daemon is running via PID file
+    local pid_file="$PROJECT_ROOT/devflow-enforcement-daemon.pid"
+    if [ -f "$pid_file" ]; then
+        local actual_pid=$(cat "$pid_file")
+        if kill -0 $actual_pid 2>/dev/null; then
+            print_status "Claude Code Enforcement Daemon started (PID: $actual_pid)"
+
+            # Perform health check validation
+            local health_check_attempts=0
+            while [ $health_check_attempts -lt 10 ]; do
+                if curl -sf --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" >/dev/null 2>&1; then
+                    print_status "Health check passed - daemon is responsive"
+
+                    # Check daemon status via health endpoint
+                    local daemon_status=$(curl -s --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "UNKNOWN")
+                    print_status "Daemon status: $daemon_status"
+
+                    # Create tracking PID file
+                    echo $actual_pid > "$PROJECT_ROOT/.enforcement.pid"
+                    return 0
+                fi
+                sleep 2
+                health_check_attempts=$((health_check_attempts + 1))
+            done
+
+            print_warning "Daemon started but health check failed"
+            return 1
+        else
+            print_error "PID file exists but process not running"
+            return 1
+        fi
+    else
+        print_error "Failed to start Claude Code Enforcement Daemon - no PID file created"
+        # Show last few lines of log for debugging
+        if [ -f logs/enforcement-daemon.log ]; then
+            print_error "Last daemon log entries:"
+            tail -5 logs/enforcement-daemon.log | while read line; do
+                print_error "  $line"
+            done
+        fi
+        return 1
+    fi
 }
 
 # Start Database Manager
@@ -280,6 +406,63 @@ start_unified_orchestrator() {
     fi
 }
 
+# Start Codex Server
+start_codex_server() {
+    print_status "Starting Codex MCP Server..."
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${CODEX_SERVER_PORT}/health" >/dev/null 2>&1; then
+        print_status "Codex Server already running on port $CODEX_SERVER_PORT"
+        return 0
+    fi
+
+    # Check if Codex server directory exists
+    local codex_dir="/tmp/openai-codex-mcp"
+    if [ ! -d "$codex_dir" ]; then
+        print_error "Codex MCP server directory not found at $codex_dir"
+        return 1
+    fi
+
+    # Check if virtual environment exists
+    if [ ! -d "$codex_dir/.venv" ]; then
+        print_error "Codex server virtual environment not found at $codex_dir/.venv"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Codex server in background
+    cd "$codex_dir"
+    nohup env PORT=$CODEX_SERVER_PORT .venv/bin/python codex_server.py > "$PROJECT_ROOT/logs/codex-server.log" 2>&1 &
+    local codex_pid=$!
+    cd "$PROJECT_ROOT"
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running
+    if kill -0 $codex_pid 2>/dev/null; then
+        # Health check validation
+        local health_attempts=0
+        while [ $health_attempts -lt 10 ]; do
+            if curl -sf --max-time 2 "http://localhost:${CODEX_SERVER_PORT}/health" >/dev/null 2>&1; then
+                echo $codex_pid > "$PROJECT_ROOT/.codex.pid"
+                print_status "✅ Codex Server started (PID: $codex_pid, Port: $CODEX_SERVER_PORT)"
+                return 0
+            fi
+            sleep 2
+            health_attempts=$((health_attempts + 1))
+        done
+
+        print_error "Codex Server started but health check failed"
+        return 1
+    else
+        print_error "Failed to start Codex Server"
+        return 1
+    fi
+}
+
 # Stop all services
 stop_services() {
     print_status "🛑 Stopping DevFlow Unified System..."
@@ -309,14 +492,43 @@ start_services() {
         return 1
     fi
 
+    # Start Codex Server (MCP integration for OpenAI Codex)
+    if ! start_codex_server; then
+        print_warning "Codex Server failed to start - CONTINUING WITHOUT CODEX"
+        print_warning "OpenAI Codex MCP integration will not be available"
+    fi
+
+    # Start Enforcement System (critical for 100-line code limit enforcement)
+    if ! start_enforcement; then
+        print_warning "Claude Code Enforcement System failed to start - CONTINUING WITHOUT ENFORCEMENT"
+        print_warning "100-line code limit enforcement will not be active"
+    fi
+
     print_status "🎉 DevFlow Unified System v1.0 Started Successfully!"
     print_status "✅ Database Manager: Running on port $DB_MANAGER_PORT"
     print_status "✅ Vector Memory: Running on port $VECTOR_MEMORY_PORT"
     print_status "✅ Unified Orchestrator: Running on port $ORCHESTRATOR_PORT"
+
+    # Check Codex Server status
+    if curl -sf --max-time 2 "http://localhost:$CODEX_SERVER_PORT/health" >/dev/null 2>&1; then
+        print_status "✅ Codex Server: Running on port $CODEX_SERVER_PORT"
+    else
+        print_warning "⚠️  Codex Server: Not Running - OpenAI Codex MCP integration disabled"
+    fi
+
+    # Check enforcement status
+    if curl -sf --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" >/dev/null 2>&1; then
+        local enforcement_status=$(curl -s --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "UNKNOWN")
+        print_status "✅ Enforcement Daemon: Running (Status: $enforcement_status, Port: $ENFORCEMENT_DAEMON_PORT)"
+    else
+        print_warning "⚠️  Enforcement Daemon: Not Running - 100-line limit enforcement disabled"
+    fi
+
     print_status "📊 Health: http://localhost:$ORCHESTRATOR_PORT/health"
     print_status "🎛️  Mode: http://localhost:$ORCHESTRATOR_PORT/api/mode"
     print_status "📈 Metrics: http://localhost:$ORCHESTRATOR_PORT/api/metrics"
-    print_status "🔄 System ready for task orchestration"
+    print_status "🔧 Enforcement: http://localhost:$ENFORCEMENT_DAEMON_PORT/health"
+    print_status "🔄 System ready for task orchestration with enforcement"
 
     return 0
 }
@@ -349,6 +561,22 @@ show_status() {
         print_status "✅ Unified Orchestrator: Running (Status: $status, Mode: $mode)"
     else
         print_status "❌ Unified Orchestrator: Stopped"
+    fi
+
+    # Check Codex Server
+    if curl -sf --max-time 2 "http://localhost:${CODEX_SERVER_PORT}/health" >/dev/null 2>&1; then
+        print_status "✅ Codex Server: Running (Port: $CODEX_SERVER_PORT)"
+    else
+        print_status "❌ Codex Server: Stopped"
+    fi
+
+    # Check Enforcement Daemon
+    if curl -sf --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" >/dev/null 2>&1; then
+        local enforcement_health=$(curl -s --max-time 2 "http://localhost:$ENFORCEMENT_DAEMON_PORT/health" 2>/dev/null)
+        local enforcement_status=$(echo "$enforcement_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "UNKNOWN")
+        print_status "✅ Enforcement Daemon: Running (Status: $enforcement_status, Port: $ENFORCEMENT_DAEMON_PORT)"
+    else
+        print_status "❌ Enforcement Daemon: Stopped - 100-line limit enforcement disabled"
     fi
 }
 
