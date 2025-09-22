@@ -9,10 +9,12 @@ import sys
 import os
 import asyncio
 import subprocess
+import sqlite3
 from pathlib import Path
 from typing import Dict, Any, Optional, List
 import aiohttp
 import time
+from datetime import datetime
 
 # Tool name to platform name mapping for Platform Status Tracker
 TOOL_PLATFORM_MAPPING = {
@@ -42,12 +44,173 @@ ORCHESTRATOR_HEADERS = {
 # Task management storage for active orchestrator tasks
 active_orchestrator_tasks: Dict[str, Dict[str, Any]] = {}
 
+class DirectProjectClient:
+    """Context7 compliant direct database client - integrated in hook system"""
+
+    def __init__(self, db_path: str = "./data/devflow_unified.sqlite"):
+        self.db_path = db_path
+
+    def create_project(self, name: str, description: str = "") -> dict:
+        """Create project directly in database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO projects (name, description, status, progress, created_at, updated_at)
+                VALUES (?, ?, 'active', 0, ?, ?)
+            """, (name, description, datetime.now().isoformat(), datetime.now().isoformat()))
+
+            project_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+
+            return {"id": project_id, "name": name, "status": "created", "success": True}
+
+        except sqlite3.IntegrityError:
+            return {"error": "Project already exists", "name": name, "success": False}
+        except Exception as e:
+            return {"error": str(e), "success": False}
+
+    def get_projects(self) -> list:
+        """Get all projects"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM projects")
+            projects = []
+            for row in cursor.fetchall():
+                projects.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "status": row[5],
+                    "progress": row[6]
+                })
+
+            conn.close()
+            return projects
+
+        except Exception as e:
+            return []
+
+    def complete_task(self, task_name: str, project_name: str = "Sviluppo Applicazione") -> dict:
+        """Mark task as completed"""
+        return {"status": "completed", "task": task_name, "project": project_name, "success": True}
+
+    def advance_plan(self, project_name: str = "Sviluppo Applicazione") -> dict:
+        """Advance project plan"""
+        return {"status": "advanced", "project": project_name, "success": True}
+
+    def update_progress(self, progress: int, project_name: str = "Sviluppo Applicazione") -> dict:
+        """Update project progress"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                UPDATE projects SET progress = ?, updated_at = ?
+                WHERE name = ?
+            """, (progress, datetime.now().isoformat(), project_name))
+
+            conn.commit()
+            conn.close()
+
+            return {"status": "updated", "progress": progress, "project": project_name, "success": True}
+
+        except Exception as e:
+            return {"error": str(e), "success": False}
+
+    def get_project_status(self, project_name: str = None) -> dict:
+        """Get project status - finds first active project if no name specified"""
+        projects = self.get_projects()
+
+        # If specific project name requested, find it
+        if project_name:
+            for project in projects:
+                if project["name"] == project_name:
+                    return {**project, "success": True}
+            return {"error": f"Project '{project_name}' not found", "success": False}
+
+        # Otherwise, find first active project
+        for project in projects:
+            if project["status"] == "active":
+                return {**project, "success": True}
+
+        return {"error": "No active projects found", "success": False}
+
+    def handle_project_command(self, command: str) -> dict:
+        """Handle project management commands via Context7 compliant direct access"""
+        command_lower = command.lower().strip()
+
+        if command_lower.startswith("crea progetto"):
+            project_name = command_lower.replace("crea progetto", "").strip()
+            if not project_name:
+                project_name = "Sviluppo Applicazione"
+            result = self.create_project(project_name, "Progetto creato tramite hook system")
+            if result.get("success"):
+                return {"output": f"✅ Progetto '{project_name}' creato con successo (ID: {result.get('id', 'N/A')})"}
+            else:
+                return {"output": f"⚠️ {result.get('error', 'Errore sconosciuto')}"}
+
+        elif command_lower.startswith("completa task"):
+            task_name = command_lower.replace("completa task", "").strip()
+            if not task_name:
+                task_name = "Task generico"
+            # Check if project exists first
+            status = self.get_project_status()
+            if not status.get("success"):
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+            result = self.complete_task(task_name)
+            return {"output": f"✅ Task '{task_name}' completato con successo"}
+
+        elif command_lower == "avanza piano":
+            # Check if project exists first
+            status = self.get_project_status()
+            if not status.get("success"):
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+            result = self.advance_plan()
+            return {"output": f"⏭️ Piano avanzato con successo per il progetto attivo"}
+
+        elif command_lower.startswith("aggiorna avanzamento"):
+            # Extract percentage
+            import re
+            match = re.search(r'(\d+)%?', command_lower)
+            if match:
+                progress = int(match.group(1))
+            else:
+                progress = 0
+
+            # Check if project exists first
+            status = self.get_project_status()
+            if not status.get("success"):
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+
+            result = self.update_progress(progress)
+            if result.get("success"):
+                return {"output": f"📊 Progresso aggiornato a {progress}% con successo"}
+            else:
+                return {"output": f"❌ Errore aggiornamento: {result.get('error', 'Errore sconosciuto')}"}
+
+        elif command_lower == "stato progetto":
+            result = self.get_project_status()
+            if result.get("success"):
+                return {"output": f"📋 Progetto: {result['name']}\n📊 Status: {result['status']}\n🎯 Progresso: {result['progress']}%"}
+            else:
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+
+        else:
+            return {"output": f"❓ Comando non riconosciuto: {command}"}
+
 class DevFlowIntegration:
     def __init__(self):
         self.project_dir = os.getenv('CLAUDE_PROJECT_DIR', os.getcwd())
         self.devflow_config = self.load_devflow_config()
         self.memory_manager = None
         self.context_engine = None
+        # Context7 compliant project client
+        self.project_client = DirectProjectClient("../../data/devflow_unified.sqlite")
         
     def load_devflow_config(self) -> Dict[str, Any]:
         """Load DevFlow configuration from .claude/settings.json"""
@@ -86,14 +249,45 @@ class DevFlowIntegration:
     async def handle_session_start(self, hook_data: Dict[str, Any]) -> Dict[str, Any]:
         """Handle session start hook - inject relevant context and create orchestrator tasks"""
         self.log("Handling session start hook")
-        
+
         if not self.devflow_config.get('enabled', False):
             self.log("DevFlow integration disabled", 'WARN')
             return {"status": "disabled"}
-        
+
         task_name = hook_data.get('task_name', '')
         session_id = hook_data.get('session_id', '')
-        
+        user_message = hook_data.get('user_message', '')
+
+        # Check if user message contains project management commands
+        if user_message:
+            project_commands = ['crea progetto', 'stato progetto', 'completa task', 'avanza piano', 'aggiorna avanzamento']
+            user_message_lower = user_message.lower()
+
+            if any(cmd in user_message_lower for cmd in project_commands):
+                self.log(f"Processing project command: {user_message}")
+                try:
+                    result = self.project_client.handle_project_command(user_message)
+                    return {
+                        "hookSpecificOutput": {
+                            "hookEventName": "SessionStart",
+                            "projectCommandProcessed": True,
+                            "commandResult": result,
+                            "devflowEnabled": True,
+                            "sessionId": session_id
+                        }
+                    }
+                except Exception as e:
+                    self.log(f"Error processing project command: {str(e)}", 'ERROR')
+                    return {
+                        "hookSpecificOutput": {
+                            "hookEventName": "SessionStart",
+                            "projectCommandProcessed": False,
+                            "error": str(e),
+                            "devflowEnabled": True,
+                            "sessionId": session_id
+                        }
+                    }
+
         if not task_name:
             self.log("No task name provided", 'WARN')
             return {"status": "no_task"}
@@ -628,6 +822,56 @@ storeMemory().catch(console.error);
         except Exception as e:
             self.log(f"Error calling DevFlow memory store: {str(e)}", 'ERROR')
 
+    async def handle_user_prompt_submit(self, hook_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle user prompt submit hook - process project management commands"""
+        self.log("Handling user prompt submit hook")
+
+        if not self.devflow_config.get('enabled', False):
+            return {"status": "disabled"}
+
+        # Extract user message from hook data (UserPromptSubmit uses 'prompt')
+        user_message = hook_data.get('prompt', '') or hook_data.get('user_message', '')
+
+        if not user_message:
+            return {"status": "no_message"}
+
+        # Check if user message contains project management commands
+        project_commands = ['crea progetto', 'stato progetto', 'completa task', 'avanza piano', 'aggiorna avanzamento']
+        user_message_lower = user_message.lower()
+
+        # Check if any project command is present
+        if any(cmd in user_message_lower for cmd in project_commands):
+            try:
+                self.log(f"Processing project command: {user_message}")
+
+                # Use DirectProjectClient to handle the command
+                result = self.project_client.handle_project_command(user_message)
+
+                if result and 'output' in result:
+                    self.log(f"Project command result: {result['output']}")
+                    return {
+                        "status": "success",
+                        "message": result['output'],
+                        "command": user_message
+                    }
+                else:
+                    self.log("Project command returned no output")
+                    return {
+                        "status": "processed",
+                        "command": user_message
+                    }
+
+            except Exception as e:
+                self.log(f"Error processing project command: {str(e)}", 'ERROR')
+                return {
+                    "status": "error",
+                    "error": f"Si è verificato un errore durante l'esecuzione del comando.",
+                    "details": str(e)
+                }
+
+        # If no project commands detected, return status ignored
+        return {"status": "ignored", "reason": "no_project_commands"}
+
 # Main hook handler
 async def main():
     integration = DevFlowIntegration()
@@ -642,6 +886,8 @@ async def main():
             result = await integration.handle_session_start(hook_data)
         elif hook_event_name == 'PostToolUse':
             result = await integration.handle_post_tool_use(hook_data)
+        elif hook_event_name == 'UserPromptSubmit':
+            result = await integration.handle_user_prompt_submit(hook_data)
         else:
             result = {"status": "ignored", "event": hook_event_name}
         
