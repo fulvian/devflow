@@ -198,6 +198,36 @@ packages/orchestrator/unified/src/
 - **Switch dinamico**: Cambio modalità in tempo reale
 - **Emergency override**: Claude può sempre intervenire
 
+## 🎯 STATO IMPLEMENTAZIONE - AGGIORNAMENTO 2025-09-23
+
+### ✅ IMPLEMENTATO
+- **Hook di Routing Intelligente**: `.claude/hooks/intelligent-task-router.js`
+- **Intercettazione Automatica**: Cattura tutti i tool call `mcp__codex-cli__*`, `mcp__gemini-cli__*`, `mcp__qwen-code__*`
+- **Analisi Dimensione Task**: < 100 righe → Claude diretto, > 100 righe → routing CLI
+- **Classificazione Tipologia**: frontend/backend/AI/database/mobile
+- **Routing Specializzato**:
+  - Codex → Implementation generali, refactoring, debugging
+  - Gemini → Analytics, context analysis, reasoning complesso
+  - Qwen → Codice specialistico, performance optimization
+- **Timeout Detection + Fallback Automatico**:
+  - Codex timeout → synthetic_code (Qwen3 Coder)
+  - Gemini timeout → synthetic_reasoning (Kimi K2)
+  - Qwen timeout → synthetic_auto (GLM 4.5)
+- **Circuit Breaker Pattern**: Resilienza per agenti che falliscono ripetutamente
+- **Logging e Metriche**: Sistema completo di tracking decisioni routing
+
+### 🔄 FUNZIONALITÀ ATTIVE
+- **Routing Trasparente**: Claude non è consapevole del routing
+- **Fallback Automatico**: Zero intervento manuale required
+- **Performance Monitoring**: Metriche salvate in `.claude/logs/routing-metrics.json`
+- **Configurazione Dinamica**: Environment variables per tuning
+
+### 📋 REQUISITI ATTIVAZIONE
+- [ ] Riavvio Claude Code per attivazione hook
+- [ ] Test routing automatico con task > 100 righe
+- [ ] Monitoring metriche performance
+- [ ] Fine-tuning soglie e classificatori
+
 ## 📈 Metriche di Successo
 
 ### Performance Indicators
