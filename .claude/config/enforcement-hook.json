@@ -1,0 +1,30 @@
+{
+  "hooks": {
+    "pre-tool-use": {
+      "enabled": true,
+      "script": ".claude/hooks/pre-tool-use-redirect.js",
+      "description": "Auto-redirect large files to Unified Orchestrator",
+      "config": {
+        "maxLines": 100,
+        "writingTools": ["Write", "MultiEdit", "Edit"],
+        "orchestratorUrl": "http://localhost:3005/api/tasks",
+        "bypassInClaudeOnlyMode": true
+      }
+    }
+  },
+  "enforcement": {
+    "enabled": true,
+    "mode": "orchestrator-redirect",
+    "strict": false,
+    "logging": {
+      "enabled": true,
+      "file": ".claude/logs/enforcement.log"
+    }
+  },
+  "orchestrator": {
+    "host": "localhost",
+    "port": 3005,
+    "timeout": 10000,
+    "retries": 2
+  }
+}
