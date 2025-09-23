@@ -1,14 +1,39 @@
 {
   "hooks": {
+    "session-start": {
+      "enabled": true,
+      "script": ".claude/hooks/devflow-integration.py",
+      "description": "Inject relevant context at session start",
+      "config": {
+        "dbPath": "./data/devflow_unified.sqlite",
+        "enableContextInjection": true,
+        "maxContextBlocks": 10,
+        "logActivity": true
+      }
+    },
     "pre-tool-use": {
       "enabled": true,
-      "script": ".claude/hooks/pre-tool-use-redirect.js",
-      "description": "Auto-redirect large files to Unified Orchestrator",
+      "script": ".claude/hooks/enhanced-pre-tool-hook.js",
+      "description": "Enhanced pre-tool: enforcement + context injection for coding agents",
       "config": {
         "maxLines": 100,
         "writingTools": ["Write", "MultiEdit", "Edit"],
+        "codingAgents": ["mcp__devflow-synthetic-cc-sessions", "mcp__gemini-cli", "mcp__qwen-code", "mcp__codex-cli", "Task"],
         "orchestratorUrl": "http://localhost:3005/api/tasks",
-        "bypassInClaudeOnlyMode": true
+        "bypassInClaudeOnlyMode": true,
+        "enableContextInjection": true
+      }
+    },
+    "post-tool-use": {
+      "enabled": true,
+      "script": ".claude/hooks/devflow-integration.py",
+      "description": "Capture decisions and save memory to project database",
+      "config": {
+        "dbPath": "./data/devflow_unified.sqlite",
+        "enableMemoryCapture": true,
+        "enableMetricsTracking": true,
+        "enableOrchestratorUpdate": true,
+        "logActivity": true
       }
     }
   },

@@ -13,7 +13,7 @@ const CONFIG = {
   LINE_THRESHOLD: parseInt(process.env.TASK_ROUTER_LINE_THRESHOLD || '100'),
   ENABLE_LOGGING: process.env.TASK_ROUTER_LOGGING !== 'false',
   METRICS_FILE: process.env.TASK_ROUTER_METRICS_FILE || '.claude/logs/routing-metrics.json',
-  REQUEST_TIMEOUT: parseInt(process.env.ORCHESTRATOR_TIMEOUT || '60000')
+  REQUEST_TIMEOUT: parseInt(process.env.ORCHESTRATOR_TIMEOUT || '5000')
 };
 
 // HTTP client utility for Orchestrator communication
@@ -40,7 +40,14 @@ async function callOrchestrator(endpoint, data, method = 'POST') {
       throw new Error(`Orchestrator request failed: ${response.status} ${response.statusText}`);
     }
 
-    return await response.json();
+    const result = await response.json();
+
+    // Check for application-level errors (like authentication failures)
+    if (result.error || result.status === 'error') {
+      throw new Error(`Orchestrator API error: ${result.error || result.message || 'Unknown error'}`);
+    }
+
+    return result;
   } catch (error) {
     if (error.name === 'AbortError') {
       throw new Error('Orchestrator request timeout');
@@ -95,9 +102,14 @@ function estimateTaskSize(taskDescription) {
   const description = taskDescription.toLowerCase();
 
   // Check for explicit line count mentions
-  const lineMatch = description.match(/(\d+) lines?/);
+  const lineMatch = description.match(/(\d+)\+?\s*lines?/);
   if (lineMatch) {
     return parseInt(lineMatch[1]);
+  }
+
+  // Check for explicit large size indicators
+  if (description.includes('150+') || description.includes('massiv') || description.includes('completo') || description.includes('comprehensive')) {
+    return 200;
   }
 
   // Basic complexity estimation
@@ -112,9 +124,11 @@ function estimateTaskSize(taskDescription) {
 // Main hook function - Bridge to Unified Orchestrator
 async function preToolUseHook(toolCall) {
   try {
-    // Only intercept MCP CLI agents for coding tasks
+    // Intercept ALL coding agents: CLI + Synthetic (CLAUDE.md compliance)
     const cliAgents = ['mcp__codex-cli__', 'mcp__gemini-cli__', 'mcp__qwen-code__'];
-    const isCodingTask = cliAgents.some(agent => toolCall.name.startsWith(agent));
+    const syntheticAgents = ['mcp__devflow-synthetic-cc-sessions__'];
+    const allCodingAgents = [...cliAgents, ...syntheticAgents];
+    const isCodingTask = allCodingAgents.some(agent => toolCall.name.startsWith(agent));
 
     if (!isCodingTask) {
       return toolCall; // Pass through non-coding tools
@@ -145,6 +159,13 @@ async function preToolUseHook(toolCall) {
     if (toolCall.name.includes('codex')) preferredAgent = 'codex';
     else if (toolCall.name.includes('gemini')) preferredAgent = 'gemini';
     else if (toolCall.name.includes('qwen')) preferredAgent = 'qwen';
+    else if (toolCall.name.includes('synthetic')) {
+      // Determine Synthetic subtype based on function name
+      if (toolCall.name.includes('synthetic_code')) preferredAgent = 'qwen3-coder';
+      else if (toolCall.name.includes('synthetic_reasoning')) preferredAgent = 'kimi-k2';
+      else if (toolCall.name.includes('synthetic_auto')) preferredAgent = 'glm-4.5';
+      else preferredAgent = 'qwen3-coder'; // Default Synthetic
+    }
 
     // 3. Submit task to Unified Orchestrator
     const taskRequest = {
