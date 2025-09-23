@@ -23,6 +23,7 @@ import { IntelligentRoutingSystem, Platform, TaskType, TaskComplexity } from './
 import { CrossPlatformHandoffSystem, PlatformType } from './handoff/cross-platform-handoff.js';
 import { OperationalModesManager, ModeCommandInterface } from './modes/operational-modes-manager.js';
 import { MCPFallbackSystem, MCPToolCall, MCPResponse } from './fallback/mcp-fallback-system.js';
+import { OAuthCredentialManager } from './auth/oauth-credential-manager.js';
 
 // Configurazione server
 const PORT = process.env.ORCHESTRATOR_PORT || 3005;
@@ -50,6 +51,9 @@ const modeInterface = new ModeCommandInterface(modesManager);
 // MCP Fallback System with proper CLI → Synthetic mapping
 const mcpFallbackSystem = new MCPFallbackSystem();
 
+// OAuth Credential Manager for CLI agents
+const oauthManager = new OAuthCredentialManager();
+
 // Middleware base
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
@@ -60,6 +64,545 @@ app.use((req, res, next) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
   next();
 });
+
+// DIRECT CLI API CALLS - OAuth-based direct calls to CLI services
+async function callQwenCLIDirect(prompt: string, startTime: number): Promise<MCPResponse> {
+  const https = await import('https');
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  try {
+    // Load Qwen OAuth credentials
+    const qwenCredsPath = path.resolve(os.homedir(), '.qwen', 'oauth_creds.json');
+
+    if (!await fs.promises.access(qwenCredsPath).then(() => true).catch(() => false)) {
+      return {
+        success: false,
+        error: 'Qwen OAuth credentials not found. Please run `qwen` CLI and complete OAuth setup.',
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    const qwenCreds = JSON.parse(await fs.promises.readFile(qwenCredsPath, 'utf8'));
+
+    console.log(`[DIRECT-CLI] Calling Qwen API directly`);
+
+    const payload = {
+      model: 'qwen-coder',
+      input: {
+        messages: [{ role: 'user', content: prompt }]
+      },
+      parameters: {
+        result_format: 'message'
+      }
+    };
+
+    const postData = JSON.stringify(payload);
+    const url = new URL('https://dashscope-intl.aliyuncs.com/api/v1/services/aigc/text-generation/generation');
+
+    const options = {
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'Authorization': `Bearer ${qwenCreds.access_token}`,
+        'User-Agent': 'DevFlow-Unified-Orchestrator/1.0'
+      },
+      timeout: 20000 // 20 second timeout for CLI calls
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let responseData = '';
+
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(responseData);
+            const executionTime = Date.now() - startTime;
+
+            console.log(`[DIRECT-CLI] Qwen call completed in ${executionTime}ms`);
+
+            if (result.output && result.output.choices && result.output.choices[0]) {
+              resolve({
+                success: true,
+                result: result.output.choices[0].message.content,
+                executionTime: executionTime,
+                metadata: {
+                  directCLI: true,
+                  provider: 'qwen-oauth',
+                  model: 'qwen-coder'
+                }
+              });
+            } else {
+              resolve({
+                success: false,
+                error: result.message || 'No valid response from Qwen API',
+                executionTime: executionTime
+              });
+            }
+          } catch (parseError) {
+            resolve({
+              success: false,
+              error: `Failed to parse Qwen API response: ${parseError.message}`,
+              executionTime: Date.now() - startTime
+            });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        resolve({
+          success: false,
+          error: `Qwen API request failed: ${error.message}`,
+          executionTime: Date.now() - startTime
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({
+          success: false,
+          error: 'Qwen API request timeout after 20 seconds',
+          executionTime: Date.now() - startTime
+        });
+      });
+
+      req.write(postData);
+      req.end();
+    });
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Qwen CLI direct call error: ${error.message}`,
+      executionTime: Date.now() - startTime
+    };
+  }
+}
+
+async function callGeminiCLIDirect(prompt: string, startTime: number): Promise<MCPResponse> {
+  const https = await import('https');
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  try {
+    // Load Gemini OAuth settings
+    const geminiSettingsPath = path.resolve(os.homedir(), '.gemini', 'settings.json');
+
+    if (!await fs.promises.access(geminiSettingsPath).then(() => true).catch(() => false)) {
+      return {
+        success: false,
+        error: 'Gemini CLI not configured. Please run `gemini` CLI and complete OAuth setup.',
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    // Load Gemini OAuth credentials from CLI setup
+    const geminiSettings = JSON.parse(await fs.promises.readFile(geminiSettingsPath, 'utf8'));
+
+    if (geminiSettings.selectedAuthType !== 'oauth-personal') {
+      return {
+        success: false,
+        error: 'Gemini CLI must be configured with oauth-personal authentication',
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    // Look for OAuth token files created by Gemini CLI
+    const geminiTokenPath = path.resolve(os.homedir(), '.gemini', 'oauth_token.json');
+
+    if (!await fs.promises.access(geminiTokenPath).then(() => true).catch(() => false)) {
+      return {
+        success: false,
+        error: 'Gemini OAuth token not found. Please re-authenticate with `gemini` CLI',
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    const geminiToken = JSON.parse(await fs.promises.readFile(geminiTokenPath, 'utf8'));
+
+    console.log(`[DIRECT-CLI] Calling Gemini API with OAuth token`);
+
+    const payload = {
+      contents: [{
+        parts: [{ text: prompt }]
+      }]
+    };
+
+    const postData = JSON.stringify(payload);
+    const url = new URL('https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent');
+
+    const options = {
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'Authorization': `Bearer ${geminiToken.access_token}`,
+        'User-Agent': 'DevFlow-Unified-Orchestrator/1.0'
+      },
+      timeout: 20000 // 20 second timeout for CLI calls
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let responseData = '';
+
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(responseData);
+            const executionTime = Date.now() - startTime;
+
+            console.log(`[DIRECT-CLI] Gemini call completed in ${executionTime}ms`);
+
+            if (result.candidates && result.candidates[0] && result.candidates[0].content) {
+              resolve({
+                success: true,
+                result: result.candidates[0].content.parts[0].text,
+                executionTime: executionTime,
+                metadata: {
+                  directCLI: true,
+                  provider: 'gemini-oauth',
+                  model: 'gemini-pro'
+                }
+              });
+            } else {
+              resolve({
+                success: false,
+                error: result.error?.message || 'No valid response from Gemini API',
+                executionTime: executionTime
+              });
+            }
+          } catch (parseError) {
+            resolve({
+              success: false,
+              error: `Failed to parse Gemini API response: ${parseError.message}`,
+              executionTime: Date.now() - startTime
+            });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        resolve({
+          success: false,
+          error: `Gemini API request failed: ${error.message}`,
+          executionTime: Date.now() - startTime
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({
+          success: false,
+          error: 'Gemini API request timeout after 20 seconds',
+          executionTime: Date.now() - startTime
+        });
+      });
+
+      req.write(postData);
+      req.end();
+    });
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Gemini CLI direct call error: ${error.message}`,
+      executionTime: Date.now() - startTime
+    };
+  }
+}
+
+// GPT-5 Model Selection for Codex CLI based on task complexity
+function selectGPT5ModelForCodex(prompt: string): { model: string, reasoning: string } {
+  const lowerPrompt = prompt.toLowerCase();
+
+  // Massive/Important Coding Tasks - GPT-5-Codex High
+  const massiveCodingKeywords = [
+    'framework', 'architecture', 'system', 'infrastructure', 'database',
+    'api design', 'microservices', 'complex algorithm', 'performance optimization',
+    'scalability', 'security implementation', 'full stack', 'enterprise',
+    'integration', 'deployment', 'ci/cd', 'massive', 'large scale', 'production'
+  ];
+
+  // Reasoning Tasks - GPT-5 High
+  const reasoningKeywords = [
+    'explain', 'analyze', 'why', 'how does', 'compare', 'evaluate',
+    'strategy', 'approach', 'best practice', 'review', 'assess',
+    'troubleshoot', 'debug logic', 'optimization strategy', 'design pattern'
+  ];
+
+  // Check for massive coding tasks
+  if (massiveCodingKeywords.some(keyword => lowerPrompt.includes(keyword))) {
+    return {
+      model: 'gpt-5-codex-high',
+      reasoning: 'Massive/important coding task detected - using GPT-5-Codex High for maximum code quality'
+    };
+  }
+
+  // Check for reasoning tasks
+  if (reasoningKeywords.some(keyword => lowerPrompt.includes(keyword))) {
+    return {
+      model: 'gpt-5-high',
+      reasoning: 'Reasoning task detected - using GPT-5 High for deep analysis'
+    };
+  }
+
+  // Default to ordinary coding - GPT-5-Codex Medium
+  return {
+    model: 'gpt-5-codex-medium',
+    reasoning: 'Standard coding task - using GPT-5-Codex Medium for balanced performance'
+  };
+}
+
+async function callCodexCLIDirect(prompt: string, startTime: number): Promise<MCPResponse> {
+  try {
+    // Select optimal GPT-5 model based on task type (for logging purposes)
+    const modelSelection = selectGPT5ModelForCodex(prompt);
+    console.log(`[OAUTH-CLI] ${modelSelection.reasoning}`);
+    console.log(`[OAUTH-CLI] Using model: ${modelSelection.model}`);
+
+    // Check if we have valid credentials
+    const validation = oauthManager.validateCredentials('codex');
+
+    if (!validation.isValid) {
+      // Fallback to original implementation if OAuth credentials not valid
+      console.log(`[OAUTH-CLI] OAuth credentials not valid, falling back to legacy auth`);
+      return await callCodexCLIDirectLegacy(prompt, startTime);
+    }
+
+    console.log(`[OAUTH-CLI] Using OAuth credentials for ChatGPT Plus API call`);
+
+    const payload = {
+      model: modelSelection.model,
+      messages: [
+        {
+          role: 'system',
+          content: modelSelection.model.includes('codex') ?
+            'You are an expert code assistant. Generate high-quality, well-commented code based on user requests.' :
+            'You are an expert reasoning assistant. Provide deep analysis and thoughtful explanations.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: modelSelection.model.includes('codex') ? 0.1 : 0.3,
+      max_tokens: modelSelection.model.includes('high') ? 8000 : 4000
+    };
+
+    // Get authenticated HTTP client
+    const httpClient = oauthManager.getHttpClient('codex');
+
+    // Make authenticated API call
+    const response = await httpClient.post('/chat/completions', payload, {
+      headers: {
+        'Content-Type': 'application/json',
+        'User-Agent': 'DevFlow-Unified-Orchestrator/1.0'
+      }
+    });
+
+    const executionTime = Date.now() - startTime;
+    console.log(`[OAUTH-CLI] Codex call completed in ${executionTime}ms using ${modelSelection.model}`);
+
+    if (response.data.choices && response.data.choices[0] && response.data.choices[0].message) {
+      return {
+        success: true,
+        result: response.data.choices[0].message.content,
+        executionTime: executionTime,
+        metadata: {
+          directCLI: true,
+          provider: 'openai-oauth-api',
+          model: modelSelection.model,
+          modelReasoning: modelSelection.reasoning,
+          usage: response.data.usage,
+          authMethod: 'oauth-manager'
+        }
+      };
+    } else {
+      return {
+        success: false,
+        error: response.data.error?.message || 'No valid response from OpenAI API',
+        executionTime: executionTime
+      };
+    }
+
+  } catch (error) {
+    console.error(`[OAUTH-CLI] OAuth call failed:`, error);
+
+    // Fallback to legacy implementation
+    console.log(`[OAUTH-CLI] Falling back to legacy authentication`);
+    return await callCodexCLIDirectLegacy(prompt, startTime);
+  }
+}
+
+// Legacy implementation as fallback
+async function callCodexCLIDirectLegacy(prompt: string, startTime: number): Promise<MCPResponse> {
+  const https = await import('https');
+  const fs = await import('fs');
+  const path = await import('path');
+  const os = await import('os');
+
+  try {
+    // Select optimal GPT-5 model based on task type (for logging purposes)
+    const modelSelection = selectGPT5ModelForCodex(prompt);
+    console.log(`[LEGACY-CLI] ${modelSelection.reasoning}`);
+    console.log(`[LEGACY-CLI] Would use model: ${modelSelection.model}`);
+
+    // Load Codex CLI OAuth credentials from ChatGPT Plus personal account
+    const codexAuthPath = path.resolve(os.homedir(), '.codex', 'auth.json');
+
+    if (!await fs.promises.access(codexAuthPath).then(() => true).catch(() => false)) {
+      return {
+        success: false,
+        error: 'Codex CLI not configured. Please run `codex login` with ChatGPT Plus personal account',
+        executionTime: Date.now() - startTime,
+        metadata: {
+          selectedModel: modelSelection.model,
+          modelReasoning: modelSelection.reasoning,
+          authStatus: 'not_configured',
+          authMethod: 'legacy-fallback'
+        }
+      };
+    }
+
+    const codexAuth = JSON.parse(await fs.promises.readFile(codexAuthPath, 'utf8'));
+
+    if (!codexAuth.tokens || !codexAuth.tokens.access_token) {
+      return {
+        success: false,
+        error: 'Codex CLI OAuth token not found. Please re-authenticate with `codex login`',
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    console.log(`[LEGACY-CLI] Calling Codex API with legacy token using ${modelSelection.model}`);
+
+    const payload = {
+      model: modelSelection.model,
+      messages: [
+        {
+          role: 'system',
+          content: modelSelection.model.includes('codex') ?
+            'You are an expert code assistant. Generate high-quality, well-commented code based on user requests.' :
+            'You are an expert reasoning assistant. Provide deep analysis and thoughtful explanations.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      temperature: modelSelection.model.includes('codex') ? 0.1 : 0.3,
+      max_tokens: modelSelection.model.includes('high') ? 8000 : 4000
+    };
+
+    const postData = JSON.stringify(payload);
+    const url = new URL('https://api.openai.com/v1/chat/completions');
+
+    const options = {
+      hostname: url.hostname,
+      port: 443,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'Authorization': `Bearer ${codexAuth.tokens.access_token}`,
+        'User-Agent': 'DevFlow-Unified-Orchestrator/1.0'
+      },
+      timeout: 20000 // 20 second timeout for CLI calls
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let responseData = '';
+
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(responseData);
+            const executionTime = Date.now() - startTime;
+
+            console.log(`[LEGACY-CLI] Codex call completed in ${executionTime}ms using ${modelSelection.model}`);
+
+            if (result.choices && result.choices[0] && result.choices[0].message) {
+              resolve({
+                success: true,
+                result: result.choices[0].message.content,
+                executionTime: executionTime,
+                metadata: {
+                  directCLI: true,
+                  provider: 'openai-legacy-api',
+                  model: modelSelection.model,
+                  modelReasoning: modelSelection.reasoning,
+                  usage: result.usage,
+                  authMethod: 'legacy-fallback'
+                }
+              });
+            } else {
+              resolve({
+                success: false,
+                error: result.error?.message || 'No valid response from OpenAI API',
+                executionTime: executionTime
+              });
+            }
+          } catch (parseError) {
+            resolve({
+              success: false,
+              error: `Failed to parse OpenAI API response: ${parseError.message}`,
+              executionTime: Date.now() - startTime
+            });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        resolve({
+          success: false,
+          error: `OpenAI API request failed: ${error.message}`,
+          executionTime: Date.now() - startTime
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({
+          success: false,
+          error: 'OpenAI API request timeout after 20 seconds',
+          executionTime: Date.now() - startTime
+        });
+      });
+
+      req.write(postData);
+      req.end();
+    });
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Codex CLI direct call error: ${error.message}`,
+      executionTime: Date.now() - startTime
+    };
+  }
+}
 
 // DIRECT SYNTHETIC API CALL - Bypass MCP bridge for performance
 async function callSyntheticAPIDirect(call: MCPToolCall, startTime: number): Promise<MCPResponse> {
@@ -244,7 +787,23 @@ async function callMCPTool(call: MCPToolCall): Promise<MCPResponse> {
       return await callSyntheticAPIDirect(call, startTime);
     }
 
-    // BRIDGE MCP: For CLI tools, use existing bridge system
+    // DIRECT CLI: Check if this is a CLI tool - call directly to respective APIs
+    if (call.tool.includes('mcp__qwen-code__ask-qwen')) {
+      const prompt = call.parameters.prompt || call.parameters.request || 'Execute task';
+      return await callQwenCLIDirect(prompt, startTime);
+    }
+
+    if (call.tool.includes('mcp__gemini-cli__ask-gemini')) {
+      const prompt = call.parameters.prompt || call.parameters.request || 'Execute task';
+      return await callGeminiCLIDirect(prompt, startTime);
+    }
+
+    if (call.tool.includes('mcp__codex-cli__codex')) {
+      const prompt = call.parameters.prompt || call.parameters.request || 'Execute task';
+      return await callCodexCLIDirect(prompt, startTime);
+    }
+
+    // BRIDGE MCP: For any other tools, use existing bridge system
     // Path to the MCP Bridge Executor
     const bridgeExecutorPath = process.env.DEVFLOW_PROJECT_ROOT
       ? `${process.env.DEVFLOW_PROJECT_ROOT}/tools/mcp-bridge-executor.js`
@@ -355,6 +914,29 @@ function initializeMCPFallbackSystem() {
 
   // Set initial operational mode (sync with modes manager)
   mcpFallbackSystem.setOperationalMode(modeInterface.getCurrentMode());
+
+  // Initialize OAuth credential manager with Codex configuration
+  initializeOAuthManager();
+}
+
+// Initialize OAuth Manager with agent configurations
+function initializeOAuthManager() {
+  try {
+    // Configure Codex CLI for ChatGPT Plus OAuth
+    oauthManager.registerAgent('codex', {
+      clientId: process.env.CODEX_CLIENT_ID || 'codex-cli-client',
+      clientSecret: process.env.CODEX_CLIENT_SECRET || '',
+      redirectUri: process.env.CODEX_REDIRECT_URI || 'http://localhost:8080/callback',
+      tokenEndpoint: 'https://api.openai.com/v1/oauth/token',
+      authEndpoint: 'https://api.openai.com/v1/oauth/authorize',
+      apiBaseURL: 'https://api.openai.com/v1',
+      scopes: ['api.read', 'api.write', 'chat.completions']
+    });
+
+    console.log('✅ OAuth Manager initialized for Codex CLI');
+  } catch (error) {
+    console.warn('⚠️  OAuth Manager initialization failed, using legacy auth:', error.message);
+  }
 
   // Register CLI and Synthetic agents in the modes manager
   // CLI Agents
@@ -864,5 +1446,8 @@ process.on('unhandledRejection', (reason, promise) => {
 
 // Start the server
 startServer();
+
+// Export direct CLI functions for use by fallback system
+export { callCodexCLIDirect, callGeminiCLIDirect, callQwenCLIDirect };
 
 export default app;
