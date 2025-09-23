@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """
 Context Loader Script for Enhanced Pre-Tool Hook
-Supports loading relevant context from DevFlow unified database
+Enhanced with Context Bridge Service integration for embeddinggemma support
+Combines vector search (60%) and semantic search (40%) for optimal context injection
 Called by enhanced-pre-tool-hook.js
 """
 
@@ -9,6 +10,8 @@ import json
 import sys
 import sqlite3
 import os
+import urllib.request
+import urllib.parse
 from pathlib import Path
 from typing import Dict, Any, List, Optional
 from datetime import datetime
@@ -16,20 +19,77 @@ from datetime import datetime
 class ContextLoader:
     def __init__(self, db_path: str = "./data/devflow_unified.sqlite"):
         self.db_path = db_path
+        self.context_bridge_url = "http://localhost:3007"
+        self.use_enhanced_context = True  # Use Context Bridge Service if available
+
+    def _call_context_bridge(self, agent_name: str, query: str, max_tokens: int = 2000) -> Optional[Dict[str, Any]]:
+        """Call Context Bridge Service for enhanced context injection"""
+        try:
+            data = {
+                "agent": agent_name,
+                "query": query,
+                "maxTokens": max_tokens,
+                "threshold": 0.7
+            }
+
+            req_data = json.dumps(data).encode('utf-8')
+            req = urllib.request.Request(
+                f"{self.context_bridge_url}/context/inject",
+                data=req_data,
+                headers={'Content-Type': 'application/json'}
+            )
+
+            with urllib.request.urlopen(req, timeout=5) as response:
+                result = json.loads(response.read().decode('utf-8'))
+                if result.get('success'):
+                    return result['context']
+                else:
+                    print(f"Context Bridge error: {result.get('error')}", file=sys.stderr)
+                    return None
+
+        except Exception as e:
+            print(f"Context Bridge Service unavailable: {str(e)}", file=sys.stderr)
+            return None
 
     def load_context_for_agent(self, agent_name: str, task_context: Dict[str, Any]) -> Dict[str, Any]:
-        """Load relevant context for a specific agent"""
+        """Load relevant context for a specific agent using enhanced Context Bridge Service"""
         try:
+            # Extract task information
+            task_name = task_context.get('task_name', 'coding_task')
+            tool_params = task_context.get('tool_parameters', {})
+
+            # Build query for Context Bridge Service
+            query_parts = [task_name]
+            if tool_params.get('objective'):
+                query_parts.append(tool_params['objective'])
+            if tool_params.get('language'):
+                query_parts.append(f"language:{tool_params['language']}")
+
+            query = " ".join(query_parts)
+
+            # Try enhanced context injection first
+            if self.use_enhanced_context:
+                enhanced_context = self._call_context_bridge(agent_name, query)
+                if enhanced_context:
+                    # Convert enhanced context to legacy format
+                    context_blocks = self._format_enhanced_context(enhanced_context, agent_name)
+                    return {
+                        "context": context_blocks,
+                        "success": True,
+                        "agent": agent_name,
+                        "task_name": task_name,
+                        "blocks_count": len(context_blocks),
+                        "enhanced": True,
+                        "source": "context_bridge_service"
+                    }
+
+            # Fallback to legacy context loading
             if not os.path.exists(self.db_path):
                 return {"context": [], "success": False, "error": "Database not found"}
 
             context_blocks = []
 
-            # Extract task information
-            task_name = task_context.get('task_name', 'coding_task')
-            tool_params = task_context.get('tool_parameters', {})
-
-            # Load context based on agent type
+            # Load context based on agent type (legacy method)
             if 'synthetic' in agent_name.lower():
                 context_blocks = self._load_synthetic_context(task_name, tool_params)
             elif 'gemini' in agent_name.lower():
@@ -48,7 +108,9 @@ class ContextLoader:
                 "success": True,
                 "agent": agent_name,
                 "task_name": task_name,
-                "blocks_count": len(context_blocks)
+                "blocks_count": len(context_blocks),
+                "enhanced": False,
+                "source": "legacy_database"
             }
 
         except Exception as e:
@@ -58,6 +120,24 @@ class ContextLoader:
                 "error": str(e),
                 "agent": agent_name
             }
+
+    def _format_enhanced_context(self, enhanced_context: Dict[str, Any], agent_name: str) -> List[str]:
+        """Format enhanced context from Context Bridge Service into legacy format"""
+        context_blocks = []
+
+        # Add header
+        context_blocks.append(f"=== CONTESTO {agent_name.upper()} ENHANCED ===")
+        context_blocks.append(f"Vector Results: {len(enhanced_context.get('vectorResults', []))}")
+        context_blocks.append(f"Semantic Results: {len(enhanced_context.get('semanticResults', []))}")
+        context_blocks.append(f"Processing Time: {enhanced_context.get('metadata', {}).get('processingTime', 0)}ms")
+        context_blocks.append("")
+
+        # Add combined context directly
+        combined_context = enhanced_context.get('combinedContext', '')
+        if combined_context:
+            context_blocks.extend(combined_context.split('\n'))
+
+        return context_blocks
 
     def _load_synthetic_context(self, task_name: str, tool_params: Dict) -> List[str]:
         """Load context optimized for Synthetic agents"""

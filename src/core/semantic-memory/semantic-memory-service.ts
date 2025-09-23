@@ -152,9 +152,9 @@ export class SemanticMemoryService {
             const embeddingBuffer = this.serializeEmbedding(embedding);
 
             embeddings.push({
-              memoryBlockId: taskId,
-              modelId,
-              embeddingVector: embeddingBuffer,
+              blockId: taskId,
+              model: modelId,
+              embedding: embeddingBuffer,
               dimensions: embedding.length
             });
           }
@@ -192,11 +192,11 @@ export class SemanticMemoryService {
         throw new EmbeddingError(`No embedding found for task ${taskId} with model ${modelId}`);
       }
 
-      const sourceVector = this.deserializeEmbedding(sourceEmbedding.embedding_vector);
+      const sourceVector = this.deserializeEmbedding(sourceEmbedding.embedding);
 
       // Use unified similarity search
       const similarEmbeddings = this.unifiedDB.findSimilarEmbeddings(
-        sourceEmbedding.embedding_vector,
+        sourceEmbedding.embedding,
         modelId,
         threshold,
         limit + 1 // +1 to exclude source task
@@ -206,19 +206,19 @@ export class SemanticMemoryService {
       const results: SimilarityResult[] = [];
 
       for (const result of similarEmbeddings) {
-        if (result.memory_block_id !== taskId) {
+        if (result.block_id !== taskId) {
           // Use the similarity from unified search or recalculate
           let similarity = result.similarity;
 
           // Optionally recalculate for more precision
           if (model.calculateSimilarity) {
-            const targetVector = this.deserializeEmbedding(result.embedding_vector);
+            const targetVector = this.deserializeEmbedding(result.embedding);
             similarity = await model.calculateSimilarity(sourceVector, targetVector);
           }
 
           if (similarity >= threshold) {
             results.push({
-              taskId: result.memory_block_id,
+              taskId: result.block_id,
               similarity
             });
           }
@@ -248,7 +248,7 @@ export class SemanticMemoryService {
   async getTaskEmbedding(taskId: string, modelId: string): Promise<number[] | null> {
     try {
       const embedding = this.unifiedDB.getEmbedding(taskId, modelId);
-      return embedding ? this.deserializeEmbedding(embedding.embedding_vector) : null;
+      return embedding ? this.deserializeEmbedding(embedding.embedding) : null;
     } catch (error) {
       console.error(`Failed to get embedding for task ${taskId}:`, error);
       return null;

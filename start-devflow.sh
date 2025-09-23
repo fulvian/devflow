@@ -95,6 +95,7 @@ set_defaults() {
     # Core DevFlow Services (range 3000-3999)
     export ORCHESTRATOR_PORT=${ORCHESTRATOR_PORT:-3005}        # Unified Orchestrator
     export DB_MANAGER_PORT=${DB_MANAGER_PORT:-3002}            # Database Manager
+    export CONTEXT_BRIDGE_PORT=${CONTEXT_BRIDGE_PORT:-3007}    # Context Bridge Service (enhanced embedding)
     export VECTOR_MEMORY_PORT=${VECTOR_MEMORY_PORT:-3008}      # Vector Memory Service
 
     # External Bridge Services (range 8000-8999)
@@ -109,7 +110,7 @@ set_defaults() {
     export DEVFLOW_VERBOSE=${DEVFLOW_VERBOSE:-false}
     export DEVFLOW_PROJECT_ROOT=${DEVFLOW_PROJECT_ROOT:-$(pwd)}
 
-    print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Vector Memory: $VECTOR_MEMORY_PORT"
+    print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Context Bridge: $CONTEXT_BRIDGE_PORT, Vector Memory: $VECTOR_MEMORY_PORT"
     print_info "Bridge services - Codex Server: $CODEX_SERVER_PORT, Enforcement: $ENFORCEMENT_DAEMON_PORT"
     print_info "DevFlow config - DB: $DEVFLOW_DB_PATH, Project Root: $DEVFLOW_PROJECT_ROOT"
 }
@@ -119,7 +120,7 @@ cleanup_services() {
     print_status "🧹 Cleaning up existing DevFlow processes..."
 
     # Clean up PID files first (including enforcement and codex)
-    local pid_files=(".orchestrator.pid" ".database.pid" ".vector.pid" ".enforcement.pid" ".codex.pid")
+    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enforcement.pid" ".codex.pid")
     for pid_file in "${pid_files[@]}"; do
         if [ -f "$PROJECT_ROOT/$pid_file" ]; then
             local pid=$(cat "$PROJECT_ROOT/$pid_file")
@@ -149,12 +150,13 @@ cleanup_services() {
     # Force kill processes by pattern
     pkill -f "unified-orchestrator" 2>/dev/null || true
     pkill -f "database-daemon" 2>/dev/null || true
+    pkill -f "context-bridge-service" 2>/dev/null || true
     pkill -f "vector-memory-service" 2>/dev/null || true
     pkill -f "enforcement-daemon" 2>/dev/null || true
     pkill -f "codex_server" 2>/dev/null || true
 
     # Clean up ports brutally (all configurable ports from .env)
-    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $VECTOR_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
+    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
 
     for port in "${DEVFLOW_PORTS[@]}"; do
         local port_pids=$(lsof -ti:$port 2>/dev/null || true)
@@ -356,6 +358,54 @@ start_vector() {
     fi
 }
 
+# Start Context Bridge Service
+start_context_bridge() {
+    print_status "Starting Context Bridge Service (Enhanced Embedding)..."
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${CONTEXT_BRIDGE_PORT}/health" >/dev/null 2>&1; then
+        print_status "Context Bridge Service already running on port $CONTEXT_BRIDGE_PORT"
+        return 0
+    fi
+
+    # Check if context bridge service exists
+    if [ ! -f "$PROJECT_ROOT/src/services/context-bridge/start-context-bridge.ts" ]; then
+        print_error "Context Bridge Service not found at src/services/context-bridge/start-context-bridge.ts"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Context Bridge Service in background (TypeScript via ts-node)
+    nohup env CONTEXT_BRIDGE_PORT=$CONTEXT_BRIDGE_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" npx ts-node "$PROJECT_ROOT/src/services/context-bridge/start-context-bridge.ts" > "$PROJECT_ROOT/logs/context-bridge.log" 2>&1 &
+    local bridge_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running
+    if kill -0 $bridge_pid 2>/dev/null; then
+        # Health check validation
+        local health_attempts=0
+        while [ $health_attempts -lt 10 ]; do
+            if curl -sf --max-time 2 "http://localhost:${CONTEXT_BRIDGE_PORT}/health" >/dev/null 2>&1; then
+                echo $bridge_pid > "$PROJECT_ROOT/.context-bridge.pid"
+                print_status "✅ Context Bridge Service started (PID: $bridge_pid, Port: $CONTEXT_BRIDGE_PORT)"
+                return 0
+            fi
+            sleep 2
+            health_attempts=$((health_attempts + 1))
+        done
+
+        print_error "Context Bridge Service started but health check failed"
+        return 1
+    else
+        print_error "Failed to start Context Bridge Service"
+        return 1
+    fi
+}
+
 # Start Unified Orchestrator
 start_unified_orchestrator() {
     print_status "Starting DevFlow Unified Orchestrator v1.0..."
@@ -486,6 +536,12 @@ start_services() {
         return 1
     fi
 
+    # Start Context Bridge Service (enhanced embedding with embeddinggemma)
+    if ! start_context_bridge; then
+        print_warning "Context Bridge Service failed to start - CONTINUING WITHOUT ENHANCED CONTEXT"
+        print_warning "Enhanced context injection with embeddinggemma will not be available"
+    fi
+
     # Start Unified Orchestrator (orchestrates other services)
     if ! start_unified_orchestrator; then
         print_error "Failed to start Unified Orchestrator - CRITICAL ERROR"
@@ -509,6 +565,13 @@ start_services() {
     print_status "✅ Vector Memory: Running on port $VECTOR_MEMORY_PORT"
     print_status "✅ Unified Orchestrator: Running on port $ORCHESTRATOR_PORT"
 
+    # Check Context Bridge Service status
+    if curl -sf --max-time 2 "http://localhost:$CONTEXT_BRIDGE_PORT/health" >/dev/null 2>&1; then
+        print_status "✅ Context Bridge: Running on port $CONTEXT_BRIDGE_PORT (Enhanced embedding with embeddinggemma)"
+    else
+        print_warning "⚠️  Context Bridge: Not Running - Enhanced context injection disabled"
+    fi
+
     # Check Codex Server status
     if curl -sf --max-time 2 "http://localhost:$CODEX_SERVER_PORT/health" >/dev/null 2>&1; then
         print_status "✅ Codex Server: Running on port $CODEX_SERVER_PORT"
@@ -527,10 +590,34 @@ start_services() {
     print_status "📊 Health: http://localhost:$ORCHESTRATOR_PORT/health"
     print_status "🎛️  Mode: http://localhost:$ORCHESTRATOR_PORT/api/mode"
     print_status "📈 Metrics: http://localhost:$ORCHESTRATOR_PORT/api/metrics"
+    print_status "🧠 Context Bridge: http://localhost:$CONTEXT_BRIDGE_PORT/health"
     print_status "🔧 Enforcement: http://localhost:$ENFORCEMENT_DAEMON_PORT/health"
-    print_status "🔄 System ready for task orchestration with enforcement"
+    print_status "🔄 System ready for task orchestration with enhanced context injection"
 
     return 0
+}
+
+# Start Claude Code with environment variables
+start_claude_code() {
+    print_status "Starting Claude Code with DevFlow environment..."
+
+    # Verify critical variables are loaded
+    if [ -z "$CONTEXT7_API_KEY" ]; then
+        print_warning "CONTEXT7_API_KEY not found - Context7 integration may not work"
+    fi
+
+    if [ -z "$SYNTHETIC_API_KEY" ]; then
+        print_warning "SYNTHETIC_API_KEY not found - Synthetic integration may not work"
+    fi
+
+    print_info "Environment variables loaded for Claude Code:"
+    print_info "  CONTEXT7_API_KEY: ${CONTEXT7_API_KEY:0:10}..."
+    print_info "  SYNTHETIC_API_KEY: ${SYNTHETIC_API_KEY:0:10}..."
+    print_info "  GITHUB_PERSONAL_ACCESS_TOKEN: ${GITHUB_PERSONAL_ACCESS_TOKEN:0:10}..."
+
+    # Start Claude Code with environment variables inherited
+    print_status "🚀 Launching Claude Code..."
+    exec claude "$@"
 }
 
 # Show service status
@@ -551,6 +638,15 @@ show_status() {
         print_status "✅ Vector Memory: Running (Port: $VECTOR_MEMORY_PORT)"
     else
         print_status "❌ Vector Memory: Stopped"
+    fi
+
+    # Check Context Bridge Service
+    if curl -sf --max-time 2 "http://localhost:${CONTEXT_BRIDGE_PORT}/health" >/dev/null 2>&1; then
+        local bridge_health=$(curl -s "http://localhost:${CONTEXT_BRIDGE_PORT}/health" 2>/dev/null)
+        local bridge_status=$(echo "$bridge_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        print_status "✅ Context Bridge: Running (Status: $bridge_status, Port: $CONTEXT_BRIDGE_PORT)"
+    else
+        print_status "❌ Context Bridge: Stopped - Enhanced context injection disabled"
     fi
 
     # Check Unified Orchestrator
@@ -632,6 +728,11 @@ main() {
             show_status
             exit 0
             ;;
+        claude)
+            load_environment
+            set_defaults
+            start_claude_code
+            ;;
         start|"")
             load_environment
             set_defaults
@@ -649,6 +750,7 @@ main() {
             echo "  stop     - Stop all DevFlow services cleanly"
             echo "  restart  - Stop and start all services (clean restart)"
             echo "  status   - Show status of all services"
+            echo "  claude   - Launch Claude Code with DevFlow environment variables"
             echo "  help     - Show this help message"
             echo ""
             echo "Architecture: Unified Orchestrator v1.0"
