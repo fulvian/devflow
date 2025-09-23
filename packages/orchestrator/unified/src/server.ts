@@ -6,6 +6,12 @@
  * FASE: Deployment Fase 1 - Sistema unificato base
  */
 
+import { config } from 'dotenv';
+import { resolve } from 'path';
+
+// Load environment variables from project root .env file
+config({ path: resolve(process.cwd(), '../../../.env') });
+
 import express from 'express';
 import cors from 'cors';
 import { createServer } from 'http';
@@ -55,6 +61,167 @@ app.use((req, res, next) => {
   next();
 });
 
+// DIRECT SYNTHETIC API CALL - Bypass MCP bridge for performance
+async function callSyntheticAPIDirect(call: MCPToolCall, startTime: number): Promise<MCPResponse> {
+  const https = await import('https');
+
+  try {
+    // Extract tool name from full MCP tool name
+    const toolMatch = call.tool.match(/mcp__devflow-synthetic-cc-sessions__synthetic_(.+)$/);
+    if (!toolMatch) {
+      return {
+        success: false,
+        error: `Invalid synthetic tool name format: ${call.tool}`,
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    const syntheticTool = toolMatch[1]; // 'auto', 'code', 'code_to_file', etc.
+
+    // Load API configuration from environment
+    const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
+    const SYNTHETIC_BASE_URL = process.env.SYNTHETIC_BASE_URL || 'https://api.synthetic.new/v1';
+
+    if (!SYNTHETIC_API_KEY) {
+      return {
+        success: false,
+        error: 'SYNTHETIC_API_KEY environment variable not configured',
+        executionTime: Date.now() - startTime
+      };
+    }
+
+    console.log(`[DIRECT-API] Calling synthetic.new directly: ${syntheticTool}`);
+
+    // Prepare API endpoint and payload based on tool
+    let endpoint: string;
+    let payload: any = call.parameters;
+
+    switch (syntheticTool) {
+      case 'auto':
+        endpoint = '/tasks/autonomous';
+        break;
+      case 'code':
+        endpoint = '/code/generate';
+        break;
+      case 'code_to_file':
+        endpoint = '/code/generate-to-file';
+        break;
+      case 'reasoning':
+        endpoint = '/tasks/reasoning';
+        break;
+      case 'context':
+        endpoint = '/tasks/context-analysis';
+        break;
+      default:
+        return {
+          success: false,
+          error: `Unknown synthetic tool: ${syntheticTool}`,
+          executionTime: Date.now() - startTime
+        };
+    }
+
+    // Make direct HTTPS request to synthetic.new API
+    const postData = JSON.stringify(payload);
+    const url = new URL(endpoint, SYNTHETIC_BASE_URL);
+
+    const options = {
+      hostname: url.hostname,
+      port: url.port || 443,
+      path: url.pathname,
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Content-Length': Buffer.byteLength(postData),
+        'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
+        'User-Agent': 'DevFlow-Unified-Orchestrator/1.0',
+        'X-Source': 'unified-orchestrator'
+      },
+      timeout: 45000 // 45 second timeout for synthetic calls
+    };
+
+    return new Promise((resolve, reject) => {
+      const req = https.request(options, (res) => {
+        let responseData = '';
+
+        res.on('data', (chunk) => {
+          responseData += chunk;
+        });
+
+        res.on('end', () => {
+          try {
+            const result = JSON.parse(responseData);
+            const executionTime = Date.now() - startTime;
+
+            console.log(`[DIRECT-API] Synthetic call completed in ${executionTime}ms`);
+
+            resolve({
+              success: result.success !== false,
+              result: result.result || result.content || result.response,
+              error: result.error || undefined,
+              executionTime: executionTime,
+              metadata: {
+                directAPI: true,
+                toolUsed: call.tool,
+                apiEndpoint: endpoint,
+                ...result.metadata
+              }
+            });
+          } catch (parseError) {
+            resolve({
+              success: false,
+              error: `Failed to parse synthetic API response: ${parseError.message}`,
+              executionTime: Date.now() - startTime,
+              metadata: {
+                directAPI: true,
+                rawResponse: responseData.substring(0, 500) // First 500 chars for debugging
+              }
+            });
+          }
+        });
+      });
+
+      req.on('error', (error) => {
+        resolve({
+          success: false,
+          error: `Synthetic API request failed: ${error.message}`,
+          executionTime: Date.now() - startTime,
+          metadata: {
+            directAPI: true,
+            networkError: true
+          }
+        });
+      });
+
+      req.on('timeout', () => {
+        req.destroy();
+        resolve({
+          success: false,
+          error: 'Synthetic API request timeout after 45 seconds',
+          executionTime: Date.now() - startTime,
+          metadata: {
+            directAPI: true,
+            timeout: true
+          }
+        });
+      });
+
+      req.write(postData);
+      req.end();
+    });
+
+  } catch (error) {
+    return {
+      success: false,
+      error: `Direct API call error: ${error.message}`,
+      executionTime: Date.now() - startTime,
+      metadata: {
+        directAPI: true,
+        internalError: true
+      }
+    };
+  }
+}
+
 // REAL MCP call function using Bridge Executor - Architecture v1.0 Compliant
 async function callMCPTool(call: MCPToolCall): Promise<MCPResponse> {
   const startTime = Date.now();
@@ -72,6 +239,12 @@ async function callMCPTool(call: MCPToolCall): Promise<MCPResponse> {
     console.log(`[MCP-REAL] Executing real tool: ${call.tool}`);
     console.log(`[MCP-REAL] Parameters:`, JSON.stringify(call.parameters, null, 2));
 
+    // DIRECT API: Check if this is a synthetic tool - call directly to synthetic.new API
+    if (call.tool.includes('mcp__devflow-synthetic-cc-sessions__')) {
+      return await callSyntheticAPIDirect(call, startTime);
+    }
+
+    // BRIDGE MCP: For CLI tools, use existing bridge system
     // Path to the MCP Bridge Executor
     const bridgeExecutorPath = process.env.DEVFLOW_PROJECT_ROOT
       ? `${process.env.DEVFLOW_PROJECT_ROOT}/tools/mcp-bridge-executor.js`

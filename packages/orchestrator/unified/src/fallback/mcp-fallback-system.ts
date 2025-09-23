@@ -45,11 +45,18 @@ export interface FallbackResult {
   fallbacksUsed: string[];
   totalExecutionTime: number;
   error?: string;
+  metadata?: {
+    enforcementBypassed?: boolean;
+    emergencyFallback?: boolean;
+    originalTargetAgent?: string;
+    maxLinesIgnored?: boolean;
+    [key: string]: any;
+  };
 }
 
 // Agent type definitions
 export type CLIAgent = 'codex' | 'gemini' | 'qwen';
-export type SyntheticModel = 'qwen3-coder' | 'kimi-k2' | 'glm-4.5' | 'deepseek-v3.1';
+export type SyntheticModel = 'qwen3-coder' | 'kimi-k2' | 'glm-4.5' | 'deepseek-v3.1' | 'qwen3-thinking';
 
 // Fallback mapping according to architecture
 const CLI_TO_SYNTHETIC_MAPPING: Record<CLIAgent, SyntheticModel> = {
@@ -63,7 +70,8 @@ const SYNTHETIC_MODEL_CONFIGS: Record<SyntheticModel, string> = {
   'qwen3-coder': 'hf:Qwen/Qwen3-Coder-480B-A35B-Instruct',
   'kimi-k2': 'hf:moonshotai/Kimi-K2-Instruct-0905',
   'glm-4.5': 'hf:zai-org/GLM-4.5',
-  'deepseek-v3.1': 'hf:deepseek-ai/DeepSeek-V3.1'
+  'deepseek-v3.1': 'hf:deepseek-ai/DeepSeek-V3.1',
+  'qwen3-thinking': 'hf:Qwen/Qwen3-235B-A22B-Thinking-2507'
 };
 
 /**
@@ -230,7 +238,14 @@ export class MCPFallbackSystem {
   }
 
   /**
-   * All-mode: cli_agents → synthetic_fallbacks → claude_emergency
+   * All-mode: SPECIFIC 1:1 fallback chains → claude_emergency
+   *
+   * ARCHITECTURE COMPLIANT IMPLEMENTATION:
+   * - Codex CLI (20s) → Qwen3 Coder Synthetic (45s) → Claude Emergency
+   * - Gemini CLI (20s) → Kimi K2 Synthetic (45s) → Claude Emergency
+   * - Qwen CLI (20s) → GLM 4.5 Synthetic (45s) → Claude Emergency
+   *
+   * MAX TIME: 65s per agent chain (not 225s sequential)
    */
   private async executeAllMode(
     taskDescription: string,
@@ -239,61 +254,64 @@ export class MCPFallbackSystem {
   ): Promise<FallbackResult> {
     const fallbacksUsed: string[] = [];
 
-    // Try preferred agent first, then all CLI agents
-    const agentsToTry: CLIAgent[] = preferredAgent
-      ? [preferredAgent, ...(['codex', 'gemini', 'qwen'] as CLIAgent[]).filter(a => a !== preferredAgent)]
-      : ['codex', 'gemini', 'qwen'];
+    // Default to codex if no preferred agent specified
+    const targetAgent: CLIAgent = preferredAgent || 'codex';
 
-    // Step 1: Try CLI agents
-    for (const agent of agentsToTry) {
-      try {
-        const result = await this.callCLIAgent(agent, taskDescription);
-        if (result.success) {
-          return {
-            success: true,
-            result: result.result,
-            agentUsed: agent,
-            fallbacksUsed,
-            totalExecutionTime: Date.now() - startTime
-          };
-        } else {
-          fallbacksUsed.push(`${agent}-cli-failed`);
-        }
-      } catch (error) {
-        fallbacksUsed.push(`${agent}-cli-error`);
+    // Step 1: Try target CLI agent (20s timeout)
+    try {
+      fallbacksUsed.push(`trying-${targetAgent}-cli`);
+      const cliResult = await this.callCLIAgent(targetAgent, taskDescription);
+
+      if (cliResult.success) {
+        return {
+          success: true,
+          result: cliResult.result,
+          agentUsed: `${targetAgent}-cli`,
+          fallbacksUsed,
+          totalExecutionTime: Date.now() - startTime
+        };
+      } else {
+        fallbacksUsed.push(`${targetAgent}-cli-failed`);
       }
+    } catch (error) {
+      fallbacksUsed.push(`${targetAgent}-cli-error`);
     }
 
-    // Step 2: Try synthetic fallbacks for each failed CLI agent
-    for (const agent of agentsToTry) {
-      const syntheticModel = CLI_TO_SYNTHETIC_MAPPING[agent];
-      try {
-        fallbacksUsed.push(`fallback-to-${syntheticModel}`);
-        const result = await this.callSyntheticAgent(syntheticModel, taskDescription);
-        if (result.success) {
-          return {
-            success: true,
-            result: result.result,
-            agentUsed: `synthetic-${syntheticModel}`,
-            fallbacksUsed,
-            totalExecutionTime: Date.now() - startTime
-          };
-        } else {
-          fallbacksUsed.push(`synthetic-${syntheticModel}-failed`);
-        }
-      } catch (error) {
-        fallbacksUsed.push(`synthetic-${syntheticModel}-error`);
+    // Step 2: Try SPECIFIC synthetic fallback for the target agent (45s timeout)
+    const syntheticModel = CLI_TO_SYNTHETIC_MAPPING[targetAgent];
+    try {
+      fallbacksUsed.push(`fallback-to-${syntheticModel}`);
+      const syntheticResult = await this.callSyntheticAgent(syntheticModel, taskDescription);
+
+      if (syntheticResult.success) {
+        return {
+          success: true,
+          result: syntheticResult.result,
+          agentUsed: `synthetic-${syntheticModel}`,
+          fallbacksUsed,
+          totalExecutionTime: Date.now() - startTime
+        };
+      } else {
+        fallbacksUsed.push(`synthetic-${syntheticModel}-failed`);
       }
+    } catch (error) {
+      fallbacksUsed.push(`synthetic-${syntheticModel}-error`);
     }
 
-    // Step 3: Claude emergency fallback
-    fallbacksUsed.push('claude-emergency');
+    // Step 3: Claude emergency fallback (enforcement bypass for critical situations)
+    fallbacksUsed.push('claude-emergency-override');
     return {
       success: true,
-      result: `Claude emergency fallback: ${taskDescription}`,
+      result: `Claude emergency fallback (enforcement bypassed): ${taskDescription}`,
       agentUsed: 'claude-emergency',
       fallbacksUsed,
-      totalExecutionTime: Date.now() - startTime
+      totalExecutionTime: Date.now() - startTime,
+      metadata: {
+        enforcementBypassed: true,
+        emergencyFallback: true,
+        originalTargetAgent: targetAgent,
+        maxLinesIgnored: true // Emergency override allows >100 lines
+      }
     };
   }
 

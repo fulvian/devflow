@@ -21,8 +21,15 @@
         "codingAgents": ["mcp__devflow-synthetic-cc-sessions", "mcp__gemini-cli", "mcp__qwen-code", "mcp__codex-cli", "Task"],
         "orchestratorUrl": "http://localhost:3005/api/tasks",
         "bypassInClaudeOnlyMode": true,
-        "enableContextInjection": true
+        "enableContextInjection": true,
+        "mcpMatcher": "mcp__devflow-synthetic-cc-sessions__.*"
       }
+    },
+    "mcp-tools": {
+      "enabled": true,
+      "description": "Enable MCP tool calls for synthetic agents",
+      "matcher": "mcp__devflow-synthetic-cc-sessions__.*",
+      "allowDirectCall": true
     },
     "post-tool-use": {
       "enabled": true,
