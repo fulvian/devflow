@@ -6,6 +6,10 @@
           {
             "type": "command",
             "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/user-prompt-submit-context7.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/natural-language-project-creation.py"
           }
         ]
       }
@@ -32,7 +36,7 @@
     ],
     "PostToolUse": [
       {
-        "matcher": "Bash|Task|Read|Write|Edit|MultiEdit|Grep|Glob|LS|WebFetch",
+        "matcher": "Bash|Task|Read|Write|Edit|MultiEdit|Grep|Glob|LS|WebFetch|mcp__.*",
         "hooks": [
           {
             "type": "command",
@@ -41,6 +45,14 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-memory-stream-hook.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/project-implementation-monitor.py"
+          },
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/git-workflow-integration.py"
           },
           {
             "type": "command",
