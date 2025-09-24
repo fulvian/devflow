@@ -210,7 +210,7 @@ class DevFlowIntegration:
         self.memory_manager = None
         self.context_engine = None
         # Context7 compliant project client
-        self.project_client = DirectProjectClient("../../data/devflow_unified.sqlite")
+        self.project_client = DirectProjectClient("./data/devflow_unified.sqlite")
         
     def load_devflow_config(self) -> Dict[str, Any]:
         """Load DevFlow configuration from .claude/settings.json"""
@@ -936,6 +936,11 @@ storeMemory().catch(console.error);
 
         if not user_message:
             return {"status": "no_message"}
+
+        # Check if this is a /cometa command - let Claude Code handle it natively
+        if user_message.strip().startswith('/cometa'):
+            self.log(f"Detected /cometa command, letting Claude Code handle it: {user_message}")
+            return {"status": "ignored", "reason": "slash_command_passthrough"}
 
         # Check if user message contains project management commands
         project_commands = ['crea progetto', 'stato progetto', 'completa task', 'avanza piano', 'aggiorna avanzamento']

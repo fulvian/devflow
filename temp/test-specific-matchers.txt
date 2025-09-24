@@ -1,0 +1,5 @@
+Testing PostToolUse hook with SPECIFIC TOOL NAMES in matcher
+This should trigger hook if specific matchers fix the bug
+Bug reference: GitHub Issue #3148 + #3091
+Matcher: "Bash|Task|Read|Write|Edit|MultiEdit|Grep|Glob|LS|WebFetch"
+Timestamp: 2025-01-24T16:05:00

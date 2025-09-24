@@ -1,0 +1,43 @@
+# Cometa Brain Testing Requirements - Stack Tecnologico come da PIANO_TEST_DEBUG_COMETA_BRAIN.md
+
+# Unit Testing
+pytest>=7.4.0
+pytest-cov>=4.1.0
+pytest-mock>=3.11.1
+pytest-asyncio>=0.21.1
+pytest-xdist>=3.3.1
+pytest-postgresql>=6.0.0
+
+# E2E Testing
+playwright>=1.40.0
+pytest-playwright>=0.4.3
+pytest-httpx>=0.26.0
+
+# Performance Testing
+pytest-benchmark>=4.0.0
+pytest-memray>=1.4.0
+pytest-line-profiler>=0.2.0
+
+# Security Testing
+bandit>=1.7.5
+safety>=2.3.0
+
+# Mock and Fixtures
+monkeypatch
+fixtures
+
+# Monitoring and Reporting
+pytest-html>=4.1.1
+pytest-json-report>=1.5.0
+opentelemetry-api>=1.20.0
+
+# Database Testing
+sqlite3
+
+# Additional Utils
+pathlib
+typing-extensions>=4.8.0
+datetime
+hashlib
+json
+re

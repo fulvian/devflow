@@ -29,7 +29,7 @@ export interface MemoryBlock {
 export class UnifiedDatabaseManager {
   private db: Database.Database;
 
-  constructor(dbPath: string = './data/devflow.sqlite') {
+  constructor(dbPath: string = './data/devflow_unified.sqlite') {
     this.db = new Database(dbPath);
 
     // Enable optimizations and safety features

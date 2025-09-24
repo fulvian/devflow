@@ -236,67 +236,133 @@ class MCPBridgeExecutor {
   }
 
   async callRealMCPTool_Synthetic(toolName, parameters) {
-    // This method would integrate with Claude Code's MCP system
-    // For now, we'll use a subprocess approach to call the MCP tools through Claude
+    // Real MCP tool integration with synthetic.new API
+    const https = require('https');
+    const { URLSearchParams } = require('url');
 
-    return new Promise((resolve, reject) => {
-      const { spawn } = require('child_process');
+    // Load environment configuration
+    const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
+    if (!SYNTHETIC_API_KEY) {
+      return {
+        success: false,
+        error: 'SYNTHETIC_API_KEY environment variable not configured'
+      };
+    }
 
-      // Create a temporary script that calls the MCP tool
-      const script = `
-        const { spawn } = require('child_process');
-        const toolCall = {
-          tool: 'mcp__devflow-synthetic-cc-sessions__synthetic_${toolName}',
-          parameters: ${JSON.stringify(parameters)}
-        };
+    // Prepare request payload based on tool type
+    let requestPayload;
+    const fullToolName = `mcp__devflow-synthetic-cc-sessions__synthetic_${toolName}`;
 
-        // In a real implementation, this would call the MCP tool directly
-        // For now, we'll output the call that should be made
-        console.log(JSON.stringify({
-          success: true,
-          result: 'Real MCP tool call would be made here: ' + toolCall.tool,
-          toolCall: toolCall,
-          note: 'Bridge Executor now configured for real MCP calls'
-        }));
-      `;
+    try {
+      switch (toolName) {
+        case 'auto':
+          requestPayload = {
+            task_id: parameters.task_id,
+            request: parameters.request,
+            approval_required: parameters.approval_required || false,
+            constraints: parameters.constraints || []
+          };
+          break;
+        case 'code':
+          requestPayload = {
+            task_id: parameters.task_id,
+            objective: parameters.objective,
+            language: parameters.language,
+            requirements: parameters.requirements || [],
+            context: parameters.context || ''
+          };
+          break;
+        case 'code_to_file':
+          requestPayload = {
+            task_id: parameters.task_id,
+            file_path: parameters.file_path,
+            objective: parameters.objective,
+            language: parameters.language,
+            requirements: parameters.requirements || [],
+            context: parameters.context || '',
+            backup: parameters.backup !== false
+          };
+          break;
+        default:
+          return {
+            success: false,
+            error: `Unknown synthetic tool: ${toolName}`
+          };
+      }
 
-      const process = spawn('node', ['-e', script], {
-        stdio: ['pipe', 'pipe', 'pipe'],
-        cwd: this.projectRoot
+      // Make HTTP request to synthetic.new API
+      const postData = JSON.stringify(requestPayload);
+
+      const options = {
+        hostname: 'synthetic.new',
+        port: 443,
+        path: '/api/mcp/bridge',
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Content-Length': Buffer.byteLength(postData),
+          'Authorization': `Bearer ${SYNTHETIC_API_KEY}`,
+          'User-Agent': 'DevFlow-Unified-Orchestrator/1.0'
+        },
+        timeout: 60000 // 60 second timeout for synthetic calls
+      };
+
+      return new Promise((resolve, reject) => {
+        const req = https.request(options, (res) => {
+          let responseData = '';
+
+          res.on('data', (chunk) => {
+            responseData += chunk;
+          });
+
+          res.on('end', () => {
+            try {
+              const result = JSON.parse(responseData);
+              resolve({
+                success: result.success || false,
+                result: result.result || result.error || 'No result from synthetic API',
+                error: result.error || undefined,
+                metadata: {
+                  toolUsed: fullToolName,
+                  apiResponse: true,
+                  ...result.metadata
+                }
+              });
+            } catch (parseError) {
+              resolve({
+                success: false,
+                error: `Failed to parse synthetic API response: ${parseError.message}`,
+                rawResponse: responseData
+              });
+            }
+          });
+        });
+
+        req.on('error', (error) => {
+          resolve({
+            success: false,
+            error: `Synthetic API request failed: ${error.message}`
+          });
+        });
+
+        req.on('timeout', () => {
+          req.destroy();
+          resolve({
+            success: false,
+            error: 'Synthetic API request timeout after 60 seconds'
+          });
+        });
+
+        req.write(postData);
+        req.end();
       });
 
-      let output = '';
-      let errorOutput = '';
-
-      process.stdout.on('data', (data) => {
-        output += data.toString();
-      });
-
-      process.stderr.on('data', (data) => {
-        errorOutput += data.toString();
-      });
-
-      process.on('close', (code) => {
-        if (code === 0) {
-          try {
-            const result = JSON.parse(output.trim());
-            resolve(result);
-          } catch (e) {
-            resolve({
-              success: true,
-              result: output.trim() || 'MCP tool executed successfully',
-              rawOutput: output
-            });
-          }
-        } else {
-          reject(new Error(`MCP tool call failed with code ${code}: ${errorOutput}`));
-        }
-      });
-
-      process.on('error', (error) => {
-        reject(error);
-      });
-    });
+    } catch (error) {
+      return {
+        success: false,
+        error: `Bridge executor error: ${error.message}`
+      };
+    }
   }
 
   async callCLITool(command, parameters) {

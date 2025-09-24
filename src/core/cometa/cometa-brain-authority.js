@@ -10,7 +10,7 @@ const path = require('path');
 const sqlite3 = require('sqlite3').verbose();
 
 // Database configuration
-const DB_PATH = process.env.DB_PATH || './.cometa/cometa.db';
+const DB_PATH = process.env.DB_PATH || './data/devflow_unified.sqlite';
 const STATE_DIR = './.claude/state';
 const DEVFLOW_DIR = './.devflow';
 

@@ -316,23 +316,36 @@ export class MCPFallbackSystem {
   }
 
   /**
-   * Call a CLI agent via MCP
+   * Call a CLI agent via Direct API (OAuth-based)
    */
   private async callCLIAgent(agent: CLIAgent, taskDescription: string): Promise<MCPResponse> {
-    if (!this.mcpCallFunction) {
-      throw new Error('MCP call function not configured');
-    }
+    const startTime = Date.now();
 
-    const mcpToolName = this.getCLIMCPToolName(agent);
-    const call: MCPToolCall = {
-      tool: mcpToolName,
-      parameters: {
-        prompt: taskDescription,
-        changeMode: false // Architecture specifies no change mode for CLI calls
+    // Import direct CLI functions (they need to be imported dynamically to avoid circular dependencies)
+    const serverModule = await import('../server.js');
+
+    try {
+      switch (agent) {
+        case 'codex':
+          return await serverModule.callCodexCLIDirect(taskDescription, startTime);
+        case 'gemini':
+          return await serverModule.callGeminiCLIDirect(taskDescription, startTime);
+        case 'qwen':
+          return await serverModule.callQwenCLIDirect(taskDescription, startTime);
+        default:
+          return {
+            success: false,
+            error: `Unknown CLI agent: ${agent}`,
+            executionTime: Date.now() - startTime
+          };
       }
-    };
-
-    return await this.mcpCallFunction(call);
+    } catch (error) {
+      return {
+        success: false,
+        error: `Direct CLI call failed for ${agent}: ${error.message}`,
+        executionTime: Date.now() - startTime
+      };
+    }
   }
 
   /**

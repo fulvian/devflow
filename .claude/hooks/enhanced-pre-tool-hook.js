@@ -242,13 +242,15 @@ async function enhancedPreToolHook(toolCall) {
         result.message = `Context injected for ${toolName}: ${contextResult.context.length} blocks`;
 
         // IMPORTANTE: Modifica la tool call per includere il contesto
+        const contextText = contextResult.context.join('\n\n');
         if (!toolCall.function.parameters.context) {
-          toolCall.function.parameters.context = contextResult.context.join('\n\n');
+          toolCall.function.parameters.context = contextText;
         } else {
-          toolCall.function.parameters.context += '\n\n' + contextResult.context.join('\n\n');
+          toolCall.function.parameters.context += '\n\n' + contextText;
         }
 
         log(`Successfully injected context for ${toolName}`);
+        log(`INJECTED CONTEXT TEXT:\n${contextText}`, 'DEBUG');
       } else {
         result.contextInjected = false;
         result.message = `No context available for ${toolName}`;

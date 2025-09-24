@@ -5,15 +5,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/user-messages.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/footer-details.py"
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/cometa-nlp-hook.py"
           }
         ]
       }
@@ -42,6 +34,15 @@
         ]
       },
       {
+        "matcher": "mcp__qwen-code__.*|mcp__gemini-cli__.*|mcp__codex-cli__.*|mcp__devflow-synthetic-cc-sessions__.*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/enhanced-pre-tool-hook.js"
+          }
+        ]
+      },
+      {
         "matcher": "Write|Edit|MultiEdit|Task|Bash",
         "hooks": [
           {
@@ -51,16 +52,29 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-task-autocreator.py"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
+        "matcher": "Bash|Task|Read|Write|Edit|MultiEdit|Grep|Glob|LS|WebFetch",
         "hooks": [
           {
             "type": "command",
+            "command": "/Users/fulvioventura/devflow/.claude/hooks/test-posttooluse.py"
+          },
+          {
+            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
+          },
+          {
+            "type": "command",
+            "command": "/Users/fulvioventura/devflow/.claude/hooks/robust-memory-stream.py"
           },
           {
             "type": "command",

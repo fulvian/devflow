@@ -149,10 +149,10 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 - **cli-only**: CLI + Claude (no Synthetic)
 - **synthetic-only**: Synthetic + Claude (no CLI)
 
-### Unified Orchestrator Endpoints
-- **Task Submission**: POST `/api/tasks` to Unified Orchestrator
-- **Mode Management**: POST `/api/mode/:modeName` for operational mode switching
-- **Performance Monitoring**: GET `/api/metrics` for real-time system metrics
+### Unified Orchestrator Endpoints (Port 3005)
+- **Task Submission**: POST `http://localhost:3005/api/tasks` to Unified Orchestrator
+- **Mode Management**: POST `http://localhost:3005/api/mode/:modeName` for operational mode switching
+- **Performance Monitoring**: GET `http://localhost:3005/api/metrics` for real-time system metrics
 
 ### Anti-Circumvention for MCP
 - Using Task tool to bypass line limits is PROHIBITED

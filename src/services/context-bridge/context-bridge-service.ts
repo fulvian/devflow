@@ -53,6 +53,42 @@ export interface ContextResponse {
     error?: string;
 }
 
+export interface MetricEntry {
+    timestamp: number;
+    queryType: 'vector' | 'semantic' | 'combined';
+    processingTime: number;
+    success: boolean;
+    resultCount: number;
+    averageSimilarity?: number;
+    averageRelevance?: number;
+    errorMessage?: string;
+}
+
+export interface PerformanceStats {
+    timeWindow: string;
+    totalRequests: number;
+    successRate: number;
+    averageProcessingTime: number;
+    requestsPerMinute: number;
+    vectorSearchStats: {
+        totalQueries: number;
+        averageTime: number;
+        averageResultCount: number;
+        averageSimilarity: number;
+    };
+    semanticSearchStats: {
+        totalQueries: number;
+        averageTime: number;
+        averageResultCount: number;
+        averageRelevance: number;
+    };
+    errorStats: {
+        totalErrors: number;
+        errorRate: number;
+        recentErrors: string[];
+    };
+}
+
 export class ContextBridgeService {
     private app: express.Application;
     private port: number;
@@ -60,6 +96,8 @@ export class ContextBridgeService {
     private taskHierarchy: TaskHierarchyService;
     private embeddingModel: OllamaEmbeddingModel;
     private isInitialized: boolean = false;
+    private metricsBuffer: MetricEntry[] = [];
+    private readonly METRICS_WINDOW_MS = 10 * 60 * 1000; // 10 minutes
 
     constructor() {
         this.app = express();
@@ -118,6 +156,15 @@ export class ContextBridgeService {
                 const context = await this.generateEnhancedContext(query, maxTokens, threshold);
                 const processingTime = Date.now() - startTime;
 
+                // Track combined request metrics
+                this.addMetric({
+                    timestamp: Date.now(),
+                    queryType: 'combined',
+                    processingTime,
+                    success: true,
+                    resultCount: context.totalResults
+                });
+
                 const response: ContextResponse = {
                     success: true,
                     context: {
@@ -134,6 +181,17 @@ export class ContextBridgeService {
                 res.json(response);
             } catch (error) {
                 console.error('[CONTEXT-BRIDGE] Context injection error:', error);
+
+                // Track error metrics
+                this.addMetric({
+                    timestamp: Date.now(),
+                    queryType: 'combined',
+                    processingTime: 0,
+                    success: false,
+                    resultCount: 0,
+                    errorMessage: error instanceof Error ? error.message : 'Unknown error'
+                });
+
                 res.status(500).json({
                     success: false,
                     error: error instanceof Error ? error.message : 'Unknown error'
@@ -172,6 +230,31 @@ export class ContextBridgeService {
                 });
             }
         });
+
+        // Performance monitoring endpoint
+        this.app.get('/stats', (req, res) => {
+            try {
+                const stats = this.calculatePerformanceStats();
+                res.json({
+                    success: true,
+                    ...stats,
+                    serviceInfo: {
+                        name: 'context-bridge',
+                        version: '1.0',
+                        port: this.port,
+                        initialized: this.isInitialized,
+                        uptime: process.uptime(),
+                        memoryUsage: process.memoryUsage()
+                    }
+                });
+            } catch (error) {
+                console.error('[CONTEXT-BRIDGE] Stats calculation error:', error);
+                res.status(500).json({
+                    success: false,
+                    error: error instanceof Error ? error.message : 'Unknown error'
+                });
+            }
+        });
     }
 
     private async generateEnhancedContext(
@@ -192,11 +275,36 @@ export class ContextBridgeService {
         const vectorWeight = 0.6; // 60% vector search
         const semanticWeight = 0.4; // 40% semantic search
 
-        // Generate vector search results using embeddinggemma
+        // Track vector search performance
+        const vectorStartTime = Date.now();
         const vectorResults = await this.getVectorSearchResults(query, threshold, Math.floor(maxTokens * vectorWeight));
+        const vectorTime = Date.now() - vectorStartTime;
 
-        // Generate semantic search results from database
+        // Track semantic search performance
+        const semanticStartTime = Date.now();
         const semanticResults = await this.getSemanticSearchResults(query, Math.floor(maxTokens * semanticWeight));
+        const semanticTime = Date.now() - semanticStartTime;
+
+        // Add metrics for tracking
+        this.addMetric({
+            timestamp: Date.now(),
+            queryType: 'vector',
+            processingTime: vectorTime,
+            success: true,
+            resultCount: vectorResults.length,
+            averageSimilarity: vectorResults.length > 0 ?
+                vectorResults.reduce((sum, r) => sum + (r.similarity || 0), 0) / vectorResults.length : 0
+        });
+
+        this.addMetric({
+            timestamp: Date.now(),
+            queryType: 'semantic',
+            processingTime: semanticTime,
+            success: true,
+            resultCount: semanticResults.length,
+            averageRelevance: semanticResults.length > 0 ?
+                semanticResults.reduce((sum, r) => sum + (r.relevance || 0), 0) / semanticResults.length : 0
+        });
 
         // Combine and format results
         const combinedContext = this.combineContextResults(vectorResults, semanticResults);
@@ -290,6 +398,65 @@ export class ContextBridgeService {
         return sections.join('\n');
     }
 
+    private addMetric(metric: MetricEntry): void {
+        this.metricsBuffer.push(metric);
+        this.cleanupOldMetrics();
+    }
+
+    private cleanupOldMetrics(): void {
+        const cutoffTime = Date.now() - this.METRICS_WINDOW_MS;
+        this.metricsBuffer = this.metricsBuffer.filter(metric => metric.timestamp > cutoffTime);
+    }
+
+    private calculatePerformanceStats(): PerformanceStats {
+        this.cleanupOldMetrics();
+
+        const now = Date.now();
+        const windowStart = now - this.METRICS_WINDOW_MS;
+
+        const totalRequests = this.metricsBuffer.length;
+        const successfulRequests = this.metricsBuffer.filter(m => m.success).length;
+        const vectorMetrics = this.metricsBuffer.filter(m => m.queryType === 'vector');
+        const semanticMetrics = this.metricsBuffer.filter(m => m.queryType === 'semantic');
+        const errors = this.metricsBuffer.filter(m => !m.success);
+
+        const avgProcessingTime = totalRequests > 0 ?
+            this.metricsBuffer.reduce((sum, m) => sum + m.processingTime, 0) / totalRequests : 0;
+
+        const requestsPerMinute = (totalRequests / (this.METRICS_WINDOW_MS / 60000));
+
+        return {
+            timeWindow: `Last 10 minutes (${new Date(windowStart).toISOString()} - ${new Date(now).toISOString()})`,
+            totalRequests,
+            successRate: totalRequests > 0 ? (successfulRequests / totalRequests) * 100 : 0,
+            averageProcessingTime: Math.round(avgProcessingTime * 100) / 100,
+            requestsPerMinute: Math.round(requestsPerMinute * 100) / 100,
+            vectorSearchStats: {
+                totalQueries: vectorMetrics.length,
+                averageTime: vectorMetrics.length > 0 ?
+                    Math.round((vectorMetrics.reduce((sum, m) => sum + m.processingTime, 0) / vectorMetrics.length) * 100) / 100 : 0,
+                averageResultCount: vectorMetrics.length > 0 ?
+                    Math.round((vectorMetrics.reduce((sum, m) => sum + m.resultCount, 0) / vectorMetrics.length) * 100) / 100 : 0,
+                averageSimilarity: vectorMetrics.length > 0 ?
+                    Math.round((vectorMetrics.reduce((sum, m) => sum + (m.averageSimilarity || 0), 0) / vectorMetrics.length) * 1000) / 1000 : 0
+            },
+            semanticSearchStats: {
+                totalQueries: semanticMetrics.length,
+                averageTime: semanticMetrics.length > 0 ?
+                    Math.round((semanticMetrics.reduce((sum, m) => sum + m.processingTime, 0) / semanticMetrics.length) * 100) / 100 : 0,
+                averageResultCount: semanticMetrics.length > 0 ?
+                    Math.round((semanticMetrics.reduce((sum, m) => sum + m.resultCount, 0) / semanticMetrics.length) * 100) / 100 : 0,
+                averageRelevance: semanticMetrics.length > 0 ?
+                    Math.round((semanticMetrics.reduce((sum, m) => sum + (m.averageRelevance || 0), 0) / semanticMetrics.length) * 1000) / 1000 : 0
+            },
+            errorStats: {
+                totalErrors: errors.length,
+                errorRate: totalRequests > 0 ? (errors.length / totalRequests) * 100 : 0,
+                recentErrors: errors.slice(-5).map(e => e.errorMessage || 'Unknown error')
+            }
+        };
+    }
+
     public async initialize(): Promise<void> {
         try {
             console.log('[CONTEXT-BRIDGE] Initializing Context Bridge Service...');
@@ -321,6 +488,7 @@ export class ContextBridgeService {
                 console.log(`📊 Health: http://localhost:${this.port}/health`);
                 console.log(`🧠 Context injection: http://localhost:${this.port}/context/inject`);
                 console.log(`🔍 Context analysis: http://localhost:${this.port}/context/analyze`);
+                console.log(`📈 Performance stats: http://localhost:${this.port}/stats`);
                 resolve();
             });
 

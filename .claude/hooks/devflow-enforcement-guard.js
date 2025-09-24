@@ -45,9 +45,47 @@ class DevFlowEnforcementGuard {
         };
     }
 
-    analyzeToolInput(toolInput) {
+    async checkOperationalMode() {
+        try {
+            const http = require('http');
+
+            return new Promise((resolve) => {
+                const req = http.get('http://localhost:3005/api/mode', {timeout: 1000}, (res) => {
+                    let data = '';
+                    res.on('data', chunk => data += chunk);
+                    res.on('end', () => {
+                        try {
+                            const response = JSON.parse(data);
+                            resolve(response.currentMode || 'all-mode');
+                        } catch (e) {
+                            resolve('all-mode');
+                        }
+                    });
+                });
+                req.on('error', () => resolve('all-mode'));
+                req.on('timeout', () => {
+                    req.destroy();
+                    resolve('all-mode');
+                });
+            });
+        } catch (error) {
+            return 'all-mode';
+        }
+    }
+
+    async analyzeToolInput(toolInput) {
         const content = toolInput.content || '';
         const filePath = toolInput.file_path || '';
+
+        // Check operational mode first - disable enforcement in claude-only mode
+        const currentMode = await this.checkOperationalMode();
+        if (currentMode === 'claude-only') {
+            return {
+                allowed: true,
+                reason: 'DevFlow Guard disabled in claude-only mode',
+                analysis: { guardEnabled: false, operationalMode: currentMode }
+            };
+        }
 
         // Guard disabled check
         if (!this.enabled) {
@@ -298,7 +336,7 @@ async function main() {
 
         // Initialize guard and analyze
         const guard = new DevFlowEnforcementGuard();
-        const analysis = guard.analyzeToolInput(toolInput);
+        const analysis = await guard.analyzeToolInput(toolInput);
 
         guard.logMessage(`Analyzed ${toolName} operation: ${analysis.allowed ? 'ALLOWED' : 'BLOCKED'} - ${analysis.reason}`);
 
