@@ -1,13 +1,17 @@
 #!/usr/bin/env python3
 """
-DevFlow Initialization Script
-Sets up DevFlow integration with Claude Code sessions
+DevFlow Initialization Script v2.0
+Context7-compliant setup for DevFlow integration with unified patterns
 """
 
 import json
 import os
 import sys
 from pathlib import Path
+
+# Import DevFlow standard hook pattern
+sys.path.append('/Users/fulvioventura/devflow/.claude/hooks/base')
+from standard_hook_pattern import BaseDevFlowHook
 
 def setup_devflow_integration():
     """Setup DevFlow integration with cc-sessions"""
@@ -114,6 +118,7 @@ def setup_claude_settings(claude_dir: Path):
             "verbose": False,
             "memory_provider": "sqlite",
             "vector_provider": "openai",
+            "db_path": "./data/devflow_unified.sqlite",
             "platforms": {
                 "claude_code": {
                     "enabled": True,
@@ -186,7 +191,7 @@ def setup_environment_variables(project_dir: Path):
     devflow_env_vars = [
         "# DevFlow Configuration",
         "DEVFLOW_ENABLED=true",
-        "DEVFLOW_DB_PATH=./devflow.sqlite",
+        "DEVFLOW_DB_PATH=./data/devflow_unified.sqlite",
         "DEVFLOW_AUTO_INJECT=true",
         "DEVFLOW_HANDOFF_ENABLED=true",
         "DEVFLOW_VERBOSE=false",

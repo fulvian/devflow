@@ -1,123 +1,154 @@
 #!/usr/bin/env python3
-"""Shared state management for Claude Code Sessions hooks."""
+"""
+Shared State Management Hook - Context7 Implementation
+
+DevFlow shared state management system for session coordination and task tracking.
+Provides centralized state management for DAIC modes and task state tracking.
+
+Author: DevFlow System
+Created: 2025-09-24
+Context7 Version: 2.0
+"""
+
 import json
+import sys
+import os
 from pathlib import Path
 from datetime import datetime
+from typing import Dict, Any
 
-# Get project root dynamically
-def get_project_root():
-    """Find project root by looking for .claude directory."""
-    current = Path.cwd()
-    while current.parent != current:
-        if (current / ".claude").exists():
-            return current
-        current = current.parent
-    # Fallback to current directory if no .claude found
-    return Path.cwd()
+# Add base hook directory to path
+sys.path.append(os.path.join(os.path.dirname(__file__), 'base'))
+from standard_hook_pattern import BaseDevFlowHook
 
-PROJECT_ROOT = get_project_root()
+class SharedStateHook(BaseDevFlowHook):
+    """Context7-compliant shared state management hook"""
 
-# All state files in .claude/state/
-STATE_DIR = PROJECT_ROOT / ".claude" / "state"
-DAIC_STATE_FILE = STATE_DIR / "daic-mode.json"
-TASK_STATE_FILE = STATE_DIR / "current_task.json"
+    def __init__(self):
+        super().__init__("shared-state")
 
-# Mode description strings
-DISCUSSION_MODE_MSG = "You are now in Discussion Mode and should focus on discussing and investigating with the user (no edit-based tools)"
-IMPLEMENTATION_MODE_MSG = "You are now in Implementation Mode and may use tools to execute the agreed upon actions - when you are done return immediately to Discussion Mode"
+        # Get project root dynamically
+        self.project_root = self._get_project_root()
+        self.state_dir = self.project_root / ".claude" / "state"
+        self.daic_state_file = self.state_dir / "daic-mode.json"
+        self.task_state_file = self.state_dir / "current_task.json"
 
-def ensure_state_dir():
-    """Ensure the state directory exists."""
-    STATE_DIR.mkdir(parents=True, exist_ok=True)
+        # Mode description strings
+        self.discussion_mode_msg = "You are now in Discussion Mode and should focus on discussing and investigating with the user (no edit-based tools)"
+        self.implementation_mode_msg = "You are now in Implementation Mode and may use tools to execute the agreed upon actions - when you are done return immediately to Discussion Mode"
 
-def check_daic_mode_bool() -> bool:
-    """Check if DAIC (discussion) mode is enabled. Returns True for discussion, False for implementation."""
-    ensure_state_dir()
-    try:
-        with open(DAIC_STATE_FILE, 'r') as f:
-            data = json.load(f)
-            return data.get("mode", "discussion") == "discussion"
-    except (FileNotFoundError, json.JSONDecodeError):
-        # Default to discussion mode if file doesn't exist
-        set_daic_mode(True)
+    def _get_project_root(self) -> Path:
+        """Find project root by looking for .claude directory."""
+        current = Path.cwd()
+        while current.parent != current:
+            if (current / ".claude").exists():
+                return current
+            current = current.parent
+        # Fallback to current directory if no .claude found
+        return Path.cwd()
+
+    def validate_input(self) -> bool:
+        """Validate shared state hook input"""
+        # Shared state hook accepts any valid input
         return True
 
-def check_daic_mode() -> str:
-    """Check if DAIC (discussion) mode is enabled. Returns mode message."""
-    ensure_state_dir()
-    try:
-        with open(DAIC_STATE_FILE, 'r') as f:
-            data = json.load(f)
-            mode = data.get("mode", "discussion")
-            return DISCUSSION_MODE_MSG if mode == "discussion" else IMPLEMENTATION_MODE_MSG
-    except (FileNotFoundError, json.JSONDecodeError):
-        # Default to discussion mode if file doesn't exist
-        set_daic_mode(True)
-        return DISCUSSION_MODE_MSG
+    def execute_logic(self) -> None:
+        """Main shared state management logic"""
+        try:
+            # Ensure state directory exists
+            self._ensure_state_dir()
 
-def toggle_daic_mode() -> str:
-    """Toggle DAIC mode and return the new state message."""
-    ensure_state_dir()
-    # Read current mode
-    try:
-        with open(DAIC_STATE_FILE, 'r') as f:
-            data = json.load(f)
-            current_mode = data.get("mode", "discussion")
-    except (FileNotFoundError, json.JSONDecodeError):
-        current_mode = "discussion"
-    
-    # Toggle and write new value
-    new_mode = "implementation" if current_mode == "discussion" else "discussion"
-    with open(DAIC_STATE_FILE, 'w') as f:
-        json.dump({"mode": new_mode}, f, indent=2)
-    
-    # Return appropriate message
-    return IMPLEMENTATION_MODE_MSG if new_mode == "implementation" else DISCUSSION_MODE_MSG
+            # Get current state information
+            daic_mode = self._check_daic_mode_bool()
+            task_state = self._get_task_state()
 
-def set_daic_mode(value: str|bool):
-    """Set DAIC mode to a specific value."""
-    ensure_state_dir()
-    if value == True or value == "discussion":
-        mode = "discussion"
-        name = "Discussion Mode"
-    elif value == False or value == "implementation":
-        mode = "implementation"
-        name = "Implementation Mode"
-    else:
-        raise ValueError(f"Invalid mode value: {value}")
-    
-    with open(DAIC_STATE_FILE, 'w') as f:
-        json.dump({"mode": mode}, f, indent=2)
-    return name
+            # Prepare response with state information
+            self.response.metadata.update({
+                'daic_mode': 'discussion' if daic_mode else 'implementation',
+                'current_task': task_state.get('task'),
+                'current_branch': task_state.get('branch'),
+                'affected_services': task_state.get('services', []),
+                'state_management': 'active'
+            })
 
-# Task and branch state management
+            # Continue execution
+            self.response.continue_execution = True
+
+        except Exception as e:
+            self.logger.error(f"Shared state management error: {str(e)}")
+            self.response.continue_execution = True  # Fail-open design
+            self.response.metadata['error'] = str(e)
+
+    def _ensure_state_dir(self):
+        """Ensure the state directory exists."""
+        self.state_dir.mkdir(parents=True, exist_ok=True)
+
+    def _check_daic_mode_bool(self) -> bool:
+        """Check if DAIC (discussion) mode is enabled. Returns True for discussion, False for implementation."""
+        self._ensure_state_dir()
+        try:
+            with open(self.daic_state_file, 'r') as f:
+                data = json.load(f)
+                return data.get("mode", "discussion") == "discussion"
+        except (FileNotFoundError, json.JSONDecodeError):
+            # Default to discussion mode if file doesn't exist
+            self._set_daic_mode(True)
+            return True
+
+    def _set_daic_mode(self, value):
+        """Set DAIC mode to a specific value."""
+        self._ensure_state_dir()
+        if value == True or value == "discussion":
+            mode = "discussion"
+        elif value == False or value == "implementation":
+            mode = "implementation"
+        else:
+            raise ValueError(f"Invalid mode value: {value}")
+
+        with open(self.daic_state_file, 'w') as f:
+            json.dump({"mode": mode}, f, indent=2)
+
+    def _get_task_state(self) -> dict:
+        """Get current task state including branch and affected services."""
+        try:
+            with open(self.task_state_file, 'r') as f:
+                return json.load(f)
+        except (FileNotFoundError, json.JSONDecodeError):
+            return {"task": None, "branch": None, "services": [], "updated": None}
+
+# Main execution
+def main():
+    """Main hook execution entry point"""
+    hook = SharedStateHook()
+    return hook.run()
+
+if __name__ == "__main__":
+    sys.exit(main())
+
+# Legacy compatibility functions for backward compatibility
+# These redirect to the Context7 hook implementation
+
+def ensure_state_dir():
+    """Legacy function - ensures state directory exists."""
+    hook = SharedStateHook()
+    hook._ensure_state_dir()
+
+def check_daic_mode_bool() -> bool:
+    """Legacy function - check if DAIC mode is enabled."""
+    hook = SharedStateHook()
+    return hook._check_daic_mode_bool()
+
 def get_task_state() -> dict:
-    """Get current task state including branch and affected services."""
-    try:
-        with open(TASK_STATE_FILE, 'r') as f:
-            return json.load(f)
-    except (FileNotFoundError, json.JSONDecodeError):
-        return {"task": None, "branch": None, "services": [], "updated": None}
+    """Legacy function - get current task state."""
+    hook = SharedStateHook()
+    return hook._get_task_state()
 
-def set_task_state(task: str, branch: str, services: list):
-    """Set current task state."""
-    state = {
-        "task": task,
-        "branch": branch,
-        "services": services,
-        "updated": datetime.now().strftime("%Y-%m-%d")
-    }
-    ensure_state_dir()
-    with open(TASK_STATE_FILE, 'w') as f:
-        json.dump(state, f, indent=2)
-    return state
+def set_daic_mode(value):
+    """Legacy function - set DAIC mode."""
+    hook = SharedStateHook()
+    return hook._set_daic_mode(value)
 
-def add_service_to_task(service: str):
-    """Add a service to the current task's affected services list."""
-    state = get_task_state()
-    if service not in state.get("services", []):
-        state["services"].append(service)
-        ensure_state_dir()
-        with open(TASK_STATE_FILE, 'w') as f:
-            json.dump(state, f, indent=2)
-    return state
+def get_project_root():
+    """Legacy function - get project root."""
+    hook = SharedStateHook()
+    return hook.project_root

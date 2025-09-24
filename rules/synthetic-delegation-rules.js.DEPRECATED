@@ -1,0 +1,40 @@
+// ⚠️ DEPRECATED JAVASCRIPT IMPLEMENTATION - DO NOT USE
+
+/*
+Original File: synthetic-delegation-rules.js
+Deprecation Date: 2025-09-24
+Removal Scheduled: 2025-10-01
+Superseded By: /.claude/hooks/unified-orchestrator-bridge.py
+
+DEPRECATION REASON:
+This JavaScript implementation used MDR (Mandatory Delegation Rules) pattern
+with DAIC mode checking, which has been replaced by the Unified Orchestrator
+architecture with Python-based hook integration.
+
+MIGRATION PATH:
+All validation logic has been consolidated into:
+1. Primary Hook: /.claude/hooks/unified-orchestrator-bridge.py
+2. Configuration: /config/protocol-registry.json
+3. Enforcement: /CLAUDE.md "MCP Integration Standards"
+
+BREAKING CHANGES:
+- MDR-001, MDR-002, MDR-003: Replaced by orchestrator routing
+- DAIC mode checking: Replaced by operational mode system
+- JavaScript hooks: Migrated to Python for better database integration
+- Direct validation: Replaced by fail-open orchestrator pattern
+
+DO NOT REFERENCE THIS FILE:
+Any hooks or systems importing this file should be updated to use
+the new unified-orchestrator-bridge.py implementation.
+
+For current implementation, see:
+- Hook: /.claude/hooks/unified-orchestrator-bridge.py
+- Registry: /config/protocol-registry.json
+- Documentation: /CLAUDE.md
+*/
+
+module.exports = {
+  deprecated: true,
+  replacementFile: '/.claude/hooks/unified-orchestrator-bridge.py',
+  migrationDate: '2025-09-24'
+};

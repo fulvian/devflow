@@ -1,0 +1,33 @@
+# ⚠️ DEPRECATED PROTOCOL - DO NOT USE
+
+**Original File**: synthetic-delegation-rules-prescriptive.md
+**Deprecation Date**: 2025-09-24
+**Removal Scheduled**: 2025-10-01
+**Superseded By**: /CLAUDE.md Section "MCP Integration Standards (UPDATED 2025-09-24)"
+
+## Deprecation Reason
+
+This protocol used **DAIC mode** and prescriptive delegation patterns that have been replaced by the **Unified Orchestrator architecture**. The enforcement mechanisms described here are incompatible with the new system.
+
+## Migration Path
+
+All functionality from this file has been consolidated into:
+
+1. **Primary Protocol**: `/CLAUDE.md` - Section "MCP Integration Standards"
+2. **Architecture**: `/docs/architettura/architettura_orchestrazione_agenti_1.md`
+3. **Implementation**: `/.claude/hooks/unified-orchestrator-bridge.py`
+4. **Registry**: `/config/protocol-registry.json`
+
+## Breaking Changes
+
+- **DAIC mode**: Removed - replaced by operational modes (all-mode, claude-only, cli-only, synthetic-only)
+- **Direct blocking**: Replaced by orchestrator routing with fail-open design
+- **Prescriptive rules**: Replaced by intelligent routing based on task complexity and security
+
+## Do Not Reference This File
+
+Any code, hooks, or documentation referencing this file should be updated to use the new protocol structure defined in the Master Protocol Registry.
+
+---
+
+**For current protocols, see**: `/config/protocol-registry.json`

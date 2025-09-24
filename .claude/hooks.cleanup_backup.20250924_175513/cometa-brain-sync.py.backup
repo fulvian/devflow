@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""
+Cometa Brain Authority Hook for Claude Code Integration v2.0
+Context7-compliant hook using unified patterns for seamless Cometa Brain integration
+"""
+
+import subprocess
+import os
+import sys
+import json
+import uuid
+from typing import Dict, Any
+from pathlib import Path
+
+# Import DevFlow standard hook pattern
+sys.path.append('/Users/fulvioventura/devflow/.claude/hooks/base')
+from standard_hook_pattern import BaseDevFlowHook, PostToolUseHook, HookDecision
+
+class CometaBrainSyncHook(BaseDevFlowHook):
+    """Context7-compliant Cometa Brain synchronization hook"""
+
+    def __init__(self, hook_event: str = "PostToolUse"):
+        super().__init__("cometa-brain-sync")
+        self.db_path = "/Users/fulvioventura/devflow/data/devflow_unified.sqlite"
+        self.script_path = "/Users/fulvioventura/devflow/src/core/cometa/cometa-brain-authority.js"
+        self.hook_event = hook_event
+
+    def load_input(self) -> bool:
+        """Load and validate input from stdin with resilience"""
+        try:
+            self.input_data = json.load(sys.stdin)
+        except json.JSONDecodeError:
+            # If JSON is invalid, start with empty dict
+            self.input_data = {}
+        except:
+            self.input_data = {}
+
+        # Ensure all required fields exist
+        if not self.input_data.get('session_id'):
+            self.input_data['session_id'] = str(uuid.uuid4())[:8]
+
+        if not self.input_data.get('hook_event_name'):
+            self.input_data['hook_event_name'] = self.hook_event
+
+        if not self.input_data.get('cwd'):
+            self.input_data['cwd'] = '/Users/fulvioventura/devflow'
+
+        self.logger.info(f"Hook {self.hook_name} loaded input for session {self.input_data.get('session_id')}")
+        return True
+
+    def validate_input(self) -> bool:
+        """Validate hook-specific input requirements"""
+        # All validation done in load_input()
+        return True
+
+    def execute_logic(self):
+        """Execute Cometa Brain synchronization logic"""
+        success = self._execute_cometa_brain_authority()
+
+        if success:
+            self.logger.info("Cometa Brain synchronization completed successfully")
+            self.response.metadata.update({
+                'cometa_sync_success': True,
+                'sync_timestamp': os.path.getmtime(self.db_path) if Path(self.db_path).exists() else None
+            })
+        else:
+            self.logger.warning("Cometa Brain synchronization failed")
+            self.response.metadata.update({
+                'cometa_sync_success': False,
+                'sync_error': 'Script execution failed'
+            })
+
+    def _execute_cometa_brain_authority(self) -> bool:
+        """Execute the cometa-brain-authority.js script"""
+        try:
+            # Verify script exists
+            if not Path(self.script_path).exists():
+                self.logger.error(f"Cometa Brain Authority script not found: {self.script_path}")
+                return False
+
+            # Set environment variable and execute script
+            env = os.environ.copy()
+            env["DB_PATH"] = self.db_path
+            env["HOOK_EVENT"] = self.hook_event
+
+            result = subprocess.run(
+                ["node", self.script_path],
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=30,
+                cwd="/Users/fulvioventura/devflow"  # Set working directory
+            )
+
+            if result.returncode == 0:
+                if result.stdout:
+                    self.logger.debug(f"Script output: {result.stdout}")
+                return True
+            else:
+                self.logger.warning(f"Script failed with return code {result.returncode}")
+                if result.stderr:
+                    self.logger.debug(f"Script error: {result.stderr}")
+                return False
+
+        except subprocess.TimeoutExpired:
+            self.logger.warning("Cometa Brain Authority script execution timed out")
+            return False
+        except FileNotFoundError:
+            self.logger.error("Node.js not found. Please ensure Node.js is installed and in PATH")
+            return False
+        except Exception as e:
+            self.logger.error(f"Unexpected error executing Cometa Brain Authority: {str(e)}")
+            return False
+
+class CometaBrainPostToolUseHook(PostToolUseHook):
+    """Specialized PostToolUse hook for Cometa Brain sync"""
+
+    def __init__(self):
+        super().__init__("cometa-brain-post-tool-sync")
+        self.cometa_sync = CometaBrainSyncHook("PostToolUse")
+
+    def execute_logic(self):
+        """Execute post-tool-use Cometa Brain sync"""
+        # Copy input data to sync hook
+        self.cometa_sync.input_data = self.input_data
+
+        # Skip validation for sync hook since we already validated
+        self.cometa_sync.execute_logic()
+
+        # Copy metadata from sync hook
+        self.response.metadata.update(self.cometa_sync.response.metadata)
+
+class CometaBrainSessionStartHook(BaseDevFlowHook):
+    """Specialized SessionStart hook for Cometa Brain sync"""
+
+    def __init__(self):
+        super().__init__("cometa-brain-session-start")
+        self.cometa_sync = CometaBrainSyncHook("SessionStart")
+
+    def validate_input(self) -> bool:
+        """Validate SessionStart input - more lenient"""
+        # For SessionStart, we might not have all standard fields
+        if not self.input_data.get('session_id'):
+            # Generate a session ID if missing
+            self.input_data['session_id'] = str(uuid.uuid4())[:8]
+
+        if not self.input_data.get('hook_event_name'):
+            self.input_data['hook_event_name'] = 'SessionStart'
+
+        # Ensure we have cwd
+        if not self.input_data.get('cwd'):
+            self.input_data['cwd'] = '/Users/fulvioventura/devflow'
+
+        return True
+
+    def execute_logic(self):
+        """Execute session-start Cometa Brain sync"""
+        # Copy input data to sync hook
+        self.cometa_sync.input_data = self.input_data
+
+        # Skip validation for sync hook since we already handled it
+        self.cometa_sync.execute_logic()
+
+        # Copy metadata from sync hook
+        self.response.metadata.update(self.cometa_sync.response.metadata)
+
+def main():
+    """Main hook execution with Context7 pattern"""
+    hook_event = os.getenv('HOOK_EVENT', 'PostToolUse')
+
+    if hook_event == 'PostToolUse':
+        hook = CometaBrainPostToolUseHook()
+    elif hook_event == 'SessionStart':
+        hook = CometaBrainSessionStartHook()
+    else:
+        # Generic sync hook for other events
+        hook = CometaBrainSyncHook(hook_event)
+
+    return hook.run()
+
+if __name__ == "__main__":
+    sys.exit(main())

@@ -5,80 +5,33 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/user-messages.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/footer-details.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-nlp-hook.py"
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/user-prompt-submit-context7.py"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__devflow-synthetic-cc-sessions__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/auto-approve-mcp.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-transcript-link.py"
-          },
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/unified-orchestrator-hook.js"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__qwen-code__.*|mcp__gemini-cli__.*|mcp__codex-cli__.*|mcp__devflow-synthetic-cc-sessions__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/enhanced-pre-tool-hook.js"
-          }
-        ]
-      },
-      {
         "matcher": "Write|Edit|MultiEdit|Task|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/devflow-enforcement-guard.js"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-task-autocreator.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/unified-orchestrator-bridge.py"
           }
         ]
       }
     ],
     "PostToolUse": [
       {
-        "matcher": "Write",
+        "matcher": "Bash|Task|Read|Write|Edit|MultiEdit|Grep|Glob|LS|WebFetch",
         "hooks": [
           {
             "type": "command",
-            "command": "echo 'POSTTOOLUSE HOOK TRIGGERED - RELOADED!' >> /Users/fulvioventura/devflow/temp/posttooluse-trigger.txt"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/performance-monitor.py"
           }
         ]
       }
@@ -90,14 +43,6 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
-          },
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/cometa-activation.js"
           }
         ]
       },
@@ -106,10 +51,6 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-monitor.py"
           }
         ]
       }
@@ -119,7 +60,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop-hook.js"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/hook-lifecycle-manager.py"
           }
         ]
       }
@@ -129,7 +70,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-stop-hook.js"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protocol-validator.py"
           }
         ]
       }

@@ -1,0 +1,5056 @@
+{
+  "audit_metadata": {
+    "timestamp": "2025-09-24T17:11:38.789769",
+    "total_hooks": 44,
+    "auditor_version": "1.0.0"
+  },
+  "summary": {
+    "total_hooks": 44,
+    "categories": {
+      "unknown": 12,
+      "cometa": 17,
+      "system": 3,
+      "core": 4,
+      "utility": 3,
+      "integration": 3,
+      "context7": 2
+    },
+    "context7_compliant": 12,
+    "context7_compliance_rate": 27.3,
+    "deprecated_hooks": 3,
+    "high_security_risk": 0,
+    "total_lines_of_code": 14682,
+    "average_complexity": 33.73
+  },
+  "categories": {
+    "core": {
+      "count": 4,
+      "context7_compliant": 2,
+      "deprecated": 0,
+      "high_complexity": 4,
+      "security_issues": 0
+    },
+    "cometa": {
+      "count": 17,
+      "context7_compliant": 5,
+      "deprecated": 0,
+      "high_complexity": 16,
+      "security_issues": 0
+    },
+    "system": {
+      "count": 3,
+      "context7_compliant": 0,
+      "deprecated": 0,
+      "high_complexity": 1,
+      "security_issues": 0
+    },
+    "integration": {
+      "count": 3,
+      "context7_compliant": 1,
+      "deprecated": 0,
+      "high_complexity": 3,
+      "security_issues": 0
+    },
+    "utility": {
+      "count": 3,
+      "context7_compliant": 0,
+      "deprecated": 0,
+      "high_complexity": 2,
+      "security_issues": 0
+    },
+    "context7": {
+      "count": 2,
+      "context7_compliant": 2,
+      "deprecated": 0,
+      "high_complexity": 2,
+      "security_issues": 0
+    }
+  },
+  "compliance": {
+    "average_compliance_score": 43.5,
+    "fully_compliant_count": 12,
+    "non_compliant_hooks": [
+      {
+        "path": "performance-cache-system.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa-user-prompt-intelligence.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "footer-display.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "robust-memory-stream.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa-context-search.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "project-lifecycle-automation.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "cometa-nlp-hook.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa-project-loader.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "hook-dispatcher.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa_task_executor.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "post-tool-use-footer.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa_progress_tracker.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cc-tools-integration.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "setup-devflow.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "task-transcript-link.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "shared_state.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "cometa_batch_manager.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "session-monitor.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "comprehensive-hook-audit-analysis.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "auto-approve-mcp.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "devflow-integration.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "context-loader.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa-slash-command.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "cometa-task-autocreator.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      },
+      {
+        "path": "cometa-memory-stream.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "footer-details.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa_nlp_processor.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "cometa-brain-sync.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": "user-messages.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": ".deprecated/memory-stream-workaround.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": ".deprecated/test-posttooluse.py",
+        "score": 28.6,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger"
+        ]
+      },
+      {
+        "path": ".deprecated/test-userprompt-hook.py",
+        "score": 14.3,
+        "missing_criteria": [
+          "imports_base_pattern",
+          "extends_base_hook",
+          "has_validate_input",
+          "has_execute_logic",
+          "uses_logger",
+          "returns_json"
+        ]
+      }
+    ],
+    "most_common_missing_criteria": {
+      "has_validate_input": 35,
+      "uses_logger": 33,
+      "imports_base_pattern": 32,
+      "extends_base_hook": 32,
+      "has_execute_logic": 32,
+      "returns_json": 10
+    }
+  },
+  "security": {
+    "total_security_issues": 13,
+    "risk_distribution": {
+      "high": 0,
+      "medium": 4,
+      "low": 40
+    },
+    "critical_security_hooks": [],
+    "most_common_vulnerabilities": {
+      "network_operations": 11,
+      "file_operations": 7
+    }
+  },
+  "optimization": [
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "database_operations",
+      "affected_hooks": [
+        "performance-cache-system.py",
+        "cometa-user-prompt-intelligence.py",
+        "cometa-user-prompt-hook.py",
+        "robust-memory-stream.py",
+        "cometa-context-search.py",
+        "cometa-orchestrator-intelligence.py",
+        "cometa-memory-stream-hook.py",
+        "cometa-project-loader.py",
+        "cometa_task_executor.py",
+        "cometa_progress_tracker.py",
+        "cross-verification-system.py",
+        "unified-cometa-processor.py",
+        "cometa-system-status-hook.py",
+        "comprehensive-hook-audit-analysis.py",
+        "devflow-integration.py",
+        "context-loader.py",
+        "cometa-task-autocreator.py",
+        "cometa-memory-stream.py",
+        "protocol-validator.py",
+        ".deprecated/memory-stream-workaround.py",
+        ".deprecated/test-posttooluse.py"
+      ],
+      "recommendation": "Consider consolidating 21 hooks with database_operations functionality"
+    },
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "json_processing",
+      "affected_hooks": [
+        "performance-cache-system.py",
+        "cometa-user-prompt-intelligence.py",
+        "footer-display.py",
+        "robust-memory-stream.py",
+        "cometa-context-search.py",
+        "session-start.py",
+        "cometa-orchestrator-intelligence.py",
+        "cometa-memory-stream-hook.py",
+        "cometa-nlp-hook.py",
+        "cometa-project-loader.py",
+        "hook-dispatcher.py",
+        "cometa_task_executor.py",
+        "post-tool-use-footer.py",
+        "cometa_progress_tracker.py",
+        "cc-tools-integration.py",
+        "cross-verification-system.py",
+        "unified-cometa-processor.py",
+        "task-transcript-link.py",
+        "cometa-system-status-hook.py",
+        "cometa_batch_manager.py",
+        "session-monitor.py",
+        "comprehensive-hook-audit-analysis.py",
+        "auto-approve-mcp.py",
+        "devflow-integration.py",
+        "unified-orchestrator-bridge.py",
+        "context-loader.py",
+        "cometa-task-autocreator.py",
+        "cometa-memory-stream.py",
+        "footer-details.py",
+        "cometa_nlp_processor.py",
+        "user-prompt-submit-context7.py",
+        "cometa-brain-sync.py",
+        "user-messages.py",
+        "protocol-validator.py",
+        ".deprecated/memory-stream-workaround.py",
+        ".deprecated/test-posttooluse.py",
+        "base/standard_hook_pattern.py"
+      ],
+      "recommendation": "Consider consolidating 37 hooks with json_processing functionality"
+    },
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "file_operations",
+      "affected_hooks": [
+        "performance-cache-system.py",
+        "cometa-user-prompt-intelligence.py",
+        "footer-display.py",
+        "cometa-user-prompt-hook.py",
+        "robust-memory-stream.py",
+        "session-start.py",
+        "cometa-memory-stream-hook.py",
+        "cometa-nlp-hook.py",
+        "post-tool-use-footer.py",
+        "cc-tools-integration.py",
+        "setup-devflow.py",
+        "unified-cometa-processor.py",
+        "task-transcript-link.py",
+        "cometa-system-status-hook.py",
+        "shared_state.py",
+        "session-monitor.py",
+        "comprehensive-hook-audit-analysis.py",
+        "devflow-integration.py",
+        "unified-orchestrator-bridge.py",
+        "context-loader.py",
+        "cometa-slash-command.py",
+        "cometa-task-autocreator.py",
+        "footer-details.py",
+        "user-prompt-submit-context7.py",
+        "user-messages.py",
+        "protocol-validator.py",
+        ".deprecated/memory-stream-workaround.py",
+        ".deprecated/test-posttooluse.py",
+        ".deprecated/test-userprompt-hook.py"
+      ],
+      "recommendation": "Consider consolidating 29 hooks with file_operations functionality"
+    },
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "task_management",
+      "affected_hooks": [
+        "performance-cache-system.py",
+        "cometa-user-prompt-intelligence.py",
+        "footer-display.py",
+        "cometa-user-prompt-hook.py",
+        "cometa-context-search.py",
+        "session-start.py",
+        "project-lifecycle-automation.py",
+        "cometa-orchestrator-intelligence.py",
+        "cometa-memory-stream-hook.py",
+        "cometa-nlp-hook.py",
+        "post-tool-use.py",
+        "cometa-project-loader.py",
+        "cometa_task_executor.py",
+        "post-tool-use-footer.py",
+        "cometa_progress_tracker.py",
+        "cc-tools-integration.py",
+        "cross-verification-system.py",
+        "setup-devflow.py",
+        "unified-cometa-processor.py",
+        "task-transcript-link.py",
+        "cometa-system-status-hook.py",
+        "shared_state.py",
+        "cometa_batch_manager.py",
+        "session-monitor.py",
+        "comprehensive-hook-audit-analysis.py",
+        "auto-approve-mcp.py",
+        "devflow-integration.py",
+        "unified-orchestrator-bridge.py",
+        "context-loader.py",
+        "cometa-slash-command.py",
+        "cometa-task-autocreator.py",
+        "cometa_nlp_processor.py",
+        "user-prompt-submit-context7.py",
+        "user-messages.py"
+      ],
+      "recommendation": "Consider consolidating 34 hooks with task_management functionality"
+    },
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "cometa_processing",
+      "affected_hooks": [
+        "performance-cache-system.py",
+        "cometa-user-prompt-intelligence.py",
+        "cometa-user-prompt-hook.py",
+        "robust-memory-stream.py",
+        "cometa-context-search.py",
+        "cometa-orchestrator-intelligence.py",
+        "cometa-memory-stream-hook.py",
+        "cometa-nlp-hook.py",
+        "cometa-project-loader.py",
+        "cometa_task_executor.py",
+        "cometa_progress_tracker.py",
+        "unified-cometa-processor.py",
+        "cometa-system-status-hook.py",
+        "cometa_batch_manager.py",
+        "comprehensive-hook-audit-analysis.py",
+        "devflow-integration.py",
+        "cometa-slash-command.py",
+        "cometa-task-autocreator.py",
+        "cometa-memory-stream.py",
+        "cometa_nlp_processor.py",
+        "user-prompt-submit-context7.py",
+        "cometa-brain-sync.py",
+        ".deprecated/memory-stream-workaround.py",
+        ".deprecated/test-posttooluse.py"
+      ],
+      "recommendation": "Consider consolidating 24 hooks with cometa_processing functionality"
+    },
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "logging",
+      "affected_hooks": [
+        "cometa-user-prompt-hook.py",
+        "project-lifecycle-automation.py",
+        "cometa-orchestrator-intelligence.py",
+        "cometa-memory-stream-hook.py",
+        "post-tool-use.py",
+        "cross-verification-system.py",
+        "unified-cometa-processor.py",
+        "cometa-system-status-hook.py",
+        "unified-orchestrator-bridge.py",
+        "user-prompt-submit-context7.py",
+        "protocol-validator.py",
+        "base/standard_hook_pattern.py"
+      ],
+      "recommendation": "Consider consolidating 12 hooks with logging functionality"
+    },
+    {
+      "type": "consolidation",
+      "priority": "high",
+      "functionality": "daic_processing",
+      "affected_hooks": [
+        "session-start.py",
+        "post-tool-use.py",
+        "task-transcript-link.py",
+        "shared_state.py",
+        "comprehensive-hook-audit-analysis.py",
+        "user-prompt-submit-context7.py",
+        "user-messages.py"
+      ],
+      "recommendation": "Consider consolidating 7 hooks with daic_processing functionality"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "performance-cache-system.py"
+      ],
+      "recommendation": "Reduce complexity in performance-cache-system.py (complexity: 41)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-user-prompt-intelligence.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-user-prompt-intelligence.py (complexity: 24)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-user-prompt-hook.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-user-prompt-hook.py (complexity: 44)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "robust-memory-stream.py"
+      ],
+      "recommendation": "Reduce complexity in robust-memory-stream.py (complexity: 27)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-context-search.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-context-search.py (complexity: 29)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "session-start.py"
+      ],
+      "recommendation": "Reduce complexity in session-start.py (complexity: 56)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "project-lifecycle-automation.py"
+      ],
+      "recommendation": "Reduce complexity in project-lifecycle-automation.py (complexity: 23)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-orchestrator-intelligence.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-orchestrator-intelligence.py (complexity: 31)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-memory-stream-hook.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-memory-stream-hook.py (complexity: 35)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-nlp-hook.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-nlp-hook.py (complexity: 81)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "post-tool-use.py"
+      ],
+      "recommendation": "Reduce complexity in post-tool-use.py (complexity: 13)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-project-loader.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-project-loader.py (complexity: 14)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa_task_executor.py"
+      ],
+      "recommendation": "Reduce complexity in cometa_task_executor.py (complexity: 48)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "post-tool-use-footer.py"
+      ],
+      "recommendation": "Reduce complexity in post-tool-use-footer.py (complexity: 32)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa_progress_tracker.py"
+      ],
+      "recommendation": "Reduce complexity in cometa_progress_tracker.py (complexity: 53)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cc-tools-integration.py"
+      ],
+      "recommendation": "Reduce complexity in cc-tools-integration.py (complexity: 17)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cross-verification-system.py"
+      ],
+      "recommendation": "Reduce complexity in cross-verification-system.py (complexity: 42)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "setup-devflow.py"
+      ],
+      "recommendation": "Reduce complexity in setup-devflow.py (complexity: 12)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "unified-cometa-processor.py"
+      ],
+      "recommendation": "Reduce complexity in unified-cometa-processor.py (complexity: 84)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "task-transcript-link.py"
+      ],
+      "recommendation": "Reduce complexity in task-transcript-link.py (complexity: 23)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-system-status-hook.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-system-status-hook.py (complexity: 38)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "shared_state.py"
+      ],
+      "recommendation": "Reduce complexity in shared_state.py (complexity: 12)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa_batch_manager.py"
+      ],
+      "recommendation": "Reduce complexity in cometa_batch_manager.py (complexity: 42)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "comprehensive-hook-audit-analysis.py"
+      ],
+      "recommendation": "Reduce complexity in comprehensive-hook-audit-analysis.py (complexity: 84)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "devflow-integration.py"
+      ],
+      "recommendation": "Reduce complexity in devflow-integration.py (complexity: 132)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "unified-orchestrator-bridge.py"
+      ],
+      "recommendation": "Reduce complexity in unified-orchestrator-bridge.py (complexity: 24)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "context-loader.py"
+      ],
+      "recommendation": "Reduce complexity in context-loader.py (complexity: 42)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-slash-command.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-slash-command.py (complexity: 29)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-task-autocreator.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-task-autocreator.py (complexity: 30)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa-memory-stream.py"
+      ],
+      "recommendation": "Reduce complexity in cometa-memory-stream.py (complexity: 22)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "footer-details.py"
+      ],
+      "recommendation": "Reduce complexity in footer-details.py (complexity: 19)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "cometa_nlp_processor.py"
+      ],
+      "recommendation": "Reduce complexity in cometa_nlp_processor.py (complexity: 60)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "user-prompt-submit-context7.py"
+      ],
+      "recommendation": "Reduce complexity in user-prompt-submit-context7.py (complexity: 49)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "user-messages.py"
+      ],
+      "recommendation": "Reduce complexity in user-messages.py (complexity: 36)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "protocol-validator.py"
+      ],
+      "recommendation": "Reduce complexity in protocol-validator.py (complexity: 38)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        ".deprecated/memory-stream-workaround.py"
+      ],
+      "recommendation": "Reduce complexity in .deprecated/memory-stream-workaround.py (complexity: 30)"
+    },
+    {
+      "type": "complexity_reduction",
+      "priority": "medium",
+      "affected_hooks": [
+        "base/standard_hook_pattern.py"
+      ],
+      "recommendation": "Reduce complexity in base/standard_hook_pattern.py (complexity: 29)"
+    }
+  ],
+  "deprecation": [
+    {
+      "type": "immediate_deprecation",
+      "priority": "high",
+      "count": 1,
+      "hooks": [
+        {
+          "path": ".deprecated/memory-stream-workaround.py",
+          "reasons": [
+            "Located in deprecated directory",
+            "Contains deprecation keywords",
+            "Not Context7 compliant"
+          ],
+          "confidence": 85
+        }
+      ],
+      "action": "Remove immediately - high confidence deprecated"
+    },
+    {
+      "type": "deprecation_review",
+      "priority": "medium",
+      "count": 2,
+      "hooks": [
+        {
+          "path": ".deprecated/test-posttooluse.py",
+          "reasons": [
+            "Located in deprecated directory",
+            "Not Context7 compliant"
+          ],
+          "confidence": 65
+        },
+        {
+          "path": ".deprecated/test-userprompt-hook.py",
+          "reasons": [
+            "Located in deprecated directory",
+            "Not Context7 compliant"
+          ],
+          "confidence": 65
+        }
+      ],
+      "action": "Review for potential deprecation"
+    },
+    {
+      "type": "context7_migration",
+      "priority": "medium",
+      "count": 32,
+      "hooks": [
+        {
+          "path": "performance-cache-system.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa-user-prompt-intelligence.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "footer-display.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "robust-memory-stream.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa-context-search.py",
+          "compliance_score": 14.3
+        },
+        {
+          "path": "project-lifecycle-automation.py",
+          "compliance_score": 14.3
+        },
+        {
+          "path": "cometa-nlp-hook.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa-project-loader.py",
+          "compliance_score": 14.3
+        },
+        {
+          "path": "hook-dispatcher.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa_task_executor.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "post-tool-use-footer.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa_progress_tracker.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cc-tools-integration.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "setup-devflow.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "task-transcript-link.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "shared_state.py",
+          "compliance_score": 14.3
+        },
+        {
+          "path": "cometa_batch_manager.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "session-monitor.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "comprehensive-hook-audit-analysis.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "auto-approve-mcp.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "devflow-integration.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "context-loader.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa-slash-command.py",
+          "compliance_score": 14.3
+        },
+        {
+          "path": "cometa-task-autocreator.py",
+          "compliance_score": 14.3
+        },
+        {
+          "path": "cometa-memory-stream.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "footer-details.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa_nlp_processor.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "cometa-brain-sync.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": "user-messages.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": ".deprecated/memory-stream-workaround.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": ".deprecated/test-posttooluse.py",
+          "compliance_score": 28.6
+        },
+        {
+          "path": ".deprecated/test-userprompt-hook.py",
+          "compliance_score": 14.3
+        }
+      ],
+      "action": "Migrate to Context7 or deprecate"
+    }
+  ],
+  "detailed_results": {
+    "performance-cache-system.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/performance-cache-system.py",
+      "relative_path": "performance-cache-system.py",
+      "file_size": 19078,
+      "last_modified": "2025-09-24T14:53:00.736060",
+      "analysis_timestamp": "2025-09-24T17:11:38.225126",
+      "line_count": 541,
+      "char_count": 19078,
+      "content_hash": "8093149bbfc84743",
+      "category": "unknown",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": false,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 23,
+        "class_count": 3,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow Performance Cache System v2.0",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 12,
+        "api_calls": 23
+      },
+      "dependencies": [
+        "Dict",
+        "pickle",
+        "json",
+        "os",
+        "argparse",
+        "Path",
+        "sys",
+        "typing",
+        "threading",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3",
+        "time"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 41,
+        "nesting_depth": 5,
+        "cognitive_complexity": 40,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "cometa-user-prompt-intelligence.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-user-prompt-intelligence.py",
+      "relative_path": "cometa-user-prompt-intelligence.py",
+      "file_size": 14692,
+      "last_modified": "2025-09-23T23:35:52.259480",
+      "analysis_timestamp": "2025-09-24T17:11:38.247351",
+      "line_count": 408,
+      "char_count": 14661,
+      "content_hash": "b2409c3d8aa07710",
+      "category": "cometa",
+      "hook_type": [
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 13,
+        "class_count": 3,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain UserPromptSubmit Intelligence Hook",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 8,
+        "api_calls": 13
+      },
+      "dependencies": [
+        "Dict",
+        "re",
+        "json",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 24,
+        "nesting_depth": 6,
+        "cognitive_complexity": 23,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "footer-display.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/footer-display.py",
+      "relative_path": "footer-display.py",
+      "file_size": 2542,
+      "last_modified": "2025-09-16T17:40:48.809894",
+      "analysis_timestamp": "2025-09-24T17:11:38.262771",
+      "line_count": 78,
+      "char_count": 2518,
+      "content_hash": "8b7bf8193aa2e7e9",
+      "category": "system",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 2,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow v3.1 Custom Footer System",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 4,
+        "api_calls": 2
+      },
+      "dependencies": [
+        "datetime",
+        "sys",
+        "json",
+        "os"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 10,
+        "nesting_depth": 3,
+        "cognitive_complexity": 9,
+        "assessment": "medium"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa-user-prompt-hook.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-user-prompt-hook.py",
+      "relative_path": "cometa-user-prompt-hook.py",
+      "file_size": 16323,
+      "last_modified": "2025-09-24T15:29:25.792099",
+      "analysis_timestamp": "2025-09-24T17:11:38.266809",
+      "line_count": 398,
+      "char_count": 16227,
+      "content_hash": "1532abad5fa9afda",
+      "category": "cometa",
+      "hook_type": [
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 19,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa User Prompt Hook - Context7 Implementation",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 8,
+        "api_calls": 19
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "re",
+        "json",
+        "UserPromptSubmitHook",
+        "os",
+        "typing",
+        "sys",
+        "datetime",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 44,
+        "nesting_depth": 6,
+        "cognitive_complexity": 43,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "file_operations",
+        "logging",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [],
+        "confidence": 0
+      }
+    },
+    "robust-memory-stream.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/robust-memory-stream.py",
+      "relative_path": "robust-memory-stream.py",
+      "file_size": 9500,
+      "last_modified": "2025-09-24T10:28:15.913361",
+      "analysis_timestamp": "2025-09-24T17:11:38.283394",
+      "line_count": 252,
+      "char_count": 9463,
+      "content_hash": "cf720a5ee58c6aff",
+      "category": "unknown",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": true,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 9,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "ROBUST COMETA MEMORY STREAM - INDEPENDENT IMPLEMENTATION",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 9,
+        "api_calls": 9
+      },
+      "dependencies": [
+        "Dict",
+        "json",
+        "numpy",
+        "Path",
+        "sys",
+        "traceback",
+        "typing",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 27,
+        "nesting_depth": 6,
+        "cognitive_complexity": 25,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa-context-search.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-context-search.py",
+      "relative_path": "cometa-context-search.py",
+      "file_size": 13716,
+      "last_modified": "2025-09-23T23:51:45.527416",
+      "analysis_timestamp": "2025-09-24T17:11:38.292917",
+      "line_count": 411,
+      "char_count": 13706,
+      "content_hash": "505927c7abfb7766",
+      "category": "cometa",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 10,
+        "class_count": 3,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Advanced Context Search Engine",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 9,
+        "api_calls": 10
+      },
+      "dependencies": [
+        "cosine_similarity",
+        "Dict",
+        "json",
+        "numpy",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "hashlib",
+        "sklearn.metrics.pairwise",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 29,
+        "nesting_depth": 3,
+        "cognitive_complexity": 28,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "session-start.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/session-start.py",
+      "relative_path": "session-start.py",
+      "file_size": 14411,
+      "last_modified": "2025-09-24T15:07:08.146386",
+      "analysis_timestamp": "2025-09-24T17:11:38.306967",
+      "line_count": 412,
+      "char_count": 14407,
+      "content_hash": "2ade1f5dcf920b91",
+      "category": "core",
+      "hook_type": [
+        "UserPromptSubmit",
+        "SessionStart"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 5,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Session start hook to initialize Claude Code Sessions context v2.0",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 13,
+        "api_calls": 5
+      },
+      "dependencies": [
+        "pathlib",
+        "standard_hook_pattern",
+        "tiktoken",
+        "json",
+        "os",
+        "shutil",
+        "subprocess",
+        "sys",
+        "Path",
+        "shared_state",
+        "BaseDevFlowHook",
+        "get_project_root"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 56,
+        "nesting_depth": 7,
+        "cognitive_complexity": 53,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "daic_processing",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords"
+        ],
+        "confidence": 20
+      }
+    },
+    "project-lifecycle-automation.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/project-lifecycle-automation.py",
+      "relative_path": "project-lifecycle-automation.py",
+      "file_size": 12416,
+      "last_modified": "2025-09-22T00:28:37.569250",
+      "analysis_timestamp": "2025-09-24T17:11:38.321169",
+      "line_count": 344,
+      "char_count": 12413,
+      "content_hash": "dbc748beb37b2b5c",
+      "category": "unknown",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 13,
+        "class_count": 7,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "Project Lifecycle Management Hook for Natural Language Commands",
+        "database_operations": false,
+        "file_operations": false,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 9,
+        "api_calls": 13
+      },
+      "dependencies": [
+        "Enum",
+        "enum",
+        "logging",
+        "Dict",
+        "dataclasses",
+        "re",
+        "requests.exceptions",
+        "dataclass",
+        "json",
+        "typing",
+        "RequestException",
+        "ABC",
+        "requests",
+        "abc"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 23,
+        "nesting_depth": 6,
+        "cognitive_complexity": 22,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "logging",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "cometa-orchestrator-intelligence.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-orchestrator-intelligence.py",
+      "relative_path": "cometa-orchestrator-intelligence.py",
+      "file_size": 16403,
+      "last_modified": "2025-09-24T14:49:57.324221",
+      "analysis_timestamp": "2025-09-24T17:11:38.331823",
+      "line_count": 417,
+      "char_count": 16403,
+      "content_hash": "5095ff01dc11072b",
+      "category": "cometa",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse",
+        "Multi-Event"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": false,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 15,
+        "class_count": 3,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain - Orchestrator Intelligence Integration v2.0",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 10,
+        "api_calls": 15
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "PreToolUseHook",
+        "json",
+        "os",
+        "sqlite3",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "requests"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 31,
+        "nesting_depth": 6,
+        "cognitive_complexity": 30,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "logging",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [],
+        "confidence": 0
+      }
+    },
+    "cometa-memory-stream-hook.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-memory-stream-hook.py",
+      "relative_path": "cometa-memory-stream-hook.py",
+      "file_size": 16283,
+      "last_modified": "2025-09-24T16:38:58.341390",
+      "analysis_timestamp": "2025-09-24T17:11:38.345794",
+      "line_count": 406,
+      "char_count": 16283,
+      "content_hash": "a858cb14512d390f",
+      "category": "cometa",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 100.0,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 17,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Memory Stream Hook - Context7 Implementation",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 8,
+        "api_calls": 17
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "json",
+        "os",
+        "PostToolUseHook",
+        "typing",
+        "sys",
+        "datetime",
+        "hashlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 35,
+        "nesting_depth": 3,
+        "cognitive_complexity": 34,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "logging",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords"
+        ],
+        "confidence": 20
+      }
+    },
+    "cometa-nlp-hook.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-nlp-hook.py",
+      "relative_path": "cometa-nlp-hook.py",
+      "file_size": 26199,
+      "last_modified": "2025-09-24T11:48:47.376369",
+      "analysis_timestamp": "2025-09-24T17:11:38.360243",
+      "line_count": 654,
+      "char_count": 26053,
+      "content_hash": "040b99c1f1ba97c3",
+      "category": "cometa",
+      "hook_type": [
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 19,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Natural Language Processing Hook",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 11,
+        "api_calls": 19
+      },
+      "dependencies": [
+        "cometa_batch_manager",
+        "Dict",
+        "NaturalLanguageCommandProcessor",
+        "re",
+        "cometa_task_executor",
+        "cometa_progress_tracker",
+        "json",
+        "TaskProgressTracker",
+        "cometa_nlp_processor",
+        "Path",
+        "sys",
+        "TaskCommandExecutor",
+        "typing",
+        "datetime",
+        "BatchOperationsManager",
+        "pysnooper",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 81,
+        "nesting_depth": 6,
+        "cognitive_complexity": 79,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "post-tool-use.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/post-tool-use.py",
+      "relative_path": "post-tool-use.py",
+      "file_size": 3474,
+      "last_modified": "2025-09-24T15:12:38.300532",
+      "analysis_timestamp": "2025-09-24T17:11:38.388619",
+      "line_count": 88,
+      "char_count": 3474,
+      "content_hash": "1f6dea686bf025a5",
+      "category": "core",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 4,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Post-tool-use hook to remind about DAIC command in implementation mode.",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": false,
+        "logging_operations": true,
+        "external_dependencies": 4,
+        "api_calls": 4
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "PostToolUseHook",
+        "Path",
+        "sys",
+        "shared_state",
+        "check_daic_mode_bool",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 13,
+        "nesting_depth": 3,
+        "cognitive_complexity": 11,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "logging",
+        "daic_processing",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [],
+        "confidence": 0
+      }
+    },
+    "cometa-project-loader.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-project-loader.py",
+      "relative_path": "cometa-project-loader.py",
+      "file_size": 7131,
+      "last_modified": "2025-09-23T23:25:51.913066",
+      "analysis_timestamp": "2025-09-24T17:11:38.392339",
+      "line_count": 225,
+      "char_count": 7113,
+      "content_hash": "7763f56dc35e849a",
+      "category": "cometa",
+      "hook_type": [
+        "SessionStart"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 8,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Project Context Loader",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 7,
+        "api_calls": 8
+      },
+      "dependencies": [
+        "Dict",
+        "json",
+        "subprocess",
+        "sys",
+        "Path",
+        "typing",
+        "datetime",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 14,
+        "nesting_depth": 3,
+        "cognitive_complexity": 13,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "hook-dispatcher.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/hook-dispatcher.py",
+      "relative_path": "hook-dispatcher.py",
+      "file_size": 1667,
+      "last_modified": "2025-09-23T07:55:10.865893",
+      "analysis_timestamp": "2025-09-24T17:11:38.400055",
+      "line_count": 54,
+      "char_count": 1667,
+      "content_hash": "fa95d727c69afec5",
+      "category": "utility",
+      "hook_type": [
+        "PostToolUse",
+        "UserPromptSubmit",
+        "SessionStart"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 0,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Hook Dispatcher for Claude Code Integration",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 6,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "json",
+        "devflow_integration",
+        "asyncio",
+        "Path",
+        "sys",
+        "DevFlowIntegration",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 7,
+        "nesting_depth": 4,
+        "cognitive_complexity": 6,
+        "assessment": "medium"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa_task_executor.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa_task_executor.py",
+      "relative_path": "cometa_task_executor.py",
+      "file_size": 18675,
+      "last_modified": "2025-09-24T11:46:49.084653",
+      "analysis_timestamp": "2025-09-24T17:11:38.402579",
+      "line_count": 553,
+      "char_count": 18675,
+      "content_hash": "27ebbc44d998a293",
+      "category": "cometa",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 19,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Task Command Executor",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 7,
+        "api_calls": 19
+      },
+      "dependencies": [
+        "Dict",
+        "json",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "pysnooper",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 48,
+        "nesting_depth": 6,
+        "cognitive_complexity": 47,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "post-tool-use-footer.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/post-tool-use-footer.py",
+      "relative_path": "post-tool-use-footer.py",
+      "file_size": 8344,
+      "last_modified": "2025-09-20T22:50:25.704162",
+      "analysis_timestamp": "2025-09-24T17:11:38.422826",
+      "line_count": 239,
+      "char_count": 8344,
+      "content_hash": "95ce58f08d429574",
+      "category": "core",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 4,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "file_operations",
+            "pattern": "open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          },
+          {
+            "category": "file_operations",
+            "pattern": "with\\s+open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          },
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "medium",
+        "security_score": 60
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow PostToolUse Footer Hook",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 10,
+        "api_calls": 4
+      },
+      "dependencies": [
+        "json",
+        "os",
+        "Path",
+        "sys",
+        "traceback",
+        "importlib",
+        "subprocess",
+        "datetime",
+        "urllib",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 32,
+        "nesting_depth": 6,
+        "cognitive_complexity": 31,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa_progress_tracker.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa_progress_tracker.py",
+      "relative_path": "cometa_progress_tracker.py",
+      "file_size": 21715,
+      "last_modified": "2025-09-24T00:02:17.155281",
+      "analysis_timestamp": "2025-09-24T17:11:38.431499",
+      "line_count": 591,
+      "char_count": 21656,
+      "content_hash": "ee0bd621c8cf96fc",
+      "category": "cometa",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 21,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Task Progress Tracking Interface",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 7,
+        "api_calls": 21
+      },
+      "dependencies": [
+        "Dict",
+        "json",
+        "defaultdict",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "pathlib",
+        "sqlite3",
+        "collections"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 53,
+        "nesting_depth": 3,
+        "cognitive_complexity": 52,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "cc-tools-integration.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cc-tools-integration.py",
+      "relative_path": "cc-tools-integration.py",
+      "file_size": 5796,
+      "last_modified": "2025-09-17T17:54:30.676145",
+      "analysis_timestamp": "2025-09-24T17:11:38.454435",
+      "line_count": 159,
+      "char_count": 5796,
+      "content_hash": "c1c04726c241a393",
+      "category": "integration",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 3,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "CC-Tools Integration Hook for Claude Code Sessions",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 7,
+        "api_calls": 6
+      },
+      "dependencies": [
+        "hooks.cc_validation_hook",
+        "Dict",
+        "json",
+        "os",
+        "cc_validation_hook",
+        "asyncio",
+        "Path",
+        "sys",
+        "typing",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 17,
+        "nesting_depth": 3,
+        "cognitive_complexity": 15,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cross-verification-system.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cross-verification-system.py",
+      "relative_path": "cross-verification-system.py",
+      "file_size": 19760,
+      "last_modified": "2025-09-24T14:51:36.498946",
+      "analysis_timestamp": "2025-09-24T17:11:38.460685",
+      "line_count": 507,
+      "char_count": 19750,
+      "content_hash": "a1497c75d58721f6",
+      "category": "unknown",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": false,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 14,
+        "class_count": 4,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "Cross-Verification Protocol System v2.0",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 12,
+        "api_calls": 14
+      },
+      "dependencies": [
+        "Enum",
+        "enum",
+        "standard_hook_pattern",
+        "Dict",
+        "json",
+        "uuid",
+        "os",
+        "sqlite3",
+        "PostToolUseHook",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "requests"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 42,
+        "nesting_depth": 6,
+        "cognitive_complexity": 40,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "logging",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [],
+        "confidence": 0
+      }
+    },
+    "setup-devflow.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/setup-devflow.py",
+      "relative_path": "setup-devflow.py",
+      "file_size": 8303,
+      "last_modified": "2025-09-24T14:58:57.176310",
+      "analysis_timestamp": "2025-09-24T17:11:38.479504",
+      "line_count": 233,
+      "char_count": 8283,
+      "content_hash": "a11611ef585eded1",
+      "category": "utility",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse",
+        "UserPromptSubmit",
+        "SessionStart"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 3,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow Initialization Script v2.0",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 5,
+        "api_calls": 3
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "json",
+        "os",
+        "Path",
+        "sys",
+        "BaseDevFlowHook",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 12,
+        "nesting_depth": 7,
+        "cognitive_complexity": 11,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "file_operations",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "unified-cometa-processor.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/unified-cometa-processor.py",
+      "relative_path": "unified-cometa-processor.py",
+      "file_size": 27150,
+      "last_modified": "2025-09-24T15:40:06.474525",
+      "analysis_timestamp": "2025-09-24T17:11:38.486876",
+      "line_count": 713,
+      "char_count": 27150,
+      "content_hash": "bfa2056632aab3ba",
+      "category": "cometa",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 100.0,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 49,
+        "class_count": 9,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Unified Cometa Processor - Context7 Implementation",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 9,
+        "api_calls": 49
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "re",
+        "json",
+        "os",
+        "Counter",
+        "typing",
+        "sys",
+        "BaseDevFlowHook",
+        "datetime",
+        "sqlite3",
+        "collections"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 84,
+        "nesting_depth": 4,
+        "cognitive_complexity": 83,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "logging",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords"
+        ],
+        "confidence": 20
+      }
+    },
+    "task-transcript-link.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/task-transcript-link.py",
+      "relative_path": "task-transcript-link.py",
+      "file_size": 3552,
+      "last_modified": "2025-09-20T12:05:15.621570",
+      "analysis_timestamp": "2025-09-24T17:11:38.513902",
+      "line_count": 112,
+      "char_count": 3552,
+      "content_hash": "9cabd4fbadd0c0b1",
+      "category": "unknown",
+      "hook_type": [
+        "PreToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": false,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "file_operations",
+            "pattern": "open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          }
+        ],
+        "risk_level": "medium",
+        "security_score": 60
+      },
+      "functionality_analysis": {
+        "purpose": "Pre-tool-use hook to chunk transcript for subagents when Task tool is called.",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 7,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "pathlib",
+        "tiktoken",
+        "json",
+        "os",
+        "deque",
+        "Path",
+        "sys",
+        "shared_state",
+        "get_project_root",
+        "collections"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 23,
+        "nesting_depth": 5,
+        "cognitive_complexity": 22,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "daic_processing",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa-system-status-hook.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-system-status-hook.py",
+      "relative_path": "cometa-system-status-hook.py",
+      "file_size": 18500,
+      "last_modified": "2025-09-24T15:41:40.631225",
+      "analysis_timestamp": "2025-09-24T17:11:38.519391",
+      "line_count": 476,
+      "char_count": 18500,
+      "content_hash": "e1a298f7eb09233f",
+      "category": "cometa",
+      "hook_type": [
+        "PostToolUse",
+        "SessionStart"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 100.0,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 19,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa System Status Hook - Context7 Implementation",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 7,
+        "api_calls": 19
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "json",
+        "os",
+        "PostToolUseHook",
+        "typing",
+        "sys",
+        "datetime",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 38,
+        "nesting_depth": 4,
+        "cognitive_complexity": 37,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "logging",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords"
+        ],
+        "confidence": 20
+      }
+    },
+    "shared_state.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/shared_state.py",
+      "relative_path": "shared_state.py",
+      "file_size": 4527,
+      "last_modified": "2025-09-08T21:42:55.767512",
+      "analysis_timestamp": "2025-09-24T17:11:38.536299",
+      "line_count": 123,
+      "char_count": 4527,
+      "content_hash": "1a3e38542f6d26f2",
+      "category": "utility",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 9,
+        "class_count": 0,
+        "has_main_guard": false,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Shared state management for Claude Code Sessions hooks.",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 3,
+        "api_calls": 9
+      },
+      "dependencies": [
+        "datetime",
+        "Path",
+        "json",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 12,
+        "nesting_depth": 2,
+        "cognitive_complexity": 11,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "file_operations",
+        "daic_processing",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa_batch_manager.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa_batch_manager.py",
+      "relative_path": "cometa_batch_manager.py",
+      "file_size": 18821,
+      "last_modified": "2025-09-24T00:03:29.731231",
+      "analysis_timestamp": "2025-09-24T17:11:38.541588",
+      "line_count": 486,
+      "char_count": 18782,
+      "content_hash": "bfaff1f0c4b4bb60",
+      "category": "cometa",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 16,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Batch Operations Manager",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 10,
+        "api_calls": 16
+      },
+      "dependencies": [
+        "Dict",
+        "concurrent.futures",
+        "NaturalLanguageCommandProcessor",
+        "cometa_task_executor",
+        "json",
+        "asyncio",
+        "cometa_nlp_processor",
+        "Path",
+        "sys",
+        "TaskCommandExecutor",
+        "ThreadPoolExecutor",
+        "typing",
+        "datetime",
+        "pathlib",
+        "time"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 42,
+        "nesting_depth": 5,
+        "cognitive_complexity": 41,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "session-monitor.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/session-monitor.py",
+      "relative_path": "session-monitor.py",
+      "file_size": 1629,
+      "last_modified": "2025-09-15T12:18:58.340246",
+      "analysis_timestamp": "2025-09-24T17:11:38.563072",
+      "line_count": 50,
+      "char_count": 1622,
+      "content_hash": "69034facd17e0a8d",
+      "category": "system",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow v3.1 Smart Session Retry System",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 4,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "datetime",
+        "sys",
+        "json",
+        "os"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 4,
+        "nesting_depth": 3,
+        "cognitive_complexity": 3,
+        "assessment": "low"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "comprehensive-hook-audit-analysis.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/comprehensive-hook-audit-analysis.py",
+      "relative_path": "comprehensive-hook-audit-analysis.py",
+      "file_size": 31960,
+      "last_modified": "2025-09-24T17:11:27.503472",
+      "analysis_timestamp": "2025-09-24T17:11:38.565576",
+      "line_count": 764,
+      "char_count": 31903,
+      "content_hash": "4a901452a0cd58a4",
+      "category": "unknown",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse",
+        "UserPromptSubmit",
+        "SessionStart",
+        "Multi-Event"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": false,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": true,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 31,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "Comprehensive Hook Audit Analysis",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 11,
+        "api_calls": 31
+      },
+      "dependencies": [
+        "Dict",
+        "re",
+        "json",
+        "os",
+        "ast",
+        "subprocess",
+        "Path",
+        "typing",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 84,
+        "nesting_depth": 4,
+        "cognitive_complexity": 82,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "daic_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "auto-approve-mcp.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/auto-approve-mcp.py",
+      "relative_path": "auto-approve-mcp.py",
+      "file_size": 496,
+      "last_modified": "2025-09-18T23:47:07.863153",
+      "analysis_timestamp": "2025-09-24T17:11:38.594206",
+      "line_count": 23,
+      "char_count": 496,
+      "content_hash": "da3a9e78cd0cb098",
+      "category": "unknown",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "!/usr/bin/env python3",
+        "database_operations": false,
+        "file_operations": false,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 2,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "sys",
+        "json"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 3,
+        "nesting_depth": 1,
+        "cognitive_complexity": 2,
+        "assessment": "low"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "devflow-integration.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/devflow-integration.py",
+      "relative_path": "devflow-integration.py",
+      "file_size": 46668,
+      "last_modified": "2025-09-24T12:08:48.057745",
+      "analysis_timestamp": "2025-09-24T17:11:38.595424",
+      "line_count": 1044,
+      "char_count": 46577,
+      "content_hash": "744f57d76ba01bde",
+      "category": "integration",
+      "hook_type": [
+        "PostToolUse",
+        "UserPromptSubmit",
+        "SessionStart"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 15,
+        "class_count": 2,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow Integration Hook for cc-sessions",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 12,
+        "api_calls": 38
+      },
+      "dependencies": [
+        "Dict",
+        "re",
+        "json",
+        "os",
+        "aiohttp",
+        "asyncio",
+        "subprocess",
+        "sys",
+        "Path",
+        "typing",
+        "datetime",
+        "pathlib",
+        "sqlite3",
+        "time"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 132,
+        "nesting_depth": 8,
+        "cognitive_complexity": 128,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "unified-orchestrator-bridge.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/unified-orchestrator-bridge.py",
+      "relative_path": "unified-orchestrator-bridge.py",
+      "file_size": 8597,
+      "last_modified": "2025-09-24T14:48:21.929414",
+      "analysis_timestamp": "2025-09-24T17:11:38.634842",
+      "line_count": 236,
+      "char_count": 8597,
+      "content_hash": "4529695acf969a1c",
+      "category": "integration",
+      "hook_type": [
+        "PreToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": false,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 10,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "file_operations",
+            "pattern": "open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          },
+          {
+            "category": "file_operations",
+            "pattern": "with\\s+open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          },
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "medium",
+        "security_score": 60
+      },
+      "functionality_analysis": {
+        "purpose": "Unified Orchestrator Bridge Hook v2.0",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 8,
+        "api_calls": 10
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "PreToolUseHook",
+        "json",
+        "os",
+        "typing",
+        "sys",
+        "datetime",
+        "hashlib",
+        "requests"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 24,
+        "nesting_depth": 4,
+        "cognitive_complexity": 22,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "logging",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords"
+        ],
+        "confidence": 20
+      }
+    },
+    "context-loader.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/context-loader.py",
+      "relative_path": "context-loader.py",
+      "file_size": 16171,
+      "last_modified": "2025-09-23T12:44:13.306740",
+      "analysis_timestamp": "2025-09-24T17:11:38.642674",
+      "line_count": 393,
+      "char_count": 16169,
+      "content_hash": "31a3b73e4a0a6fba",
+      "category": "unknown",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 14,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "Context Loader Script for Enhanced Pre-Tool Hook",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 9,
+        "api_calls": 14
+      },
+      "dependencies": [
+        "Dict",
+        "json",
+        "os",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "urllib",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 42,
+        "nesting_depth": 6,
+        "cognitive_complexity": 41,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "cometa-slash-command.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-slash-command.py",
+      "relative_path": "cometa-slash-command.py",
+      "file_size": 8220,
+      "last_modified": "2025-09-24T11:57:20.879435",
+      "analysis_timestamp": "2025-09-24T17:11:38.659227",
+      "line_count": 224,
+      "char_count": 8160,
+      "content_hash": "4affb03c4e3e328d",
+      "category": "cometa",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 5,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Slash Command",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 7,
+        "api_calls": 5
+      },
+      "dependencies": [
+        "NaturalLanguageCommandProcessor",
+        "cometa_task_executor",
+        "json",
+        "os",
+        "cometa_nlp_processor",
+        "Path",
+        "sys",
+        "TaskCommandExecutor",
+        "datetime",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 29,
+        "nesting_depth": 5,
+        "cognitive_complexity": 28,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "file_operations",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa-task-autocreator.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-task-autocreator.py",
+      "relative_path": "cometa-task-autocreator.py",
+      "file_size": 15196,
+      "last_modified": "2025-09-23T23:26:54.299716",
+      "analysis_timestamp": "2025-09-24T17:11:38.668305",
+      "line_count": 462,
+      "char_count": 15186,
+      "content_hash": "1aa2ac028842fc5c",
+      "category": "cometa",
+      "hook_type": [
+        "PreToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 14,
+        "class_count": 3,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Task Auto-Creator",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 8,
+        "api_calls": 14
+      },
+      "dependencies": [
+        "Dict",
+        "re",
+        "json",
+        "uuid",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 30,
+        "nesting_depth": 3,
+        "cognitive_complexity": 29,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa-memory-stream.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-memory-stream.py",
+      "relative_path": "cometa-memory-stream.py",
+      "file_size": 9824,
+      "last_modified": "2025-09-23T23:50:05.483962",
+      "analysis_timestamp": "2025-09-24T17:11:38.684835",
+      "line_count": 282,
+      "char_count": 9814,
+      "content_hash": "571d2e952bf28d12",
+      "category": "cometa",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 9,
+        "class_count": 2,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Memory Stream Processor",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 12,
+        "api_calls": 9
+      },
+      "dependencies": [
+        "cchooks.contexts",
+        "Dict",
+        "re",
+        "create_context",
+        "cchooks",
+        "json",
+        "PostToolUseContext",
+        "numpy",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 22,
+        "nesting_depth": 4,
+        "cognitive_complexity": 21,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "footer-details.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/footer-details.py",
+      "relative_path": "footer-details.py",
+      "file_size": 7971,
+      "last_modified": "2025-09-15T21:52:07.357958",
+      "analysis_timestamp": "2025-09-24T17:11:38.695154",
+      "line_count": 195,
+      "char_count": 7182,
+      "content_hash": "11617ea8f3f5173e",
+      "category": "system",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 4,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow Footer Detail View System",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 6,
+        "api_calls": 4
+      },
+      "dependencies": [
+        "json",
+        "os",
+        "psutil",
+        "sys",
+        "datetime",
+        "urllib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 19,
+        "nesting_depth": 4,
+        "cognitive_complexity": 18,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "cometa_nlp_processor.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa_nlp_processor.py",
+      "relative_path": "cometa_nlp_processor.py",
+      "file_size": 14981,
+      "last_modified": "2025-09-24T11:46:27.812565",
+      "analysis_timestamp": "2025-09-24T17:11:38.702700",
+      "line_count": 381,
+      "char_count": 14981,
+      "content_hash": "c863ccfe8afcf493",
+      "category": "cometa",
+      "hook_type": [
+        "Unknown"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 15,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Natural Language Command Processor",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 9,
+        "api_calls": 15
+      },
+      "dependencies": [
+        "Dict",
+        "re",
+        "json",
+        "Path",
+        "sys",
+        "subprocess",
+        "typing",
+        "datetime",
+        "pysnooper",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 60,
+        "nesting_depth": 5,
+        "cognitive_complexity": 59,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 35
+      }
+    },
+    "user-prompt-submit-context7.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/user-prompt-submit-context7.py",
+      "relative_path": "user-prompt-submit-context7.py",
+      "file_size": 16863,
+      "last_modified": "2025-09-24T16:45:09.893785",
+      "analysis_timestamp": "2025-09-24T17:11:38.717742",
+      "line_count": 402,
+      "char_count": 16851,
+      "content_hash": "69f024791ccfd3d2",
+      "category": "context7",
+      "hook_type": [
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 100.0,
+        "compliant": true
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 16,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "file_operations",
+            "pattern": "open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          },
+          {
+            "category": "file_operations",
+            "pattern": "with\\s+open\\s*\\([^)]*[\"\\'][^\"\\']*\\+",
+            "severity": "medium"
+          }
+        ],
+        "risk_level": "medium",
+        "security_score": 60
+      },
+      "functionality_analysis": {
+        "purpose": "UserPromptSubmit Hook Context7 - Critical Implementation",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 8,
+        "api_calls": 16
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "re",
+        "json",
+        "UserPromptSubmitHook",
+        "os",
+        "Path",
+        "sys",
+        "typing",
+        "datetime",
+        "pathlib"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 49,
+        "nesting_depth": 5,
+        "cognitive_complexity": 48,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "logging",
+        "daic_processing",
+        "task_management",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [],
+        "confidence": 0
+      }
+    },
+    "cometa-brain-sync.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/cometa-brain-sync.py",
+      "relative_path": "cometa-brain-sync.py",
+      "file_size": 2226,
+      "last_modified": "2025-09-24T16:42:23.649022",
+      "analysis_timestamp": "2025-09-24T17:11:38.734941",
+      "line_count": 74,
+      "char_count": 2226,
+      "content_hash": "10d4c62209fcaf67",
+      "category": "cometa",
+      "hook_type": [
+        "PostToolUse",
+        "SessionStart",
+        "Multi-Event"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Cometa Brain Sync Hook - Minimal Context7 Implementation",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": true,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 6,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "json",
+        "uuid",
+        "os",
+        "subprocess",
+        "sys",
+        "datetime"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 9,
+        "nesting_depth": 2,
+        "cognitive_complexity": 8,
+        "assessment": "medium"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "user-messages.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/user-messages.py",
+      "relative_path": "user-messages.py",
+      "file_size": 8642,
+      "last_modified": "2025-09-20T18:20:57.502630",
+      "analysis_timestamp": "2025-09-24T17:11:38.737584",
+      "line_count": 193,
+      "char_count": 8630,
+      "content_hash": "568fb2454a1974eb",
+      "category": "core",
+      "hook_type": [
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": false,
+        "uses_typing": false,
+        "has_constants": true
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "User message hook to detect DAIC trigger phrases and special patterns.",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 10,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "pathlib",
+        "tiktoken",
+        "re",
+        "json",
+        "os",
+        "Path",
+        "sys",
+        "shared_state",
+        "check_daic_mode_bool",
+        "get_project_root"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 36,
+        "nesting_depth": 5,
+        "cognitive_complexity": 33,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "json_processing",
+        "file_operations",
+        "daic_processing",
+        "task_management"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Not Context7 compliant"
+        ],
+        "confidence": 15
+      }
+    },
+    "protocol-validator.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/protocol-validator.py",
+      "relative_path": "protocol-validator.py",
+      "file_size": 16896,
+      "last_modified": "2025-09-24T15:11:50.233572",
+      "analysis_timestamp": "2025-09-24T17:11:38.746039",
+      "line_count": 408,
+      "char_count": 16892,
+      "content_hash": "c1b2755b4c6a6ac4",
+      "category": "unknown",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": true,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 100.0,
+        "compliant": true
+      },
+      "executable": false,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 11,
+        "class_count": 2,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [
+          {
+            "category": "network_operations",
+            "pattern": "urllib|requests|http|socket",
+            "severity": "low"
+          }
+        ],
+        "risk_level": "low",
+        "security_score": 80
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow Protocol Validator v1.0",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": true,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 11,
+        "api_calls": 11
+      },
+      "dependencies": [
+        "standard_hook_pattern",
+        "Dict",
+        "re",
+        "json",
+        "os",
+        "Path",
+        "sys",
+        "typing",
+        "BaseDevFlowHook",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3",
+        "time"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 38,
+        "nesting_depth": 6,
+        "cognitive_complexity": 37,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "logging"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [
+          "Contains deprecation keywords"
+        ],
+        "confidence": 20
+      }
+    },
+    ".deprecated/memory-stream-workaround.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/.deprecated/memory-stream-workaround.py",
+      "relative_path": ".deprecated/memory-stream-workaround.py",
+      "file_size": 9438,
+      "last_modified": "2025-09-24T10:41:28.598932",
+      "analysis_timestamp": "2025-09-24T17:11:38.762924",
+      "line_count": 272,
+      "char_count": 9422,
+      "content_hash": "c91d4387bc9961ac",
+      "category": "unknown",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": true,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 12,
+        "class_count": 1,
+        "has_main_guard": true,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "WORKAROUND per BUG Claude Code PostToolUse Hook Triggering",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 11,
+        "api_calls": 12
+      },
+      "dependencies": [
+        "signal",
+        "Dict",
+        "json",
+        "os",
+        "Path",
+        "sys",
+        "typing",
+        "threading",
+        "datetime",
+        "hashlib",
+        "pathlib",
+        "sqlite3",
+        "time"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 30,
+        "nesting_depth": 5,
+        "cognitive_complexity": 28,
+        "assessment": "high"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": true,
+        "reasons": [
+          "Located in deprecated directory",
+          "Contains deprecation keywords",
+          "Not Context7 compliant"
+        ],
+        "confidence": 85
+      }
+    },
+    ".deprecated/test-posttooluse.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/.deprecated/test-posttooluse.py",
+      "relative_path": ".deprecated/test-posttooluse.py",
+      "file_size": 2118,
+      "last_modified": "2025-09-24T10:21:43.869350",
+      "analysis_timestamp": "2025-09-24T17:11:38.774000",
+      "line_count": 61,
+      "char_count": 2115,
+      "content_hash": "89702a89c518a704",
+      "category": "unknown",
+      "hook_type": [
+        "PostToolUse"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 28.6,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "CRITICAL TEST: Simple PostToolUse Hook without cchooks dependency",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 5,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "json",
+        "Path",
+        "sys",
+        "datetime",
+        "pathlib",
+        "sqlite3"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 3,
+        "nesting_depth": 2,
+        "cognitive_complexity": 2,
+        "assessment": "low"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "database_operations",
+        "json_processing",
+        "file_operations",
+        "cometa_processing"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": true,
+        "reasons": [
+          "Located in deprecated directory",
+          "Not Context7 compliant"
+        ],
+        "confidence": 65
+      }
+    },
+    ".deprecated/test-userprompt-hook.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/.deprecated/test-userprompt-hook.py",
+      "relative_path": ".deprecated/test-userprompt-hook.py",
+      "file_size": 884,
+      "last_modified": "2025-09-24T11:51:57.547984",
+      "analysis_timestamp": "2025-09-24T17:11:38.776773",
+      "line_count": 29,
+      "char_count": 884,
+      "content_hash": "078498180b795e83",
+      "category": "unknown",
+      "hook_type": [
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": false,
+        "has_validate_input": false,
+        "has_execute_logic": false,
+        "uses_logger": false,
+        "returns_json": false,
+        "has_error_handling": true,
+        "score": 14.3,
+        "compliant": false
+      },
+      "executable": true,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 1,
+        "class_count": 0,
+        "has_main_guard": true,
+        "uses_typing": false,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "Minimal test hook for UserPromptSubmit",
+        "database_operations": false,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": false,
+        "external_dependencies": 3,
+        "api_calls": 1
+      },
+      "dependencies": [
+        "datetime",
+        "sys",
+        "json"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 3,
+        "nesting_depth": 2,
+        "cognitive_complexity": 2,
+        "assessment": "low"
+      },
+      "imports_context7": false,
+      "duplicate_functionality": [
+        "file_operations"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": true,
+        "reasons": [
+          "Located in deprecated directory",
+          "Not Context7 compliant"
+        ],
+        "confidence": 65
+      }
+    },
+    "base/standard_hook_pattern.py": {
+      "file_path": "/Users/fulvioventura/devflow/.claude/hooks/base/standard_hook_pattern.py",
+      "relative_path": "base/standard_hook_pattern.py",
+      "file_size": 10576,
+      "last_modified": "2025-09-24T14:47:45.346829",
+      "analysis_timestamp": "2025-09-24T17:11:38.778262",
+      "line_count": 309,
+      "char_count": 10576,
+      "content_hash": "289219c4eadd9633",
+      "category": "context7",
+      "hook_type": [
+        "PostToolUse",
+        "PreToolUse",
+        "UserPromptSubmit"
+      ],
+      "context7_compliant": {
+        "imports_base_pattern": false,
+        "extends_base_hook": true,
+        "has_validate_input": true,
+        "has_execute_logic": true,
+        "uses_logger": true,
+        "returns_json": true,
+        "has_error_handling": true,
+        "score": 85.7,
+        "compliant": true
+      },
+      "executable": false,
+      "code_quality": {
+        "has_docstring": false,
+        "has_shebang": true,
+        "proper_encoding": false,
+        "syntax_valid": true,
+        "pylint_score": null,
+        "function_count": 23,
+        "class_count": 6,
+        "has_main_guard": false,
+        "uses_typing": true,
+        "has_constants": false
+      },
+      "security_analysis": {
+        "vulnerabilities": [],
+        "risk_level": "low",
+        "security_score": 100
+      },
+      "functionality_analysis": {
+        "purpose": "DevFlow Standard Hook Pattern v2.0",
+        "database_operations": true,
+        "file_operations": true,
+        "network_operations": false,
+        "subprocess_calls": false,
+        "json_processing": true,
+        "logging_operations": true,
+        "external_dependencies": 10,
+        "api_calls": 23
+      },
+      "dependencies": [
+        "Enum",
+        "enum",
+        "logging",
+        "Dict",
+        "re",
+        "ABC",
+        "json",
+        "os",
+        "typing",
+        "sys",
+        "traceback",
+        "datetime",
+        "abc"
+      ],
+      "complexity_metrics": {
+        "cyclomatic_complexity": 29,
+        "nesting_depth": 2,
+        "cognitive_complexity": 27,
+        "assessment": "high"
+      },
+      "imports_context7": true,
+      "duplicate_functionality": [
+        "json_processing",
+        "logging"
+      ],
+      "deprecation_indicators": {
+        "is_deprecated": false,
+        "reasons": [],
+        "confidence": 0
+      }
+    }
+  }
+}

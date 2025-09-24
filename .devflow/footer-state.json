@@ -1,50 +1,6 @@
 {
-  "timestamp": "2025-09-24T12:46:33.022021",
-  "version": "3.1",
-  "progress": {
-    "percentage": 50,
-    "current_task": "critical-issues-todos",
-    "token_count": 0
-  },
-  "system": {
-    "status": "PARTIAL",
-    "services_active": 4,
-    "services_total": 8
-  },
-  "mode": "DEV",
-  "last_tool": "unknown",
-  "services": [
-    {
-      "name": "Database",
-      "status": "active"
-    },
-    {
-      "name": "Registry",
-      "status": "inactive"
-    },
-    {
-      "name": "Vector",
-      "status": "active"
-    },
-    {
-      "name": "Optimizer",
-      "status": "inactive"
-    },
-    {
-      "name": "CCR",
-      "status": "inactive"
-    },
-    {
-      "name": "Enforcement",
-      "status": "active"
-    },
-    {
-      "name": "Orchestrator",
-      "status": "active"
-    },
-    {
-      "name": "Synthetic",
-      "status": "inactive"
-    }
-  ]
+  "progress": "50%",
+  "completed": 1,
+  "total": 2,
+  "timestamp": "2025-09-24T16:59:09.618Z"
 }

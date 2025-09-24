@@ -52,9 +52,9 @@ function executeQuery(db, query, params = []) {
 async function getActiveTasks(db) {
     try {
         const query = `
-            SELECT id, title, description, status, created_at
-            FROM task_contexts 
-            WHERE status IN ('planning', 'active', 'blocked')
+            SELECT id, name as title, description, status, created_at
+            FROM tasks
+            WHERE status IN ('pending', 'in_progress')
             ORDER BY created_at DESC
         `;
         return await executeQuery(db, query);
@@ -71,8 +71,8 @@ async function getActiveTasks(db) {
 async function getCompletedTasks(db) {
     try {
         const query = `
-            SELECT id, title, description, status, created_at
-            FROM task_contexts 
+            SELECT id, name as title, description, status, created_at
+            FROM tasks
             WHERE status = 'completed'
             ORDER BY created_at DESC
         `;

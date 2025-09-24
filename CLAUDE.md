@@ -134,25 +134,32 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 
 ---
 
-## MCP Integration Standards (UPDATED 2025-09-22)
+## MCP Integration Standards (UPDATED 2025-09-24 - CRITICAL PROTOCOL CONSOLIDATION)
 
-### Required Orchestrator Usage
-1. **MANDATORY Unified Orchestrator**: ALL coding tasks MUST go through Unified Orchestrator system
-2. **NO DIRECT AGENT CALLS**: Never call CLI or Synthetic agents directly - only via Orchestrator
-3. **Task ID Standard**: Format DEVFLOW-[COMPONENT]-[SEQUENCE] (e.g., DEVFLOW-AUTH-001)
-4. **Orchestrator Flow**: Task submission → CLI selection → Execution → Fallback (if needed)
-5. **Verification Required**: All outputs must pass cross-verification before integration
+### Required Orchestrator Usage (BREAKING CHANGES)
+1. **MANDATORY Unified Orchestrator**: ALL coding tasks MUST use POST http://localhost:3005/api/tasks
+2. **NO DIRECT AGENT CALLS**: Complete prohibition of direct CLI/Synthetic calls - SECURITY VIOLATION
+3. **Task ID Standard**: DEVFLOW-[COMPONENT]-[SEQUENCE]-[TIMESTAMP] (e.g., DEVFLOW-AUTH-001-20250924)
+4. **Orchestrator Flow**: Task submission → Agent selection → Execution → Cross-verification → Integration
+5. **Verification Required**: MANDATORY cross-verification by different agent type before integration
 
-### Operational Mode Compliance
-- **all-mode**: Full stack (CLI + Synthetic + Cross-verification)
-- **claude-only**: Solo Claude (bypass enforcement 100 righe)
-- **cli-only**: CLI + Claude (no Synthetic)
-- **synthetic-only**: Synthetic + Claude (no CLI)
+### Critical Security Requirements (NEW)
+- **Hook Bridge Enforcement**: All tool calls intercepted by .claude/hooks/unified-orchestrator-bridge.py
+- **Direct Edit/Write/Bash Prohibition**: Must route through orchestrator for >50 lines or security-sensitive operations
+- **Agent Authentication**: All orchestrator requests require DEVFLOW_API_TOKEN validation
+- **Audit Trail**: Every orchestrator interaction logged with cryptographic integrity
 
-### Unified Orchestrator Endpoints (Port 3005)
-- **Task Submission**: POST `http://localhost:3005/api/tasks` to Unified Orchestrator
-- **Mode Management**: POST `http://localhost:3005/api/mode/:modeName` for operational mode switching
-- **Performance Monitoring**: GET `http://localhost:3005/api/metrics` for real-time system metrics
+### Operational Mode Compliance (ENHANCED)
+- **all-mode**: Full stack (CLI → Synthetic fallback → Cross-verification → Claude emergency)
+- **claude-only**: Solo Claude (bypass enforcement 100 righe) - DEVELOPMENT ONLY
+- **cli-only**: CLI → Claude emergency (no Synthetic) - LIMITED USE CASES
+- **synthetic-only**: Synthetic → Claude emergency (no CLI) - FALLBACK MODE
+
+### Unified Orchestrator Endpoints (Port 3005) - MANDATORY INTEGRATION
+- **Task Submission**: POST `http://localhost:3005/api/tasks` with authentication header
+- **Mode Management**: POST `http://localhost:3005/api/mode/:modeName` for runtime mode switching
+- **Performance Monitoring**: GET `http://localhost:3005/api/metrics` for real-time system health
+- **Protocol Health**: GET `http://localhost:3005/api/protocols/health` for protocol consistency validation
 
 ### Anti-Circumvention for MCP
 - Using Task tool to bypass line limits is PROHIBITED

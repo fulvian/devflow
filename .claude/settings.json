@@ -5,57 +5,27 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/cometa-nlp-hook.py"
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/user-prompt-submit-context7.py"
           }
         ]
       }
     ],
     "PreToolUse": [
       {
-        "matcher": "mcp__devflow-synthetic-cc-sessions__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/auto-approve-mcp.py"
-          }
-        ]
-      },
-      {
-        "matcher": "Task",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/task-transcript-link.py"
-          },
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/unified-orchestrator-hook.js"
-          }
-        ]
-      },
-      {
-        "matcher": "mcp__qwen-code__.*|mcp__gemini-cli__.*|mcp__codex-cli__.*|mcp__devflow-synthetic-cc-sessions__.*",
-        "hooks": [
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/enhanced-pre-tool-hook.js"
-          }
-        ]
-      },
-      {
         "matcher": "Write|Edit|MultiEdit|Task|Bash",
         "hooks": [
           {
             "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/devflow-enforcement-guard.js"
-          },
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/unified-orchestrator-bridge.py"
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__.*",
+        "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-task-autocreator.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-orchestrator-intelligence.py"
           }
         ]
       }
@@ -66,15 +36,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "/Users/fulvioventura/devflow/.claude/hooks/test-posttooluse.py"
-          },
-          {
-            "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
           },
           {
             "type": "command",
-            "command": "/Users/fulvioventura/devflow/.claude/hooks/robust-memory-stream.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-memory-stream-hook.py"
           },
           {
             "type": "command",
@@ -82,19 +48,15 @@
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-system-status-hook.py"
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cc-tools-integration.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/performance-monitor.py"
           },
           {
             "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/session-limit-detector.js"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/post-tool-use-footer.py"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/system-diagnostics.py"
           }
         ]
       }
@@ -109,11 +71,7 @@
           },
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/devflow-integration.py"
-          },
-          {
-            "type": "command",
-            "command": "node $CLAUDE_PROJECT_DIR/.claude/hooks/cometa-activation.js"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/unified-cometa-processor.py"
           }
         ]
       },
@@ -122,10 +80,6 @@
           {
             "type": "command",
             "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
-          },
-          {
-            "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-monitor.py"
           }
         ]
       }
@@ -135,7 +89,11 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/stop-hook.js"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/hook-lifecycle-manager.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cross-verification-system.py"
           }
         ]
       }
@@ -145,7 +103,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/subagent-stop-hook.js"
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protocol-validator.py"
           }
         ]
       }
