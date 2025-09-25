@@ -425,11 +425,9 @@ start_unified_orchestrator() {
     # Create logs directory
     mkdir -p "$PROJECT_ROOT/logs"
 
-    # Start orchestrator in background
-    cd "$PROJECT_ROOT/packages/orchestrator/unified"
-    nohup env ORCHESTRATOR_PORT=$ORCHESTRATOR_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" npm start > "$PROJECT_ROOT/logs/unified-orchestrator.log" 2>&1 &
+    # Start orchestrator in background using the built server.js directly
+    nohup env ORCHESTRATOR_PORT=$ORCHESTRATOR_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" node "$PROJECT_ROOT/packages/orchestrator/unified/dist/server.js" > "$PROJECT_ROOT/logs/unified-orchestrator.log" 2>&1 &
     local orchestrator_pid=$!
-    cd "$PROJECT_ROOT"
 
     # Give it time to start
     sleep 3
