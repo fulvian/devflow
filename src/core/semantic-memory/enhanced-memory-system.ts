@@ -1,7 +1,7 @@
 /**
- * Enhanced Project Memory System - Phase 1 Integration Service
- * Unified interface for all Phase 1 semantic memory capabilities
- * Provides production-ready semantic memory with Ollama integration
+ * Enhanced Project Memory System - Phase 4 Complete Integration Service
+ * Unified interface for all semantic memory capabilities including advanced intelligence
+ * Provides production-ready semantic memory with AI-driven context injection and predictive analytics
  */
 
 import { SemanticMemoryEngine, MemoryContent, MemoryRecord } from './semantic-memory-engine';
@@ -10,12 +10,20 @@ import { MemoryClusteringEngine, MemoryCluster } from './memory-clustering-engin
 import { OllamaEmbeddingService } from './ollama-embedding-service';
 import { MemoryMigrationUtils, ValidationResult, MemorySystemHealth } from './memory-migration-utils';
 import { PerformanceTestingUtils, SystemBenchmarkResult } from './performance-testing-utils';
+// Phase 4: Advanced Intelligence Imports
+import { IntelligentContextInjector, ContextInjectionConfig, IntelligentContext } from './intelligent-context-injector';
+import { PredictiveMemorySystem, PredictiveContext, PredictiveRecommendation } from './predictive-memory-system';
 
 export interface EnhancedMemoryConfig {
   enableClustering: boolean;
   enablePerformanceMonitoring: boolean;
   autoMigration: boolean;
   clusteringInterval: number; // in hours
+  // Phase 4: Advanced Intelligence Configuration
+  enableIntelligentContext: boolean;
+  enablePredictiveAnalytics: boolean;
+  enableCrossProjectLearning: boolean;
+  adaptiveThresholds: boolean;
   performanceThresholds: {
     searchTime: number;
     embeddingTime: number;
@@ -49,6 +57,10 @@ export class EnhancedProjectMemorySystem {
   private migrationUtils: MemoryMigrationUtils;
   private performanceUtils: PerformanceTestingUtils;
 
+  // Phase 4: Advanced Intelligence Components
+  private contextInjector: IntelligentContextInjector;
+  private predictiveSystem: PredictiveMemorySystem;
+
   private config: EnhancedMemoryConfig;
   private isInitialized: boolean = false;
 
@@ -58,6 +70,11 @@ export class EnhancedProjectMemorySystem {
       enablePerformanceMonitoring: true,
       autoMigration: true,
       clusteringInterval: 24, // 24 hours
+      // Phase 4: Default Advanced Intelligence Configuration
+      enableIntelligentContext: true,
+      enablePredictiveAnalytics: true,
+      enableCrossProjectLearning: false, // Conservative default
+      adaptiveThresholds: true,
       performanceThresholds: {
         searchTime: 50, // ms
         embeddingTime: 100, // ms
@@ -72,6 +89,10 @@ export class EnhancedProjectMemorySystem {
     this.embedding = new OllamaEmbeddingService();
     this.migrationUtils = new MemoryMigrationUtils();
     this.performanceUtils = new PerformanceTestingUtils();
+
+    // Phase 4: Initialize Advanced Intelligence Components
+    this.contextInjector = new IntelligentContextInjector();
+    this.predictiveSystem = new PredictiveMemorySystem();
   }
 
   /**
@@ -81,7 +102,7 @@ export class EnhancedProjectMemorySystem {
     const startTime = performance.now();
 
     try {
-      console.log('Initializing Enhanced Project Memory System (Phase 1)...');
+      console.log('Initializing Enhanced Project Memory System (Phase 4 - Complete)...');
 
       // Validate system requirements
       const validation = await this.migrationUtils.validateSystem();
@@ -382,6 +403,257 @@ export class EnhancedProjectMemorySystem {
     }, 5 * 60 * 1000); // 5 minutes
 
     this.clusteringTimeouts.set(projectId, timeout);
+  }
+
+  // ====================================================================
+  // Phase 4: Advanced Intelligence & Learning Methods
+  // ====================================================================
+
+  /**
+   * Phase 4: Get intelligent context with AI-driven analysis
+   * Context7: Intelligent context injection with adaptive learning
+   */
+  async getIntelligentContext(
+    config: ContextInjectionConfig
+  ): Promise<MemoryOperationResult<IntelligentContext>> {
+    if (!this.isInitialized) {
+      return { success: false, error: 'System not initialized' };
+    }
+
+    if (!this.config.enableIntelligentContext) {
+      return { success: false, error: 'Intelligent context disabled in configuration' };
+    }
+
+    const startTime = performance.now();
+
+    try {
+      const context = await this.contextInjector.injectIntelligentContext(config);
+
+      return {
+        success: true,
+        data: context,
+        performanceMetrics: {
+          duration: performance.now() - startTime,
+          memoryUsed: 0 // Would implement actual memory measurement
+        }
+      };
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        success: false,
+        error: `Intelligent context injection failed: ${message}`
+      };
+    }
+  }
+
+  /**
+   * Phase 4: Get predictive context with AI-driven recommendations
+   * Context7: Proactive suggestions and learning pattern recognition
+   */
+  async getPredictiveContext(
+    config: ContextInjectionConfig
+  ): Promise<MemoryOperationResult<PredictiveContext>> {
+    if (!this.isInitialized) {
+      return { success: false, error: 'System not initialized' };
+    }
+
+    if (!this.config.enablePredictiveAnalytics) {
+      return { success: false, error: 'Predictive analytics disabled in configuration' };
+    }
+
+    const startTime = performance.now();
+
+    try {
+      const context = await this.predictiveSystem.generatePredictiveContext(config);
+
+      return {
+        success: true,
+        data: context,
+        performanceMetrics: {
+          duration: performance.now() - startTime,
+          memoryUsed: 0
+        }
+      };
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        success: false,
+        error: `Predictive context generation failed: ${message}`
+      };
+    }
+  }
+
+  /**
+   * Phase 4: Enhanced search with intelligent context integration
+   * Combines semantic search with AI-driven context analysis
+   */
+  async searchWithIntelligentContext(
+    query: string,
+    projectId: number,
+    options?: {
+      sessionContext?: string;
+      activeTask?: string;
+      codeContext?: string[];
+      userIntent?: 'development' | 'debugging' | 'learning' | 'planning';
+      includeRecommendations?: boolean;
+    }
+  ): Promise<MemoryOperationResult<{
+    searchResults: MemorySearchResult[];
+    intelligentContext?: IntelligentContext;
+    recommendations?: PredictiveRecommendation[];
+  }>> {
+    if (!this.isInitialized) {
+      return { success: false, error: 'System not initialized' };
+    }
+
+    const startTime = performance.now();
+
+    try {
+      // Phase 4: Standard search
+      const searchResult = await this.searchMemories({
+        query,
+        projectId,
+        limit: options?.includeRecommendations ? 8 : 10,
+        similarityThreshold: this.config.adaptiveThresholds ? undefined : 0.3 // Let intelligent context decide
+      });
+
+      if (!searchResult.success || !searchResult.data) {
+        return {
+          success: false,
+          error: searchResult.error || 'Search failed',
+          performanceMetrics: searchResult.performanceMetrics
+        };
+      }
+
+      const result: any = {
+        searchResults: searchResult.data
+      };
+
+      // Phase 4: Add intelligent context if enabled
+      if (this.config.enableIntelligentContext && options) {
+        const contextConfig: ContextInjectionConfig = {
+          projectId,
+          sessionContext: options.sessionContext,
+          activeTask: options.activeTask,
+          codeContext: options.codeContext,
+          userIntent: options.userIntent,
+          adaptiveThreshold: this.config.adaptiveThresholds,
+          crossProjectLearning: this.config.enableCrossProjectLearning
+        };
+
+        const intelligentResult = await this.getIntelligentContext(contextConfig);
+        if (intelligentResult.success) {
+          result.intelligentContext = intelligentResult.data;
+        }
+
+        // Phase 4: Add predictive recommendations if requested
+        if (options.includeRecommendations && this.config.enablePredictiveAnalytics) {
+          const predictiveResult = await this.getPredictiveContext(contextConfig);
+          if (predictiveResult.success) {
+            result.recommendations = predictiveResult.data?.upcomingNeeds?.slice(0, 5);
+          }
+        }
+      }
+
+      return {
+        success: true,
+        data: result,
+        performanceMetrics: {
+          duration: performance.now() - startTime,
+          memoryUsed: 0
+        }
+      };
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        success: false,
+        error: `Intelligent search failed: ${message}`
+      };
+    }
+  }
+
+  /**
+   * Phase 4: Get learning insights and analytics
+   * Context7: Learning pattern analysis and performance metrics
+   */
+  async getLearningInsights(projectId: number): Promise<MemoryOperationResult<{
+    learningPatterns: any;
+    predictiveInsights: any;
+    performanceMetrics: any;
+  }>> {
+    if (!this.isInitialized) {
+      return { success: false, error: 'System not initialized' };
+    }
+
+    try {
+      const [learningInsights, predictiveInsights] = await Promise.all([
+        this.contextInjector.getLearningInsights(projectId),
+        this.predictiveSystem.getPredictiveInsights(projectId)
+      ]);
+
+      // Get performance benchmarks
+      const benchmarkResults = await this.performanceUtils.runSystemBenchmark(projectId);
+
+      return {
+        success: true,
+        data: {
+          learningPatterns: learningInsights,
+          predictiveInsights,
+          performanceMetrics: benchmarkResults
+        }
+      };
+
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      return {
+        success: false,
+        error: `Learning insights failed: ${message}`
+      };
+    }
+  }
+
+  /**
+   * Phase 4: Get system configuration and capabilities
+   */
+  getSystemCapabilities(): {
+    phase: string;
+    capabilities: string[];
+    configuration: EnhancedMemoryConfig;
+    version: string;
+  } {
+    const capabilities = [
+      'Semantic Memory Storage',
+      'Vector Similarity Search',
+      'K-means Clustering',
+      'Performance Benchmarking'
+    ];
+
+    // Phase 4: Advanced capabilities
+    if (this.config.enableIntelligentContext) {
+      capabilities.push('Intelligent Context Injection');
+    }
+
+    if (this.config.enablePredictiveAnalytics) {
+      capabilities.push('Predictive Analytics');
+    }
+
+    if (this.config.enableCrossProjectLearning) {
+      capabilities.push('Cross-Project Learning');
+    }
+
+    if (this.config.adaptiveThresholds) {
+      capabilities.push('Adaptive Threshold Optimization');
+    }
+
+    return {
+      phase: 'Phase 4: Advanced Intelligence & Learning',
+      capabilities,
+      configuration: this.config,
+      version: '4.0.0'
+    };
   }
 
   /**

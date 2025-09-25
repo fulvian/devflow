@@ -47,31 +47,31 @@ async function runPhase1Demo() {
       {
         content: 'Implement user authentication system with JWT tokens and role-based access control',
         contentType: 'task' as const,
-        projectId: 1,
+        projectId: 19,
         metadata: { priority: 'high', category: 'security' }
       },
       {
         content: 'Optimize database queries for better performance using indexes and query optimization',
         contentType: 'task' as const,
-        projectId: 1,
+        projectId: 19,
         metadata: { priority: 'medium', category: 'performance' }
       },
       {
         content: 'Create responsive UI components with React and TypeScript for better user experience',
         contentType: 'task' as const,
-        projectId: 1,
+        projectId: 19,
         metadata: { priority: 'medium', category: 'frontend' }
       },
       {
         content: 'Set up automated testing pipeline with Jest and continuous integration',
         contentType: 'task' as const,
-        projectId: 1,
+        projectId: 19,
         metadata: { priority: 'high', category: 'testing' }
       },
       {
         content: 'Design microservices architecture for scalable backend system',
         contentType: 'decision' as const,
-        projectId: 1,
+        projectId: 19,
         metadata: { impact: 'high', stakeholders: ['backend-team', 'devops'] }
       }
     ];
@@ -102,9 +102,9 @@ async function runPhase1Demo() {
 
       const searchResult = await memorySystem.searchMemories({
         query,
-        projectId: 1,
+        projectId: 19,
         limit: 3,
-        similarityThreshold: 0.5
+        similarityThreshold: 0.3  // Lower threshold for better recall
       });
 
       if (searchResult.success && searchResult.data) {
@@ -123,7 +123,7 @@ async function runPhase1Demo() {
     console.log('\n🧠 Step 4: Memory Clustering');
     console.log('-'.repeat(40));
 
-    const clusterResult = await memorySystem.getProjectClusters(1);
+    const clusterResult = await memorySystem.getProjectClusters(19);
 
     if (clusterResult.success && clusterResult.data) {
       console.log(`✅ Generated ${clusterResult.data.length} clusters`);
@@ -141,7 +141,7 @@ async function runPhase1Demo() {
     console.log('\n📊 Step 5: Project Statistics');
     console.log('-'.repeat(40));
 
-    const statsResult = await memorySystem.getProjectStats(1);
+    const statsResult = await memorySystem.getProjectStats(19);
 
     if (statsResult.success && statsResult.data) {
       const stats = statsResult.data;
@@ -160,7 +160,7 @@ async function runPhase1Demo() {
     console.log('-'.repeat(40));
 
     const recommendationsResult = await memorySystem.getContextRecommendations(
-      1,
+      19,
       'Need to implement user login and authentication for the web application',
       3
     );
@@ -179,7 +179,7 @@ async function runPhase1Demo() {
     console.log('\n🏥 Step 7: System Health Check');
     console.log('-'.repeat(40));
 
-    const healthResult = await memorySystem.runHealthCheck(1);
+    const healthResult = await memorySystem.runHealthCheck(19);
 
     if (healthResult.success && healthResult.data) {
       const { systemHealth, benchmarkResults } = healthResult.data;

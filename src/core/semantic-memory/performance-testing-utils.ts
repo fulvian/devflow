@@ -56,7 +56,7 @@ export class PerformanceTestingUtils {
   /**
    * Run comprehensive system benchmark
    */
-  async runSystemBenchmark(projectId: number = 1): Promise<SystemBenchmarkResult> {
+  async runSystemBenchmark(projectId: number = 19): Promise<SystemBenchmarkResult> {
     console.log('Running Phase 1 performance benchmark...');
 
     const results: Partial<SystemBenchmarkResult> = {

@@ -29,8 +29,8 @@ The Enhanced Project Memory System represents a quantum leap in AI-assisted deve
   - `content_hash`: SHA-256 hash for deduplication
   - `content`: Original text content
   - `content_type`: Memory type (task, conversation, file, decision, context)
-  - `embedding_vector`: BLOB storage for 1024-dimensional embeddinggemma vectors
-  - `vector_dimension`: Embedding dimensions (1024 for embeddinggemma:300m)
+  - `embedding_vector`: BLOB storage for 768-dimensional embeddinggemma vectors
+  - `vector_dimension`: Embedding dimensions (768 for embeddinggemma:300m)
   - `metadata`: JSON metadata for additional context
   - `similarity_threshold`: Configurable similarity threshold (default: 0.7)
 
@@ -50,7 +50,7 @@ The Enhanced Project Memory System represents a quantum leap in AI-assisted deve
 ## Core Operations (Phase 1)
 ### Ollama Embedding Generation
 - `generateEmbedding()`: Local embeddinggemma:300m integration with retry logic
-- `calculateSimilarity()`: Cosine similarity for 1024-dimensional vectors
+- `calculateSimilarity()`: Cosine similarity for 768-dimensional vectors
 - `testConnection()`: Ollama service health validation
 
 ### Memory Management

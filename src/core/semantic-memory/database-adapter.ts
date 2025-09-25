@@ -13,22 +13,58 @@ export interface DatabaseResult {
 
 export class DatabaseAdapter {
   private db: Database.Database;
+  private preparedStatements: Map<string, Database.Statement> = new Map();
 
   constructor(dbPath: string = './data/devflow_unified.sqlite') {
     this.db = new Database(dbPath);
 
-    // Enable optimizations
+    // Context7: Better SQLite3 performance optimizations
     this.db.pragma('foreign_keys = ON');
     this.db.pragma('journal_mode = WAL');
     this.db.pragma('synchronous = NORMAL');
+    this.db.pragma('cache_size = 10000'); // Increase cache size
+    this.db.pragma('temp_store = memory'); // Store temp files in memory
+    this.db.pragma('mmap_size = 268435456'); // 256MB memory-mapped I/O
+
+    // Context7: WAL checkpoint management to prevent starvation
+    this.setupWALCheckpoints();
   }
 
   /**
-   * Execute a query that returns a single row
+   * Context7: Setup WAL checkpoint management to prevent checkpoint starvation
+   */
+  private setupWALCheckpoints(): void {
+    const fs = require('fs');
+    const walFile = this.db.name + '-wal';
+    const maxWalSize = 10 * 1024 * 1024; // 10MB
+
+    setInterval(() => {
+      fs.stat(walFile, (err: any, stat: any) => {
+        if (err) {
+          if (err.code !== 'ENOENT') console.error('WAL stat error:', err);
+        } else if (stat.size > maxWalSize) {
+          this.db.pragma('wal_checkpoint(RESTART)');
+        }
+      });
+    }, 30000).unref(); // Check every 30 seconds
+  }
+
+  /**
+   * Context7: Get or create prepared statement with caching
+   */
+  private getPreparedStatement(sql: string): Database.Statement {
+    if (!this.preparedStatements.has(sql)) {
+      this.preparedStatements.set(sql, this.db.prepare(sql));
+    }
+    return this.preparedStatements.get(sql)!;
+  }
+
+  /**
+   * Execute a query that returns a single row (Context7 optimized)
    */
   get(sql: string, params: any[] = []): any {
     try {
-      const stmt = this.db.prepare(sql);
+      const stmt = this.getPreparedStatement(sql);
       return stmt.get(...params);
     } catch (error) {
       console.error('Database GET error:', error);
@@ -37,11 +73,11 @@ export class DatabaseAdapter {
   }
 
   /**
-   * Execute a query that returns multiple rows
+   * Execute a query that returns multiple rows (Context7 optimized)
    */
   all(sql: string, params: any[] = []): any[] {
     try {
-      const stmt = this.db.prepare(sql);
+      const stmt = this.getPreparedStatement(sql);
       return stmt.all(...params);
     } catch (error) {
       console.error('Database ALL error:', error);
@@ -50,11 +86,11 @@ export class DatabaseAdapter {
   }
 
   /**
-   * Execute a query that modifies data (INSERT, UPDATE, DELETE)
+   * Execute a query that modifies data (Context7 optimized with prepared statements)
    */
   run(sql: string, params: any[] = []): DatabaseResult {
     try {
-      const stmt = this.db.prepare(sql);
+      const stmt = this.getPreparedStatement(sql);
       const result = stmt.run(...params);
       return {
         lastID: result.lastInsertRowid as number,
@@ -74,9 +110,11 @@ export class DatabaseAdapter {
   }
 
   /**
-   * Close database connection
+   * Close database connection (Context7: cleanup prepared statements)
    */
   close(): void {
+    // Cleanup prepared statements
+    this.preparedStatements.clear();
     this.db.close();
   }
 

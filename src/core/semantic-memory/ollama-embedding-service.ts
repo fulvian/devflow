@@ -25,7 +25,7 @@ export interface OllamaEmbeddingResponse {
 export class OllamaEmbeddingService implements EmbeddingModel {
   public readonly id = 'ollama-embeddinggemma';
   public readonly name = 'Ollama EmbeddingGemma 300M';
-  public readonly dimensions = 1024; // embeddinggemma:300m dimensions
+  public readonly dimensions = 768; // embeddinggemma:300m actual dimensions
 
   private config: OllamaConfig;
 
