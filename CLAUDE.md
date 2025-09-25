@@ -186,6 +186,16 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 5. **Verification Required**: All agent outputs must pass cross-verification
 6. **Enforcement**: Violations trigger immediate access suspension
 
+### Generic Task Verification Enforcement (MANDATORY - NEW)
+1. **Universal Verification**: ALL task completions MUST trigger Generic Task Verification Protocol
+2. **Verification Bypass Prohibition**: Disabling, skipping, or circumventing verification is PROHIBITED
+3. **Resolution Plan Compliance**: User MUST approve generated resolution plans before implementation
+4. **Context7 Pattern Adherence**: All verification methods MUST follow AI Dev Tasks and Weaver patterns
+5. **Cross-Agent Verification**: No agent may verify its own work - different agent types required
+6. **Audit Trail Maintenance**: All verification results MUST be stored with cryptographic integrity
+7. **Hook Integration Mandatory**: Stop-hook MUST call Generic Task Verification Protocol
+8. **Enforcement**: Verification bypass triggers immediate Level 3 penalties + task reopening
+
 ### Database Management Enforcement (MANDATORY)
 1. **Automatic Tracking**: All projects-plans-roadmaps-macrotasks-microtasks-sessions MUST be auto-logged
 2. **State Persistence**: Task state changes MUST update database immediately
@@ -196,6 +206,31 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 ---
 
 ## Verification Mechanisms
+
+### Generic Task Verification Protocol (MANDATORY - NEW)
+1. **Universal Application**: Protocol applies to ALL tasks, not specific implementations
+2. **Dynamic Criteria Extraction**: Automatically reads requirements from task markdown files
+3. **Context7 Integration**: Uses /snarktank/ai-dev-tasks and /typelevel/weaver-test patterns
+4. **Resolution Plan Generation**: Creates structured plans requiring user approval
+5. **Cross-Verification**: Different agent types verify each other's work
+6. **Enforcement**: All task completions MUST pass generic verification
+
+### Generic Protocol Components (MANDATORY)
+1. **GenericTaskVerifier Class**:
+   - Reads current task from `.claude/state/current_task.json`
+   - Dynamically extracts verification criteria from task content
+   - Performs Context7-based structured verification
+   - Generates detailed findings with issues and suggestions
+2. **ResolutionPlanGenerator Class**:
+   - Analyzes verification results using Weaver failure reporting patterns
+   - Creates time-estimated resolution plans with risk assessment
+   - Presents plans for mandatory user approval before execution
+   - Stores results in Cometa Brain database for audit trails
+3. **Automatic Hook Integration**:
+   - Triggered via `.claude/hooks/stop-hook.js` when verification enabled
+   - Controlled by `.devflow/verification-trigger.json` configuration
+   - 2-minute timeout for comprehensive verification
+   - Fallback mechanisms for error handling
 
 ### Continuous Verification (MANDATORY)
 1. **Real-time Monitoring**: All code changes trigger immediate verification
@@ -212,11 +247,12 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 5. **Enforcement**: Meta-verification failures trigger task reopening
 
 ### Verification Hooks (MANDATORY)
-- **.claude/hooks/stop-hook.js**: Triggers verification on session completion
+- **.claude/hooks/stop-hook.js**: Triggers Generic Task Verification Protocol on session completion
+- **.claude/hooks/enhanced-stop-hook-with-verification.js**: Main Generic Task Verification Protocol implementation
 - **.claude/hooks/subagent-stop-hook.js**: Triggers verification on subagent completion
 - **.claude/hooks/intelligent-save-hook.js**: Triggers verification on code changes
 - **Trigger File**: `.devflow/verification-trigger.json` activates real-time verification
-- **Response Time**: Verification must complete within 30 seconds
+- **Response Time**: Generic verification must complete within 120 seconds (2 minutes)
 
 ---
 
@@ -293,7 +329,7 @@ The delegation process defines how tasks are assigned and tracked within the CLA
 - **Third Offense**: Permanent access revocation + leadership review
 
 ### Level 3 Penalties (Severe Violations)
-- **Violations**: Database tampering, security bypass, malicious circumvention, data corruption
+- **Violations**: Database tampering, security bypass, malicious circumvention, data corruption, Generic Task Verification Protocol bypass
 - **Immediate Actions**: Complete access revocation + forensic investigation
 - **Review Process**: Leadership review + legal assessment + organizational consequences
 - **Recovery**: Requires unanimous management approval for any access restoration
