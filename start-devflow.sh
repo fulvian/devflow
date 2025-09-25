@@ -97,6 +97,7 @@ set_defaults() {
     export DB_MANAGER_PORT=${DB_MANAGER_PORT:-3002}            # Database Manager
     export CONTEXT_BRIDGE_PORT=${CONTEXT_BRIDGE_PORT:-3007}    # Context Bridge Service (enhanced embedding)
     export VECTOR_MEMORY_PORT=${VECTOR_MEMORY_PORT:-3008}      # Vector Memory Service
+    export ENHANCED_MEMORY_PORT=${ENHANCED_MEMORY_PORT:-3009}  # Enhanced Memory System (Phase 1-3)
 
     # External Bridge Services (range 8000-8999)
     export CODEX_SERVER_PORT=${CODEX_SERVER_PORT:-8013}        # OpenAI Codex MCP Server
@@ -110,7 +111,7 @@ set_defaults() {
     export DEVFLOW_VERBOSE=${DEVFLOW_VERBOSE:-false}
     export DEVFLOW_PROJECT_ROOT=${DEVFLOW_PROJECT_ROOT:-$(pwd)}
 
-    print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Context Bridge: $CONTEXT_BRIDGE_PORT, Vector Memory: $VECTOR_MEMORY_PORT"
+    print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Context Bridge: $CONTEXT_BRIDGE_PORT, Vector Memory: $VECTOR_MEMORY_PORT, Enhanced Memory: $ENHANCED_MEMORY_PORT"
     print_info "Bridge services - Codex Server: $CODEX_SERVER_PORT, Enforcement: $ENFORCEMENT_DAEMON_PORT"
     print_info "DevFlow config - DB: $DEVFLOW_DB_PATH, Project Root: $DEVFLOW_PROJECT_ROOT"
 }
@@ -120,7 +121,7 @@ cleanup_services() {
     print_status "🧹 Cleaning up existing DevFlow processes..."
 
     # Clean up PID files first (including enforcement and codex)
-    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enforcement.pid" ".codex.pid")
+    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enhanced-memory.pid" ".enforcement.pid" ".codex.pid")
     for pid_file in "${pid_files[@]}"; do
         if [ -f "$PROJECT_ROOT/$pid_file" ]; then
             local pid=$(cat "$PROJECT_ROOT/$pid_file")
@@ -152,11 +153,12 @@ cleanup_services() {
     pkill -f "database-daemon" 2>/dev/null || true
     pkill -f "context-bridge-service" 2>/dev/null || true
     pkill -f "vector-memory-service" 2>/dev/null || true
+    pkill -f "enhanced-memory-service" 2>/dev/null || true
     pkill -f "enforcement-daemon" 2>/dev/null || true
     pkill -f "codex_server" 2>/dev/null || true
 
     # Clean up ports brutally (all configurable ports from .env)
-    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
+    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $ENHANCED_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
 
     for port in "${DEVFLOW_PORTS[@]}"; do
         local port_pids=$(lsof -ti:$port 2>/dev/null || true)
@@ -406,6 +408,53 @@ start_context_bridge() {
     fi
 }
 
+# Verify Enhanced Memory System Health
+verify_enhanced_memory() {
+    print_status "Verifying Enhanced Memory System..."
+
+    # Check if memory bridge runner exists
+    if [ ! -f "$PROJECT_ROOT/scripts/memory-bridge-runner.js" ]; then
+        print_warning "Enhanced Memory bridge not found - memory features will be limited"
+        return 1
+    fi
+
+    # Check if enhanced memory integration hook exists
+    if [ ! -f "$PROJECT_ROOT/.claude/hooks/enhanced-memory-integration.py" ]; then
+        print_warning "Enhanced Memory integration hook not found - hook-based features disabled"
+        return 1
+    fi
+
+    # Test Node.js bridge health
+    if command_exists node; then
+        local health_result=$(node "$PROJECT_ROOT/scripts/memory-bridge-runner.js" health-check 2>/dev/null || echo '{"success":false}')
+        local health_status=$(echo "$health_result" | grep -o '"success":[^,}]*' | cut -d':' -f2 | tr -d ' "')
+
+        if [ "$health_status" = "true" ]; then
+            print_status "✅ Enhanced Memory System: All components healthy"
+
+            # Check Ollama embeddinggemma availability
+            if curl -sf --max-time 3 "http://localhost:11434/api/tags" >/dev/null 2>&1; then
+                local models=$(curl -s "http://localhost:11434/api/tags" 2>/dev/null | grep -o '"name":"embeddinggemma:300m"' || echo "")
+                if [ -n "$models" ]; then
+                    print_status "✅ Enhanced Memory: Ollama embeddinggemma:300m available"
+                else
+                    print_warning "⚠️  Enhanced Memory: embeddinggemma:300m model not found in Ollama"
+                fi
+            else
+                print_warning "⚠️  Enhanced Memory: Ollama service not available"
+            fi
+        else
+            print_warning "⚠️  Enhanced Memory System: Health check failed"
+            return 1
+        fi
+    else
+        print_warning "Node.js not available - Enhanced Memory bridge disabled"
+        return 1
+    fi
+
+    return 0
+}
+
 # Start Unified Orchestrator
 start_unified_orchestrator() {
     print_status "Starting DevFlow Unified Orchestrator v1.0..."
@@ -540,6 +589,12 @@ start_services() {
         print_warning "Enhanced context injection with embeddinggemma will not be available"
     fi
 
+    # Verify Enhanced Memory System (Phase 1-3 semantic memory)
+    if ! verify_enhanced_memory; then
+        print_warning "Enhanced Memory System verification failed - CONTINUING WITH BASIC MEMORY"
+        print_warning "Semantic memory features may be limited"
+    fi
+
     # Start Unified Orchestrator (orchestrates other services)
     if ! start_unified_orchestrator; then
         print_error "Failed to start Unified Orchestrator - CRITICAL ERROR"
@@ -590,7 +645,15 @@ start_services() {
     print_status "📈 Metrics: http://localhost:$ORCHESTRATOR_PORT/api/metrics"
     print_status "🧠 Context Bridge: http://localhost:$CONTEXT_BRIDGE_PORT/health"
     print_status "🔧 Enforcement: http://localhost:$ENFORCEMENT_DAEMON_PORT/health"
-    print_status "🔄 System ready for task orchestration with enhanced context injection"
+
+    # Check Enhanced Memory System status
+    if verify_enhanced_memory >/dev/null 2>&1; then
+        print_status "✅ Enhanced Memory: Semantic memory system operational (Phase 1-3)"
+    else
+        print_warning "⚠️  Enhanced Memory: System verification failed - check Ollama and components"
+    fi
+
+    print_status "🔄 System ready for task orchestration with enhanced context injection and semantic memory"
 
     return 0
 }
@@ -671,6 +734,13 @@ show_status() {
         print_status "✅ Enforcement Daemon: Running (Status: $enforcement_status, Port: $ENFORCEMENT_DAEMON_PORT)"
     else
         print_status "❌ Enforcement Daemon: Stopped - 100-line limit enforcement disabled"
+    fi
+
+    # Check Enhanced Memory System
+    if verify_enhanced_memory >/dev/null 2>&1; then
+        print_status "✅ Enhanced Memory: Semantic memory system operational (Ollama + Phase 1-3)"
+    else
+        print_status "❌ Enhanced Memory: System not operational - check Ollama and components"
     fi
 }
 
