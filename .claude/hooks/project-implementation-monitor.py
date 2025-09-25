@@ -52,13 +52,16 @@ class ProjectImplementationMonitorHook(PostToolUseHook):
         }
 
     def validate_input(self) -> bool:
-        """Validate PostToolUse input"""
+        """Validate PostToolUse input with graceful degradation"""
         if not super().validate_input():
             return False
 
         tool_name = self.input_data.get("tool_name")
-        if tool_name not in self.monitored_tools:
-            return False
+
+        # If no tool_name or not a monitored tool, skip gracefully but don't fail
+        if not tool_name or tool_name not in self.monitored_tools:
+            self.logger.info(f"Tool {tool_name} not in monitored tools, skipping monitoring")
+            return False  # Skip execution but don't error
 
         return True
 

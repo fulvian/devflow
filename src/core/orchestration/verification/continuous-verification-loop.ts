@@ -105,11 +105,13 @@ export class RealVerificationLoop {
     try {
       return await this.orchestrator.runTestSuite(TestSuiteType.VECTOR);
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       return [{
         testName: 'Vector Test Suite Execution',
         passed: false,
-        errorMessage: `Failed to execute vector tests: ${error.message}`,
-        evidence: error.stack || 'No stack trace available'
+        errorMessage: `Failed to execute vector tests: ${errorMsg}`,
+        evidence: errorStack || 'No stack trace available'
       }];
     }
   }
@@ -121,11 +123,13 @@ export class RealVerificationLoop {
     try {
       return await this.orchestrator.runTestSuite(TestSuiteType.SESSION);
     } catch (error) {
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      const errorStack = error instanceof Error ? error.stack : undefined;
       return [{
         testName: 'Session Test Suite Execution',
         passed: false,
-        errorMessage: `Failed to execute session tests: ${error.message}`,
-        evidence: error.stack || 'No stack trace available'
+        errorMessage: `Failed to execute session tests: ${errorMsg}`,
+        evidence: errorStack || 'No stack trace available'
       }];
     }
   }
@@ -154,6 +158,8 @@ export class RealVerificationLoop {
           });
         }
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
         alerts.push({
           id: `claim-validation-error-${claim.id}`,
           type: AlertType.CLAIM,
@@ -162,8 +168,8 @@ export class RealVerificationLoop {
           timestamp: new Date(),
           details: {
             claimId: claim.id,
-            error: error.message,
-            stack: error.stack
+            error: errorMsg,
+            stack: errorStack
           }
         });
       }
@@ -196,6 +202,8 @@ export class RealVerificationLoop {
           });
         }
       } catch (error) {
+        const errorMsg = error instanceof Error ? error.message : String(error);
+        const errorStack = error instanceof Error ? error.stack : undefined;
         alerts.push({
           id: `requirement-verification-error-${requirement.id}`,
           type: AlertType.REQUIREMENT,
@@ -204,8 +212,8 @@ export class RealVerificationLoop {
           timestamp: new Date(),
           details: {
             requirementId: requirement.id,
-            error: error.message,
-            stack: error.stack
+            error: errorMsg,
+            stack: errorStack
           }
         });
       }

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-Enhanced Memory Integration Hook
-Integrates semantic memory system with DevFlow hook lifecycle
-Handles automatic memory storage and intelligent context injection
+Enhanced Memory Integration Hook - SAFE VERSION
+Memory-safe implementation with proper subprocess cleanup and resource management
+Prevents macOS system crashes through controlled resource usage
 """
 
 import sys
@@ -10,14 +10,156 @@ import json
 import os
 import subprocess
 import hashlib
+import time
+import signal
+import threading
 from datetime import datetime
 from pathlib import Path
+from typing import Optional, Dict, Any
 
-class EnhancedMemoryIntegrationHook:
+class ProcessManager:
+    """Manages subprocess lifecycle with proper cleanup"""
+
+    def __init__(self, max_concurrent=3, timeout=8):
+        self.max_concurrent = max_concurrent
+        self.timeout = timeout
+        self.active_processes = {}
+        self.lock = threading.Lock()
+
+    def cleanup_process(self, proc, timeout=5):
+        """Safely cleanup a subprocess with proper termination"""
+        if proc.poll() is not None:
+            return  # Already terminated
+
+        try:
+            # First attempt: graceful termination
+            proc.terminate()
+            proc.wait(timeout=timeout)
+        except subprocess.TimeoutExpired:
+            # Force kill if graceful termination fails
+            proc.kill()
+            proc.wait(timeout=2)
+        except:
+            pass
+
+    def run_subprocess(self, cmd, input_data=None):
+        """Run subprocess with automatic cleanup and resource limits"""
+        with self.lock:
+            if len(self.active_processes) >= self.max_concurrent:
+                return None, "Too many concurrent processes"
+
+        proc = None
+        try:
+            proc = subprocess.Popen(
+                cmd,
+                stdin=subprocess.PIPE,
+                stdout=subprocess.PIPE,
+                stderr=subprocess.PIPE,
+                text=True,
+                preexec_fn=os.setsid if hasattr(os, 'setsid') else None
+            )
+
+            with self.lock:
+                self.active_processes[proc.pid] = proc
+
+            try:
+                stdout, stderr = proc.communicate(
+                    input=input_data,
+                    timeout=self.timeout
+                )
+                return stdout, stderr
+
+            except subprocess.TimeoutExpired:
+                self.cleanup_process(proc)
+                return None, f"Process timeout after {self.timeout}s"
+
+        except Exception as e:
+            if proc:
+                self.cleanup_process(proc)
+            return None, f"Process error: {str(e)}"
+
+        finally:
+            if proc:
+                with self.lock:
+                    self.active_processes.pop(proc.pid, None)
+                self.cleanup_process(proc)
+
+class RateLimiter:
+    """Prevents hook flooding with rate limiting"""
+
+    def __init__(self, max_calls=5, window=60):
+        self.max_calls = max_calls
+        self.window = window
+        self.calls = []
+
+    def allow_call(self):
+        now = time.time()
+        # Clean old calls
+        self.calls = [call for call in self.calls if now - call < self.window]
+
+        if len(self.calls) >= self.max_calls:
+            return False
+
+        self.calls.append(now)
+        return True
+
+    def get_remaining_time(self):
+        if not self.calls:
+            return 0
+        return max(0, self.window - (time.time() - self.calls[0]))
+
+class CircuitBreaker:
+    """Circuit breaker pattern for failing operations"""
+
+    def __init__(self, failure_threshold=3, recovery_timeout=300):
+        self.failure_threshold = failure_threshold
+        self.recovery_timeout = recovery_timeout
+        self.failure_count = 0
+        self.last_failure_time = None
+        self.state = 'CLOSED'  # CLOSED, OPEN, HALF_OPEN
+
+    def call(self, func, *args, **kwargs):
+        if self.state == 'OPEN':
+            if time.time() - self.last_failure_time > self.recovery_timeout:
+                self.state = 'HALF_OPEN'
+            else:
+                return None, "Circuit breaker OPEN"
+
+        try:
+            result = func(*args, **kwargs)
+            if self.state == 'HALF_OPEN':
+                self.state = 'CLOSED'
+                self.failure_count = 0
+            return result, None
+
+        except Exception as e:
+            self.failure_count += 1
+            self.last_failure_time = time.time()
+
+            if self.failure_count >= self.failure_threshold:
+                self.state = 'OPEN'
+
+            return None, str(e)
+
+class EnhancedMemoryIntegrationHookSafe:
+    """Memory-safe version of Enhanced Memory Integration Hook"""
+
     def __init__(self):
         self.project_dir = os.environ.get('CLAUDE_PROJECT_DIR', os.getcwd())
         self.session_id = self._generate_session_id()
+        self.process_manager = ProcessManager(max_concurrent=2, timeout=5)
+        self.rate_limiter = RateLimiter(max_calls=3, window=60)
+        self.circuit_breaker = CircuitBreaker(failure_threshold=2, recovery_timeout=180)
         self.memory_bridge_enabled = self._check_bridge_availability()
+
+        # Health metrics
+        self.stats = {
+            'calls_made': 0,
+            'calls_successful': 0,
+            'calls_rate_limited': 0,
+            'calls_circuit_broken': 0,
+            'total_processing_time': 0
+        }
 
     def _generate_session_id(self):
         """Generate unique session ID for this Claude Code session"""
@@ -25,34 +167,54 @@ class EnhancedMemoryIntegrationHook:
         return hashlib.md5(timestamp.encode()).hexdigest()[:8]
 
     def _check_bridge_availability(self):
-        """Check if memory bridge system is available and initialized"""
-        bridge_path = os.path.join(
-            self.project_dir,
-            'src/core/semantic-memory/memory-hook-integration-bridge.ts'
-        )
+        """Check if memory bridge system is available and safe to use"""
+        bridge_path = os.path.join(self.project_dir, 'scripts', 'memory-bridge-runner.js')
         return os.path.exists(bridge_path)
 
     def _log_hook_activity(self, event_type, data):
-        """Log hook activity for debugging and monitoring"""
-        log_entry = {
-            'timestamp': datetime.now().isoformat(),
-            'event_type': event_type,
-            'session_id': self.session_id,
-            'data': data
-        }
+        """Log hook activity for debugging and monitoring with size limits"""
+        try:
+            # Limit log entry size to prevent memory bloat
+            data_str = str(data)[:500] if len(str(data)) > 500 else data
 
-        log_path = os.path.join(self.project_dir, 'logs', 'memory-integration.log')
-        os.makedirs(os.path.dirname(log_path), exist_ok=True)
+            log_entry = {
+                'timestamp': datetime.now().isoformat(),
+                'event_type': event_type,
+                'session_id': self.session_id,
+                'data': data_str,
+                'stats': self.stats.copy()
+            }
 
-        with open(log_path, 'a') as f:
-            f.write(json.dumps(log_entry) + '\n')
+            log_path = os.path.join(self.project_dir, 'logs', 'memory-integration-safe.log')
+            os.makedirs(os.path.dirname(log_path), exist_ok=True)
+
+            # Rotate log if too large (>10MB)
+            if os.path.exists(log_path) and os.path.getsize(log_path) > 10 * 1024 * 1024:
+                os.rename(log_path, f"{log_path}.old")
+
+            with open(log_path, 'a') as f:
+                f.write(json.dumps(log_entry) + '\n')
+
+        except Exception:
+            pass  # Fail silently to not break hook functionality
 
     def handle_user_prompt_submit(self, prompt_data):
-        """Handle UserPromptSubmit hook - inject intelligent context"""
+        """Handle UserPromptSubmit hook - inject intelligent context with safety checks"""
+        start_time = time.time()
+        self.stats['calls_made'] += 1
+
         if not self.memory_bridge_enabled:
             return prompt_data
 
         try:
+            # Rate limiting check
+            if not self.rate_limiter.allow_call():
+                self.stats['calls_rate_limited'] += 1
+                self._log_hook_activity('rate_limited', {
+                    'remaining_time': self.rate_limiter.get_remaining_time()
+                })
+                return prompt_data
+
             # Extract prompt from hook data
             user_prompt = prompt_data.get('prompt', '')
             if len(user_prompt.strip()) < 10:
@@ -62,19 +224,27 @@ class EnhancedMemoryIntegrationHook:
             if not self._is_context_injection_enabled():
                 return prompt_data
 
-            # Phase 3: Check for dual-trigger integration
-            dual_trigger_context = self._check_dual_trigger_integration(user_prompt)
+            # Phase 3: Check for dual-trigger integration (with circuit breaker)
+            dual_trigger_context, error = self.circuit_breaker.call(
+                self._check_dual_trigger_integration, user_prompt
+            )
+
+            if error:
+                self.stats['calls_circuit_broken'] += 1
+                self._log_hook_activity('circuit_breaker_open', {'error': error})
+                return prompt_data
+
             if dual_trigger_context:
                 # Handle dual-trigger context restoration
                 enhanced_prompt = self._handle_dual_trigger_context_restoration(
-                    user_prompt,
-                    dual_trigger_context
+                    user_prompt, dual_trigger_context
                 )
 
                 if enhanced_prompt and enhanced_prompt != user_prompt:
+                    self.stats['calls_successful'] += 1
                     self._log_hook_activity('dual_trigger_context_restoration', {
                         'original_length': len(user_prompt),
-                        'enhanced_length': len(enhanced_prompt),
+                        'enhanced_length': min(len(enhanced_prompt), 2000),  # Limit logged length
                         'trigger_type': dual_trigger_context.get('trigger_type', 'unknown')
                     })
 
@@ -82,14 +252,21 @@ class EnhancedMemoryIntegrationHook:
                     enhanced_data['prompt'] = enhanced_prompt
                     return enhanced_data
 
-            # Standard context injection (Phase 2)
+            # Standard context injection (with memory limits)
+            if len(user_prompt) > 1000:  # Skip context injection for very long prompts
+                return prompt_data
+
             enhanced_prompt = self._call_memory_bridge_context_injection(user_prompt)
 
-            if enhanced_prompt and enhanced_prompt != user_prompt:
+            if enhanced_prompt and enhanced_prompt != user_prompt and len(enhanced_prompt) < 5000:
+                self.stats['calls_successful'] += 1
+                self.stats['total_processing_time'] += time.time() - start_time
+
                 self._log_hook_activity('context_injection', {
                     'original_length': len(user_prompt),
                     'enhanced_length': len(enhanced_prompt),
-                    'injection_applied': True
+                    'injection_applied': True,
+                    'processing_time': round(time.time() - start_time, 2)
                 })
 
                 # Return enhanced prompt data
@@ -101,14 +278,18 @@ class EnhancedMemoryIntegrationHook:
 
         except Exception as e:
             self._log_hook_activity('context_injection_error', {
-                'error': str(e),
+                'error': str(e)[:200],  # Limit error message length
                 'prompt_length': len(prompt_data.get('prompt', ''))
             })
             return prompt_data
 
     def handle_post_tool_use(self, tool_data):
-        """Handle PostToolUse hook - store significant interactions"""
+        """Handle PostToolUse hook - store significant interactions with safety checks"""
         if not self.memory_bridge_enabled:
+            return
+
+        # Skip if rate limited
+        if not self.rate_limiter.allow_call():
             return
 
         try:
@@ -117,6 +298,10 @@ class EnhancedMemoryIntegrationHook:
 
             # Check if tool interaction should be stored
             if not self._is_significant_tool_interaction(tool_name, tool_params):
+                return
+
+            # Limit data size to prevent memory bloat
+            if len(str(tool_params)) > 2000:
                 return
 
             # Prepare hook context for memory bridge
@@ -128,56 +313,28 @@ class EnhancedMemoryIntegrationHook:
                 'projectContext': self._get_current_project_context()
             }
 
-            # Call TypeScript memory bridge for storage
-            storage_result = self._call_memory_bridge_storage(hook_context)
+            # Call TypeScript memory bridge for storage (with circuit breaker)
+            storage_result, error = self.circuit_breaker.call(
+                self._call_memory_bridge_storage, hook_context
+            )
 
             self._log_hook_activity('memory_storage', {
                 'tool_name': tool_name,
-                'storage_success': storage_result,
-                'content_length': len(str(tool_params))
+                'storage_success': storage_result and not error,
+                'content_length': min(len(str(tool_params)), 1000),
+                'error': error[:100] if error else None
             })
 
         except Exception as e:
             self._log_hook_activity('memory_storage_error', {
-                'error': str(e),
+                'error': str(e)[:200],
                 'tool_name': tool_data.get('tool_name', 'unknown')
             })
-
-    def handle_session_start(self):
-        """Handle SessionStart hook - restore session context"""
-        if not self.memory_bridge_enabled:
-            return None
-
-        try:
-            # Call TypeScript memory bridge for context restoration
-            restored_context = self._call_memory_bridge_session_restore()
-
-            if restored_context:
-                self._log_hook_activity('session_restoration', {
-                    'context_length': len(restored_context),
-                    'restoration_success': True
-                })
-
-                # Store restored context for use in prompts
-                self._store_session_context(restored_context)
-                return restored_context
-
-            return None
-
-        except Exception as e:
-            self._log_hook_activity('session_restoration_error', {
-                'error': str(e)
-            })
-            return None
 
     def _is_context_injection_enabled(self):
         """Check if context injection is enabled in configuration"""
         try:
-            config_path = os.path.join(
-                self.project_dir,
-                '.devflow/context-management-config.json'
-            )
-
+            config_path = os.path.join(self.project_dir, '.devflow/context-management-config.json')
             if not os.path.exists(config_path):
                 return True  # Default enabled
 
@@ -185,15 +342,12 @@ class EnhancedMemoryIntegrationHook:
                 config = json.load(f)
 
             return config.get('enable_context_injection', True)
-
         except:
             return True  # Default enabled on error
 
     def _is_significant_tool_interaction(self, tool_name, tool_params):
         """Determine if tool interaction is significant enough for memory storage"""
-        significant_tools = [
-            'Write', 'Edit', 'MultiEdit', 'Task', 'Bash', 'Read'
-        ]
+        significant_tools = ['Write', 'Edit', 'MultiEdit', 'Task', 'Bash', 'Read']
 
         if tool_name not in significant_tools:
             return False
@@ -201,16 +355,16 @@ class EnhancedMemoryIntegrationHook:
         # Check minimum content requirements
         if tool_name in ['Write', 'Edit', 'MultiEdit']:
             content = tool_params.get('content', '') or tool_params.get('new_string', '')
-            return len(content.strip()) >= 50
+            return 50 <= len(content.strip()) <= 2000  # Size limits
 
         if tool_name == 'Task':
             prompt = tool_params.get('prompt', '')
-            return len(prompt.strip()) >= 20
+            return 20 <= len(prompt.strip()) <= 1000
 
         if tool_name == 'Bash':
             command = tool_params.get('command', '')
             description = tool_params.get('description', '')
-            return len(command + description) >= 10
+            return 10 <= len(command + description) <= 500
 
         if tool_name == 'Read':
             file_path = tool_params.get('file_path', '').lower()
@@ -225,61 +379,67 @@ class EnhancedMemoryIntegrationHook:
     def _get_current_project_context(self):
         """Get current project context from task state"""
         try:
-            task_state_path = os.path.join(
-                self.project_dir,
-                '.claude/state/current_task.json'
-            )
-
+            task_state_path = os.path.join(self.project_dir, '.claude/state/current_task.json')
             if os.path.exists(task_state_path):
                 with open(task_state_path, 'r') as f:
                     task_state = json.load(f)
 
                 return {
-                    'id': 1,  # Default project ID - should be enhanced
-                    'name': task_state.get('task', 'unknown'),
-                    'branch': task_state.get('branch', 'main')
+                    'id': 1,  # Default project ID
+                    'name': task_state.get('task', 'unknown')[:50],  # Limit length
+                    'branch': task_state.get('branch', 'main')[:50]
                 }
-
         except:
             pass
 
         return {'id': 1, 'name': 'devflow', 'branch': 'main'}
 
     def _call_memory_bridge_context_injection(self, user_prompt):
-        """Call Node.js memory bridge for context injection"""
+        """Call Node.js memory bridge for context injection with safety checks"""
         try:
             bridge_script = os.path.join(self.project_dir, 'scripts', 'memory-bridge-runner.js')
             if not os.path.exists(bridge_script):
                 return user_prompt
 
+            # Limit input size
+            if len(user_prompt) > 1000:
+                user_prompt = user_prompt[:1000] + "..."
+
             # Prepare data for bridge call
             bridge_data = {
                 'user_prompt': user_prompt,
                 'session_id': self.session_id,
-                'project_id': 1  # Default project ID
+                'project_id': 1
             }
 
-            # Call Node.js bridge
-            result = subprocess.run([
+            # Call Node.js bridge with process manager
+            stdout, stderr = self.process_manager.run_subprocess([
                 'node', bridge_script, 'context-injection', json.dumps(bridge_data)
-            ], capture_output=True, text=True, timeout=10)
+            ])
 
-            if result.returncode == 0 and result.stdout:
-                response = json.loads(result.stdout.strip())
-                if response.get('success') and response.get('context_applied'):
-                    return response.get('enhanced_prompt', user_prompt)
+            if stdout and not stderr:
+                try:
+                    response = json.loads(stdout.strip())
+                    if response.get('success') and response.get('context_applied'):
+                        enhanced = response.get('enhanced_prompt', user_prompt)
+                        # Limit response size
+                        if len(enhanced) > 5000:
+                            return user_prompt
+                        return enhanced
+                except json.JSONDecodeError:
+                    pass
 
             return user_prompt
 
         except Exception as e:
             self._log_hook_activity('bridge_call_error', {
                 'operation': 'context_injection',
-                'error': str(e)
+                'error': str(e)[:200]
             })
             return user_prompt
 
     def _call_memory_bridge_storage(self, hook_context):
-        """Call Node.js memory bridge for memory storage"""
+        """Call Node.js memory bridge for memory storage with safety checks"""
         try:
             bridge_script = os.path.join(self.project_dir, 'scripts', 'memory-bridge-runner.js')
             if not os.path.exists(bridge_script):
@@ -293,81 +453,31 @@ class EnhancedMemoryIntegrationHook:
                 'project_id': hook_context.get('projectContext', {}).get('id', 1)
             }
 
-            # Call Node.js bridge
-            result = subprocess.run([
+            # Call Node.js bridge with process manager
+            stdout, stderr = self.process_manager.run_subprocess([
                 'node', bridge_script, 'memory-storage', json.dumps(bridge_data)
-            ], capture_output=True, text=True, timeout=15)
+            ])
 
-            if result.returncode == 0 and result.stdout:
-                response = json.loads(result.stdout.strip())
-                return response.get('success', False)
+            if stdout and not stderr:
+                try:
+                    response = json.loads(stdout.strip())
+                    return response.get('success', False)
+                except json.JSONDecodeError:
+                    pass
 
             return False
 
         except Exception as e:
             self._log_hook_activity('bridge_call_error', {
                 'operation': 'memory_storage',
-                'error': str(e)
+                'error': str(e)[:200]
             })
             return False
-
-    def _call_memory_bridge_session_restore(self):
-        """Call Node.js memory bridge for session context restoration"""
-        try:
-            bridge_script = os.path.join(self.project_dir, 'scripts', 'memory-bridge-runner.js')
-            if not os.path.exists(bridge_script):
-                return None
-
-            # Prepare data for bridge call
-            bridge_data = {
-                'session_id': self.session_id,
-                'project_id': 1  # Default project ID
-            }
-
-            # Call Node.js bridge
-            result = subprocess.run([
-                'node', bridge_script, 'session-restore', json.dumps(bridge_data)
-            ], capture_output=True, text=True, timeout=10)
-
-            if result.returncode == 0 and result.stdout:
-                response = json.loads(result.stdout.strip())
-                if response.get('success') and response.get('context_restored'):
-                    return response.get('restored_context')
-
-            return None
-
-        except Exception as e:
-            self._log_hook_activity('bridge_call_error', {
-                'operation': 'session_restore',
-                'error': str(e)
-            })
-            return None
-
-    def _store_session_context(self, context):
-        """Store restored session context for use in current session"""
-        try:
-            context_path = os.path.join(
-                self.project_dir,
-                '.devflow/session-context.md'
-            )
-
-            os.makedirs(os.path.dirname(context_path), exist_ok=True)
-
-            with open(context_path, 'w') as f:
-                f.write(context)
-
-        except Exception as e:
-            self._log_hook_activity('context_storage_error', {'error': str(e)})
 
     def _check_dual_trigger_integration(self, user_prompt):
         """Check if dual-trigger context restoration should be activated"""
         try:
-            # Check if there's a saved session state from dual-trigger
-            trigger_metadata_path = os.path.join(
-                self.project_dir,
-                '.devflow/dual-trigger-log.json'
-            )
-
+            trigger_metadata_path = os.path.join(self.project_dir, '.devflow/dual-trigger-log.json')
             if not os.path.exists(trigger_metadata_path):
                 return None
 
@@ -399,13 +509,12 @@ class EnhancedMemoryIntegrationHook:
             }
 
         except Exception as e:
-            self._log_hook_activity('dual_trigger_check_error', {'error': str(e)})
+            self._log_hook_activity('dual_trigger_check_error', {'error': str(e)[:200]})
             return None
 
     def _handle_dual_trigger_context_restoration(self, user_prompt, dual_trigger_context):
         """Handle context restoration using dual-trigger saved state"""
         try:
-            # Call TypeScript cross-session memory bridge for restoration
             bridge_script = os.path.join(self.project_dir, 'scripts', 'memory-bridge-runner.js')
             if not os.path.exists(bridge_script):
                 return user_prompt
@@ -414,46 +523,57 @@ class EnhancedMemoryIntegrationHook:
             bridge_data = {
                 'operation': 'session_restoration',
                 'session_id': dual_trigger_context['session_id'],
-                'project_id': 1,  # Default project ID
+                'project_id': 1,
                 'trigger_type': dual_trigger_context['trigger_type']
             }
 
             # Call Node.js bridge for session restoration
-            result = subprocess.run([
+            stdout, stderr = self.process_manager.run_subprocess([
                 'node', bridge_script, 'session-restoration', json.dumps(bridge_data)
-            ], capture_output=True, text=True, timeout=15)
+            ])
 
-            if result.returncode == 0 and result.stdout:
-                response = json.loads(result.stdout.strip())
+            if stdout and not stderr:
+                try:
+                    response = json.loads(stdout.strip())
 
-                if response.get('success') and response.get('data', {}).get('contextRestored'):
-                    restored_context = response['data']['restoredContext']
-                    context_quality = response['data'].get('contextQuality', 0)
+                    if response.get('success') and response.get('data', {}).get('contextRestored'):
+                        restored_context = response['data']['restoredContext']
+                        context_quality = response['data'].get('contextQuality', 0)
 
-                    if restored_context and context_quality > 0.3:  # Minimum quality threshold
-                        # Create enhanced prompt with restored context
-                        enhanced_sections = [
-                            '## Previous Session Context',
-                            '',
-                            restored_context,
-                            '',
-                            '## Current Request',
-                            '',
-                            user_prompt
-                        ]
+                        if restored_context and context_quality > 0.3:
+                            # Limit context size
+                            if len(restored_context) > 2000:
+                                restored_context = restored_context[:2000] + "..."
 
-                        enhanced_prompt = '\n'.join(enhanced_sections)
+                            # Create enhanced prompt with restored context
+                            enhanced_sections = [
+                                '## Previous Session Context',
+                                '',
+                                restored_context,
+                                '',
+                                '## Current Request',
+                                '',
+                                user_prompt
+                            ]
 
-                        # Mark context as restored in trigger log
-                        self._mark_trigger_context_restored(dual_trigger_context['session_id'])
+                            enhanced_prompt = '\n'.join(enhanced_sections)
 
-                        return enhanced_prompt
+                            # Final size check
+                            if len(enhanced_prompt) > 5000:
+                                return user_prompt
+
+                            # Mark context as restored in trigger log
+                            self._mark_trigger_context_restored(dual_trigger_context['session_id'])
+
+                            return enhanced_prompt
+                except json.JSONDecodeError:
+                    pass
 
             return user_prompt
 
         except Exception as e:
             self._log_hook_activity('dual_trigger_restoration_error', {
-                'error': str(e),
+                'error': str(e)[:200],
                 'session_id': dual_trigger_context.get('session_id', 'unknown')
             })
             return user_prompt
@@ -461,11 +581,7 @@ class EnhancedMemoryIntegrationHook:
     def _mark_trigger_context_restored(self, session_id):
         """Mark dual-trigger context as restored to prevent duplicate restoration"""
         try:
-            trigger_metadata_path = os.path.join(
-                self.project_dir,
-                '.devflow/dual-trigger-log.json'
-            )
-
+            trigger_metadata_path = os.path.join(self.project_dir, '.devflow/dual-trigger-log.json')
             if not os.path.exists(trigger_metadata_path):
                 return
 
@@ -483,14 +599,18 @@ class EnhancedMemoryIntegrationHook:
                 json.dump(trigger_log, f, indent=2)
 
         except Exception as e:
-            self._log_hook_activity('mark_restoration_error', {'error': str(e)})
-
+            self._log_hook_activity('mark_restoration_error', {'error': str(e)[:200]})
 
 def main():
-    """Main hook entry point"""
+    """Main hook entry point with signal handling"""
+    def signal_handler(signum, frame):
+        sys.exit(0)
+
+    signal.signal(signal.SIGTERM, signal_handler)
+    signal.signal(signal.SIGINT, signal_handler)
+
     if len(sys.argv) < 2:
-        print("Usage: enhanced-memory-integration.py <hook_type> [hook_data]")
-        sys.exit(1)
+        return
 
     hook_type = sys.argv[1]
     hook_data = {}
@@ -503,12 +623,16 @@ def main():
             pass
     elif not sys.stdin.isatty():
         try:
-            hook_data = json.loads(sys.stdin.read())
-        except json.JSONDecodeError:
+            # Use select with timeout to avoid blocking
+            import select
+            if select.select([sys.stdin], [], [], 0.1)[0]:
+                hook_data_str = sys.stdin.read(4096)  # Limit input size
+                hook_data = json.loads(hook_data_str)
+        except (json.JSONDecodeError, ImportError):
             pass
 
     # Initialize hook handler
-    hook = EnhancedMemoryIntegrationHook()
+    hook = EnhancedMemoryIntegrationHookSafe()
 
     # Route to appropriate handler
     if hook_type == "UserPromptSubmit":
@@ -518,14 +642,8 @@ def main():
     elif hook_type == "PostToolUse":
         hook.handle_post_tool_use(hook_data)
 
-    elif hook_type == "SessionStart":
-        context = hook.handle_session_start()
-        if context:
-            print(context)
-
     else:
         hook._log_hook_activity('unknown_hook_type', {'hook_type': hook_type})
-
 
 if __name__ == "__main__":
     main()

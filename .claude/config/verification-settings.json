@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "autoVerify": true,
+  "failOnError": false,
+  "excludedPaths": [
+    "node_modules",
+    ".git",
+    "dist",
+    "build",
+    "coverage"
+  ],
+  "severityThreshold": "medium",
+  "rules": {
+    "lineLimit": 100,
+    "allowSQLite": false,
+    "checkCodeQuality": true,
+    "bugDetection": true
+  }
+}

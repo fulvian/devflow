@@ -826,6 +826,15 @@ class MemoryBridgeRunner {
     }
 }
 
-// Run the bridge
-const bridge = new MemoryBridgeRunner();
-bridge.run();
+// Use safe version by default
+const { MemoryBridgeRunnerSafe } = require('./memory-bridge-runner-safe.js');
+
+// Fallback to original if safe version fails
+try {
+    const safeBridge = new MemoryBridgeRunnerSafe();
+    safeBridge.run();
+} catch (error) {
+    console.warn('Safe bridge failed, using original:', error.message);
+    const bridge = new MemoryBridgeRunner();
+    bridge.run();
+}

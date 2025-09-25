@@ -1,0 +1,54 @@
+{
+  "detectionRules": [
+    {
+      "id": "large_commit",
+      "name": "Large Commit Detection",
+      "description": "Detects commits with an unusually large number of file changes",
+      "enabled": true,
+      "operations": ["pre-commit", "post-commit", "stop"],
+      "threshold": 50,
+      "severity": "high",
+      "category": "code_quality"
+    },
+    {
+      "id": "conflict_prone",
+      "name": "Conflict Prone Changes",
+      "description": "Detects changes to files that commonly cause merge conflicts",
+      "enabled": true,
+      "operations": ["pre-commit", "pre-push"],
+      "patterns": ["package-lock.json", "yarn.lock", "*.env", "requirements.txt"],
+      "severity": "medium",
+      "category": "merge_conflicts"
+    },
+    {
+      "id": "performance_impact",
+      "name": "Performance Impact Detection",
+      "description": "Detects changes that may impact application performance",
+      "enabled": true,
+      "operations": ["*"],
+      "filePatterns": ["*.js", ".ts", "*.py", "package.json"],
+      "severity": "medium",
+      "category": "performance"
+    },
+    {
+      "id": "security_risk",
+      "name": "Security Risk Detection",
+      "description": "Detects potential security vulnerabilities in code changes",
+      "enabled": true,
+      "operations": ["pre-commit", "pre-push"],
+      "patterns": ["*.env", "config/*.json", "secrets.json"],
+      "severity": "critical",
+      "category": "security"
+    }
+  ],
+  "performance": {
+    "maxHookDuration": 5000,
+    "monitoringInterval": 1000,
+    "logPerformance": true
+  },
+  "notifications": {
+    "enabled": true,
+    "channels": ["console", "log_file"],
+    "minSeverity": "medium"
+  }
+}
