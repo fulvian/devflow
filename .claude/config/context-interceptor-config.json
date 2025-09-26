@@ -1,9 +1,9 @@
 {
   "context_interceptor": {
     "enabled": true,
-    "mode": "shadow",
-    "last_updated": "2025-09-26T00:00:00.000Z",
-    "description": "Context7-compliant Context Interceptor Configuration"
+    "mode": "hybrid",
+    "last_updated": "2025-09-26T16:15:00.000Z",
+    "description": "Context7-compliant Context Interceptor Configuration - HYBRID MODE ACTIVATED"
   },
   "modes": {
     "shadow": {
@@ -17,10 +17,10 @@
       "timeout_ms": 30000
     },
     "hybrid": {
-      "description": "Selective context replacement based on confidence scores",
+      "description": "Selective context replacement based on confidence scores - TESTING MODE 0.6",
       "enhanced_memory_enabled": true,
       "context_replacement": true,
-      "replacement_threshold": 0.8,
+      "replacement_threshold": 0.6,
       "logging_enabled": true,
       "performance_monitoring": true,
       "safety_validation": true,

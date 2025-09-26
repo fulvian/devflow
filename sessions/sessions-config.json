@@ -17,5 +17,12 @@
   "branch_enforcement": {
     "enabled": true
   },
-  "api_mode": false
+  "api_mode": false,
+  "enhanced_memory": {
+    "enabled": true,
+    "database_path": "./data/devflow_unified.sqlite",
+    "sensitivity": "high",
+    "min_keywords": 2,
+    "max_results": 5
+  }
 }

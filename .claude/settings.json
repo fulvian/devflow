@@ -5,24 +5,33 @@
         "hooks": [
           {
             "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/enhanced-memory-integration.py"
+            "command": "python3 /Users/fulvioventura/devflow/.claude/hooks/debug-hook-execution.py"
           },
           {
             "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/dual-trigger-context-manager.py"
+            "command": "python3 /Users/fulvioventura/devflow/.claude/hooks/universal-memory-injection.py"
           },
           {
             "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/user-prompt-submit-context7.py"
+            "command": "python3 /Users/fulvioventura/devflow/.claude/hooks/user-prompt-submit-context7.py"
           },
           {
             "type": "command",
-            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/natural-language-project-creation.py"
+            "command": "python3 /Users/fulvioventura/devflow/.claude/hooks/natural-language-project-creation.py"
           }
         ]
       }
     ],
     "PreToolUse": [
+      {
+        "matcher": ".*",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/user-prompt-submit-context7.py"
+          }
+        ]
+      },
       {
         "matcher": "Write|Edit|MultiEdit|Task|Bash",
         "hooks": [

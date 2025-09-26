@@ -120,8 +120,8 @@ set_defaults() {
 cleanup_services() {
     print_status "🧹 Cleaning up existing DevFlow processes..."
 
-    # Clean up PID files first (including enforcement and codex)
-    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enhanced-memory.pid" ".enforcement.pid" ".codex.pid")
+    # Clean up PID files first (including enforcement, codex, and embedding scheduler)
+    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enhanced-memory.pid" ".enforcement.pid" ".codex.pid" ".embedding-scheduler.pid")
     for pid_file in "${pid_files[@]}"; do
         if [ -f "$PROJECT_ROOT/$pid_file" ]; then
             local pid=$(cat "$PROJECT_ROOT/$pid_file")
@@ -156,6 +156,7 @@ cleanup_services() {
     pkill -f "enhanced-memory-service" 2>/dev/null || true
     pkill -f "enforcement-daemon" 2>/dev/null || true
     pkill -f "codex_server" 2>/dev/null || true
+    pkill -f "embedding-scheduler-daemon" 2>/dev/null || true
 
     # Clean up ports brutally (all configurable ports from .env)
     local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $ENHANCED_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
@@ -503,6 +504,58 @@ start_unified_orchestrator() {
     fi
 }
 
+# Start Embedding Background Scheduler Daemon
+start_embedding_scheduler() {
+    print_status "Starting Embedding Background Scheduler Daemon..."
+
+    # Check if scheduler daemon exists
+    if [ ! -f "$PROJECT_ROOT/.claude/hooks/embedding-scheduler-daemon.py" ]; then
+        print_warning "Embedding scheduler daemon not found - skipping background embedding processing"
+        return 0
+    fi
+
+    # Check if Python 3 is available
+    if ! command_exists python3; then
+        print_warning "Python 3 not available - skipping embedding scheduler"
+        return 0
+    fi
+
+    # Check if already running via process check
+    if pgrep -f "embedding-scheduler-daemon" >/dev/null 2>&1; then
+        print_status "Embedding scheduler daemon already running"
+        return 0
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start embedding scheduler daemon in background
+    nohup python3 "$PROJECT_ROOT/.claude/hooks/embedding-scheduler-daemon.py" > "$PROJECT_ROOT/logs/embedding-scheduler.log" 2>&1 &
+    local scheduler_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running
+    if kill -0 $scheduler_pid 2>/dev/null; then
+        echo $scheduler_pid > "$PROJECT_ROOT/.embedding-scheduler.pid"
+        print_status "✅ Embedding Background Scheduler started (PID: $scheduler_pid)"
+
+        # Brief status check
+        sleep 2
+        local scheduler_running=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"scheduler_running"' | grep -o 'true\|false' || echo "unknown")
+        if [ "$scheduler_running" = "true" ]; then
+            print_status "✅ Embedding scheduler operational - automatic queue processing enabled"
+        else
+            print_warning "⚠️  Embedding scheduler started but not fully operational"
+        fi
+        return 0
+    else
+        print_error "Failed to start Embedding Background Scheduler"
+        return 1
+    fi
+}
+
 # Start Codex Server
 start_codex_server() {
     print_status "Starting Codex MCP Server..."
@@ -613,6 +666,12 @@ start_services() {
         print_warning "100-line code limit enforcement will not be active"
     fi
 
+    # Start Embedding Background Scheduler (automatic queue processing)
+    if ! start_embedding_scheduler; then
+        print_warning "Embedding Background Scheduler failed to start - CONTINUING WITHOUT AUTO-EMBEDDING"
+        print_warning "Automatic embedding queue processing will not be active"
+    fi
+
     print_status "🎉 DevFlow Unified System v1.0 Started Successfully!"
     print_status "✅ Database Manager: Running on port $DB_MANAGER_PORT"
     print_status "✅ Vector Memory: Running on port $VECTOR_MEMORY_PORT"
@@ -640,6 +699,15 @@ start_services() {
         print_warning "⚠️  Enforcement Daemon: Not Running - 100-line limit enforcement disabled"
     fi
 
+    # Check embedding scheduler status
+    if pgrep -f "embedding-scheduler-daemon" >/dev/null 2>&1; then
+        local scheduler_running=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"scheduler_running"' | grep -o 'true\|false' || echo "unknown")
+        local pending_entries=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"pending_entries"' | grep -o '[0-9]*' || echo "unknown")
+        print_status "✅ Embedding Scheduler: Running (Active: $scheduler_running, Queue: $pending_entries entries)"
+    else
+        print_warning "⚠️  Embedding Scheduler: Not Running - automatic embedding processing disabled"
+    fi
+
     print_status "📊 Health: http://localhost:$ORCHESTRATOR_PORT/health"
     print_status "🎛️  Mode: http://localhost:$ORCHESTRATOR_PORT/api/mode"
     print_status "📈 Metrics: http://localhost:$ORCHESTRATOR_PORT/api/metrics"
@@ -653,7 +721,7 @@ start_services() {
         print_warning "⚠️  Enhanced Memory: System verification failed - check Ollama and components"
     fi
 
-    print_status "🔄 System ready for task orchestration with enhanced context injection and semantic memory"
+    print_status "🔄 System ready for task orchestration with enhanced context injection, semantic memory, and automatic embedding processing"
 
     return 0
 }
@@ -734,6 +802,15 @@ show_status() {
         print_status "✅ Enforcement Daemon: Running (Status: $enforcement_status, Port: $ENFORCEMENT_DAEMON_PORT)"
     else
         print_status "❌ Enforcement Daemon: Stopped - 100-line limit enforcement disabled"
+    fi
+
+    # Check Embedding Background Scheduler
+    if pgrep -f "embedding-scheduler-daemon" >/dev/null 2>&1; then
+        local scheduler_status=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"scheduler_running"' | grep -o 'true\|false' || echo "unknown")
+        local queue_size=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"pending_entries"' | grep -o '[0-9]*' || echo "0")
+        print_status "✅ Embedding Scheduler: Running (Active: $scheduler_status, Queue: $queue_size entries)"
+    else
+        print_status "❌ Embedding Scheduler: Stopped - automatic embedding processing disabled"
     fi
 
     # Check Enhanced Memory System
