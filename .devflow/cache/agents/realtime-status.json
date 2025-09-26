@@ -2,14 +2,14 @@
   "active": 7,
   "total": 8,
   "health_ratio": 0.88,
-  "timestamp": 1758887356527,
+  "timestamp": 1758895163735,
   "agents": [
     {
       "id": "claude-sonnet",
       "name": "Claude Sonnet (Supreme Orchestrator)",
       "type": "claude",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 1,
       "capabilities": [
         "reasoning",
@@ -23,7 +23,7 @@
       "name": "Qwen3 Coder (Synthetic)",
       "type": "synthetic",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 0.95,
       "capabilities": [
         "code",
@@ -36,7 +36,7 @@
       "name": "Kimi K2 (Synthetic)",
       "type": "synthetic",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 0.95,
       "capabilities": [
         "frontend",
@@ -48,7 +48,7 @@
       "name": "GLM 4.5 (Synthetic)",
       "type": "synthetic",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 0.95,
       "capabilities": [
         "backend",
@@ -60,7 +60,7 @@
       "name": "DeepSeek 3.1 (Synthetic)",
       "type": "synthetic",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 0.95,
       "capabilities": [
         "reasoning",
@@ -72,7 +72,7 @@
       "name": "Qwen Code CLI",
       "type": "cli",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 0.9,
       "capabilities": [
         "backend",
@@ -85,7 +85,7 @@
       "name": "Gemini CLI",
       "type": "cli",
       "status": "inactive",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 0,
       "capabilities": [
         "frontend",
@@ -98,7 +98,7 @@
       "name": "Codex CLI (GPT-5)",
       "type": "cli",
       "status": "active",
-      "last_ping": 1758887356527,
+      "last_ping": 1758895163735,
       "health_score": 1,
       "capabilities": [
         "code",
@@ -108,5 +108,5 @@
       ]
     }
   ],
-  "cache_updated": 1758887356527
+  "cache_updated": 1758895163735
 }

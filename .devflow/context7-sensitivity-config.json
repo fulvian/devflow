@@ -1,0 +1,87 @@
+{
+  "version": "2.0_kernel_memory_patterns",
+  "last_updated": "2025-09-26T15:08:00Z",
+  "enhanced_triggers": {
+    "enabled": true,
+    "activation_threshold": 50,
+    "sensitivity_level": "enhanced",
+    "microsoft_kernel_memory_compliance": true
+  },
+  "scoring_weights": {
+    "technical_conversation_patterns": 100,
+    "analysis_request_patterns": 60,
+    "multiple_technologies": 40,
+    "single_technology": 20,
+    "error_patterns": 30,
+    "long_prompt_bonus": 10
+  },
+  "pattern_categories": {
+    "analysis_patterns": [
+      "analisi|analysis|analyze",
+      "best practice|practice|pattern|approach",
+      "documentation|docs|api reference|guide",
+      "implement|integration|setup|configure",
+      "gap|missing|improve|optimize|enhance",
+      "architecture|design|structure|framework",
+      "context|memory|injection|hook|trigger"
+    ],
+    "technical_conversation_patterns": [
+      "microsoft kernel memory|kernel memory|memory patterns",
+      "context injection|automatic injection|memory integration",
+      "production ready|enterprise|scalability|performance",
+      "vector embedding|semantic search|relevance scoring",
+      "claude code|native context|context system replacement",
+      "hook.*activation|trigger.*sensitivity|automatic.*trigger",
+      "database.*query|sqlite|cometa|memory.*stream",
+      "natural language|nlp|semantic.*analysis"
+    ],
+    "technology_patterns": [
+      "context7|claude|code|native|system",
+      "sqlite|database|cometa|memory",
+      "production|enterprise|hook|trigger",
+      "microsoft|kernel|semantic|analysis"
+    ]
+  },
+  "enhanced_memory_integration": {
+    "enabled": true,
+    "keyword_extraction": {
+      "multilingual_support": true,
+      "technical_term_boosting": true,
+      "min_keyword_length": 3,
+      "max_keywords": 12,
+      "priority_scoring": true
+    },
+    "database_queries": {
+      "max_memory_results": 3,
+      "max_task_results": 2,
+      "max_pattern_results": 2,
+      "relevance_threshold": 0.5,
+      "context_truncation": 180
+    }
+  },
+  "context7_detection": {
+    "enabled": true,
+    "auto_suggestion": true,
+    "activation_logging": true,
+    "near_miss_logging": true,
+    "min_score_for_logging": 25
+  },
+  "adaptive_learning": {
+    "enabled": false,
+    "user_feedback_integration": false,
+    "pattern_effectiveness_tracking": false,
+    "dynamic_threshold_adjustment": false
+  },
+  "performance_optimization": {
+    "cache_keywords": true,
+    "parallel_queries": false,
+    "query_timeout_ms": 2000,
+    "max_context_length": 5000
+  },
+  "monitoring": {
+    "trigger_analytics": true,
+    "performance_metrics": true,
+    "error_tracking": true,
+    "success_rate_monitoring": true
+  }
+}
