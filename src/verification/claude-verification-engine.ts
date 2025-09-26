@@ -128,7 +128,7 @@ class ClaudeVerificationEngine {
         this.getAllProjectFiles(filePath, fileList);
       } else {
         // Only include source files
-        if (\.(ts|tsx|js|jsx|json|md|sql)$/.test(file)) {
+        if (/\.(ts|tsx|js|jsx|json|md|sql)$/.test(file)) {
           fileList.push(filePath);
         }
       }

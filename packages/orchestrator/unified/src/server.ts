@@ -7,7 +7,8 @@
  */
 
 import { config } from 'dotenv';
-import { resolve } from 'path';
+import { resolve, join } from 'path';
+import { exec } from 'child_process';
 
 // Load environment variables from project root .env file
 config({ path: resolve(process.cwd(), '../../../.env') });
@@ -1073,6 +1074,24 @@ app.post('/api/mode/:modeName', (req, res) => {
   try {
     const { modeName } = req.params;
     const result = modeInterface.changeMode(modeName as any);
+
+    // Context7 Pattern: Event-based notification trigger on mode change
+    if (result.success) {
+      // Trigger footer refresh immediately using Context7 node-notifier pattern
+      const rootDir = resolve(process.cwd(), '../../../');
+      const footerScript = join(rootDir, '.claude/cometa-footer.sh');
+      exec(footerScript, {
+        timeout: 5000,
+        cwd: rootDir
+      }, (error, stdout, stderr) => {
+        if (error) {
+          console.log(`[Footer] Refresh failed: ${error.message}`);
+        } else {
+          console.log(`[Footer] Refreshed on mode change: ${modeName}`);
+        }
+      });
+    }
+
     res.json(result);
   } catch (error) {
     res.status(400).json({ error: error instanceof Error ? error.message : String(error) });
@@ -1090,6 +1109,20 @@ app.post('/mode/switch/:mode', (req, res) => {
     if (result.success) {
       mcpFallbackSystem.setOperationalMode(mode as any);
       console.log(`[MCP] Fallback system mode synchronized to: ${mode}`);
+
+      // Context7 Pattern: Event-based notification trigger on mode change
+      const rootDir = resolve(process.cwd(), '../../../');
+      const footerScript = join(rootDir, '.claude/cometa-footer.sh');
+      exec(footerScript, {
+        timeout: 5000,
+        cwd: rootDir
+      }, (error, stdout, stderr) => {
+        if (error) {
+          console.log(`[Footer] Refresh failed: ${error.message}`);
+        } else {
+          console.log(`[Footer] Refreshed on mode change: ${mode}`);
+        }
+      });
     }
 
     // Log mode change per audit trail

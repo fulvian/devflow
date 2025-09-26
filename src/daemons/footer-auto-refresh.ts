@@ -31,7 +31,8 @@ export class FooterAutoRefreshDaemon {
       watchFiles: [
         '.devflow/token-usage-state.json',
         '.claude/state/current_task.json',
-        '.devflow/footer-state.json'
+        '.devflow/footer-state.json',
+        '.devflow/orchestrator-mode-state.json'
       ],
       footerScript: '.claude/cometa-footer.sh',
       stabilityThreshold: 200, // ms - wait for file write completion

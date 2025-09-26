@@ -1,7 +1,7 @@
 {
-  "id": 12,
-  "title": "injection_memory_enhanced",
-  "description": "Enhanced Project Memory & Context System - Implementazione sistema di memoria semantica per sostituire/migliorare memoria nativa Claude Code con Context7 patterns, vector embeddings, intelligent context injection e cross-session continuity",
-  "status": "in_progress",
-  "created_at": "2025-09-25 08:54:20"
+  "id": 14,
+  "title": "context7_rollout_monitoring",
+  "description": "Context7 Progressive Rollout Monitoring Task - Monitoraggio attivo del rollout progressivo Context7 per la sostituzione del context management nativo Claude Code. \n\n📊 FASE ATTUALE: Shadow Mode (72h testing parallelo)\n\n🔧 COMPONENTI DA MONITORARE:\n- Progressive Rollout Monitor: .claude/hooks/progressive-rollout-monitor.py\n- Metrics Command: python3 .claude/hooks/progressive-rollout-monitor.py metrics\n- Status Command: python3 .claude/hooks/progressive-rollout-monitor.py status\n- Context Interceptor: .claude/hooks/context-interceptor.py\n- Context Safety Validator: src/core/semantic-memory/context-safety-validator.ts\n- Enhanced Memory Bridge: scripts/memory-bridge-runner-safe.js\n- Emergency Systems: .claude/emergency/context-rollback.sh + context-restore.sh\n\n📈 SUCCESS CRITERIA:\n- Token Savings: >20%\n- Performance Gain: >15%\n- Safety Incidents: 0\n- Quality Score: >0.75\n- Uptime: >99.5%\n\n⏱️ TIMELINE:\n- Shadow Mode: 72 ore (test paralleli senza sostituzione)\n- Hybrid Mode: 168 ore (sostituzione selettiva)\n- Full Mode: Produzione completa\n\n🚨 ROLLBACK TRIGGERS:\n- Safety incidents ≥1\n- Performance degradation >25%\n- Quality score <0.6\n- Context poisoning detected\n\n💾 FILE CONFIGURAZIONE:\n- .claude/config/context-interceptor-config.json\n- .devflow/context-management-config.json\n- .devflow/verification-trigger.json\n\n📋 AZIONI PERIODICHE:\n1. Verificare metriche ogni 8 ore\n2. Analizzare logs per anomalie\n3. Validare criteri successo per progressione\n4. Documentare insights e optimization\n5. Preparare report per transizione Hybrid Mode\n\nOBIETTIVO: Gestire la transizione sicura da context nativo Claude a Enhanced Memory System senza degradazione performance LLM",
+  "status": "pending",
+  "created_at": "2025-09-25 23:19:37"
 }

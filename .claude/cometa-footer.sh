@@ -86,16 +86,31 @@ get_task_progress() {
     echo "${BOLD}${task_name}${RESET} ${progress_color}${progress}%${RESET}"
 }
 
-# Function to get agent mode
+# Function to get agent mode - Context7 Zustand-inspired state management
 get_agent_mode() {
     local mode="claude-only"
     local mode_color="$MODE_CLAUDE"
+    local state_file="${PWD}/.devflow/orchestrator-mode-state.json"
 
-    # Try to get from orchestrator
-    local orchestrator_mode=$(curl -s --connect-timeout 2 "http://localhost:3005/api/mode/current" 2>/dev/null | jq -r '.mode // "claude-only"' 2>/dev/null || echo "claude-only")
+    # Context7 Pattern: Try primary source (orchestrator API)
+    local orchestrator_mode=$(curl -s --connect-timeout 2 "http://localhost:3005/api/mode" 2>/dev/null | jq -r '.currentMode // "claude-only"' 2>/dev/null || echo "claude-only")
 
-    if [ "$orchestrator_mode" != "null" ] && [ -n "$orchestrator_mode" ]; then
+    if [ "$orchestrator_mode" != "null" ] && [ -n "$orchestrator_mode" ] && [ "$orchestrator_mode" != "claude-only" ]; then
         mode="$orchestrator_mode"
+        # Context7 Pattern: Cache successful state for resilience
+        echo "{\"currentMode\":\"$mode\",\"lastUpdate\":\"$(date -Iseconds)\",\"source\":\"orchestrator\"}" > "$state_file" 2>/dev/null
+    else
+        # Context7 Pattern: Fallback to cached state (Zustand-like persistence)
+        if [ -f "$state_file" ]; then
+            local cached_mode=$(jq -r '.currentMode // "claude-only"' "$state_file" 2>/dev/null || echo "claude-only")
+            local cache_age=$(jq -r '.lastUpdate // "1970-01-01T00:00:00Z"' "$state_file" 2>/dev/null)
+            local current_time=$(date -Iseconds)
+
+            # Use cached mode if less than 5 minutes old
+            if [ -n "$cached_mode" ] && [ "$cached_mode" != "null" ]; then
+                mode="$cached_mode"
+            fi
+        fi
     fi
 
     # Set color based on mode
