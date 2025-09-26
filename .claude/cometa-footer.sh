@@ -151,18 +151,18 @@ get_token_counters() {
     local session_tokens=0
     local task_tokens=0
 
-    # Try compiled JavaScript RealTimeTokenMonitor first (faster than ts-node)
-    if [ -f "dist/scripts/token-monitor-cli.js" ]; then
-        local real_time_data=$(node dist/scripts/token-monitor-cli.js 2>/dev/null || echo "")
+    # Use simple token monitor with timeout for clean token counts
+    if [ -f "scripts/simple-token-monitor.ts" ]; then
+        local real_time_data=$(npx ts-node scripts/simple-token-monitor.ts & PID=$!; sleep 3; kill -9 $PID 2>/dev/null; wait $PID 2>/dev/null)
         if [ -n "$real_time_data" ]; then
             local success=$(echo "$real_time_data" | jq -r '.success // false' 2>/dev/null || echo "false")
             if [ "$success" = "true" ]; then
-                # Use formatted strings directly from compiled JavaScript
-                local session_formatted=$(echo "$real_time_data" | jq -r '.session // "0"' 2>/dev/null)
-                local task_formatted=$(echo "$real_time_data" | jq -r '.task // "0"' 2>/dev/null)
+                # Use input/output format directly from token monitor
+                local input_formatted=$(echo "$real_time_data" | jq -r '.input // "0"' 2>/dev/null)
+                local output_formatted=$(echo "$real_time_data" | jq -r '.output // "0"' 2>/dev/null)
 
-                # Output directly without further formatting
-                echo "${TOKEN_SESSION}Session:${session_formatted}${RESET} ${TOKEN_TASK}Task:${task_formatted}${RESET}"
+                # Output with new Input/Output format
+                echo "${TOKEN_SESSION}Input:${input_formatted}${RESET} ${TOKEN_TASK}Output:${output_formatted}${RESET}"
                 return
             fi
         fi
