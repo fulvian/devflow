@@ -80,6 +80,72 @@ router.get('/realtime-status', async (req: Request, res: Response) => {
 });
 
 /**
+ * GET /api/agents/status
+ * DevFlow Footer-compatible endpoint with simplified response format
+ *
+ * Response format: {
+ *   "active": 6,
+ *   "total": 8,
+ *   "agents": [...]
+ * }
+ */
+router.get('/status', async (req: Request, res: Response) => {
+  const startTime = Date.now();
+
+  try {
+    console.log(`[AgentStatus] Processing status request for footer`);
+
+    // Get realtime agent status
+    const realtimeStatus = await healthMonitor.getRealtimeStatus();
+
+    // Validate response format
+    const isValid = AgentHealthUtils.validateResponse(realtimeStatus);
+    if (!isValid) {
+      console.warn('[AgentStatus] Invalid response format, using fallback');
+      const fallbackStatus = AgentHealthUtils.getFallbackStatus();
+      return res.json({
+        active: fallbackStatus.active,
+        total: fallbackStatus.total,
+        agents: fallbackStatus.agents
+      });
+    }
+
+    // Calculate response time
+    const responseTime = Date.now() - startTime;
+    console.log(`[AgentStatus] Footer status response generated in ${responseTime}ms`);
+
+    // Return simplified format for footer compatibility
+    const footerResponse = {
+      active: realtimeStatus.active,
+      total: realtimeStatus.total,
+      agents: realtimeStatus.agents.map(agent => ({
+        name: agent.name,
+        status: agent.status,
+        type: agent.type
+      }))
+    };
+
+    res.json(footerResponse);
+
+  } catch (error) {
+    const responseTime = Date.now() - startTime;
+    console.error('[AgentStatus] Error processing footer status request:', error);
+
+    // Return fallback status for footer
+    const fallbackStatus = AgentHealthUtils.getFallbackStatus();
+    res.status(500).json({
+      active: fallbackStatus.active,
+      total: fallbackStatus.total,
+      agents: fallbackStatus.agents.map(agent => ({
+        name: agent.name,
+        status: agent.status,
+        type: agent.type
+      }))
+    });
+  }
+});
+
+/**
  * POST /api/agents/realtime-status/invalidate
  * Force cache invalidation for immediate fresh status
  */

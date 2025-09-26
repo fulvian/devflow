@@ -504,13 +504,13 @@ start_unified_orchestrator() {
     fi
 }
 
-# Start Embedding Background Scheduler Daemon
+# Start APScheduler Embedding Background Daemon (Context7 Robust Solution)
 start_embedding_scheduler() {
-    print_status "Starting Embedding Background Scheduler Daemon..."
+    print_status "Starting APScheduler Embedding Background Daemon (Context7 Solution)..."
 
-    # Check if scheduler daemon exists
-    if [ ! -f "$PROJECT_ROOT/.claude/hooks/embedding-scheduler-daemon.py" ]; then
-        print_warning "Embedding scheduler daemon not found - skipping background embedding processing"
+    # Check if APScheduler daemon exists
+    if [ ! -f "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" ]; then
+        print_warning "APScheduler embedding daemon not found - skipping background embedding processing"
         return 0
     fi
 
@@ -520,38 +520,49 @@ start_embedding_scheduler() {
         return 0
     fi
 
+    # Check if APScheduler is installed
+    if ! python3 -c "import apscheduler" 2>/dev/null; then
+        print_warning "APScheduler not installed - attempting installation..."
+        if ! pip3 install --break-system-packages apscheduler 2>/dev/null; then
+            print_error "Failed to install APScheduler - skipping embedding scheduler"
+            return 0
+        fi
+        print_status "✅ APScheduler installed successfully"
+    fi
+
     # Check if already running via process check
-    if pgrep -f "embedding-scheduler-daemon" >/dev/null 2>&1; then
-        print_status "Embedding scheduler daemon already running"
+    if pgrep -f "apscheduler-embedding-daemon" >/dev/null 2>&1; then
+        print_status "APScheduler embedding daemon already running"
         return 0
     fi
 
     # Create logs directory
     mkdir -p "$PROJECT_ROOT/logs"
 
-    # Start embedding scheduler daemon in background
-    nohup python3 "$PROJECT_ROOT/.claude/hooks/embedding-scheduler-daemon.py" > "$PROJECT_ROOT/logs/embedding-scheduler.log" 2>&1 &
+    # Start APScheduler embedding daemon in background
+    nohup python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --daemon > "$PROJECT_ROOT/logs/apscheduler-embedding.log" 2>&1 &
     local scheduler_pid=$!
 
     # Give it time to start
-    sleep 3
+    sleep 5
 
     # Verify it's running
     if kill -0 $scheduler_pid 2>/dev/null; then
         echo $scheduler_pid > "$PROJECT_ROOT/.embedding-scheduler.pid"
-        print_status "✅ Embedding Background Scheduler started (PID: $scheduler_pid)"
+        print_status "✅ APScheduler Embedding Daemon started (PID: $scheduler_pid)"
 
         # Brief status check
-        sleep 2
-        local scheduler_running=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"scheduler_running"' | grep -o 'true\|false' || echo "unknown")
-        if [ "$scheduler_running" = "true" ]; then
-            print_status "✅ Embedding scheduler operational - automatic queue processing enabled"
+        sleep 3
+        local daemon_status=$(python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --status 2>/dev/null | grep '"daemon_running"' | grep -o 'true\|false' || echo "unknown")
+        if [ "$daemon_status" = "true" ]; then
+            print_status "✅ APScheduler daemon operational - persistent 30-second interval processing enabled"
+            print_status "✅ Context7 BackgroundScheduler solution - robust threading and auto-recovery"
         else
-            print_warning "⚠️  Embedding scheduler started but not fully operational"
+            print_warning "⚠️  APScheduler daemon started but status check unclear"
         fi
         return 0
     else
-        print_error "Failed to start Embedding Background Scheduler"
+        print_error "Failed to start APScheduler Embedding Daemon"
         return 1
     fi
 }

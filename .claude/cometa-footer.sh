@@ -144,8 +144,8 @@ get_agent_count() {
     local total=8
     local count_color="$PROGRESS_HIGH"
 
-    # Try new realtime status endpoint first
-    local agent_status=$(curl -s --connect-timeout 2 "http://localhost:3005/api/agents/realtime-status" 2>/dev/null | jq -r '.active // 1, .total // 8' 2>/dev/null || echo "1 8")
+    # Try new agent status endpoint first (optimized for footer)
+    local agent_status=$(curl -s --connect-timeout 2 "http://localhost:3005/api/agents/status" 2>/dev/null | jq -r '.active // 1, .total // 8' 2>/dev/null || echo "1 8")
 
     if [ -n "$agent_status" ]; then
         active=$(echo "$agent_status" | head -n1)
