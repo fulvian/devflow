@@ -25,7 +25,7 @@ RESET='\033[0m'
 
 # Function to check database activity
 check_db_activity() {
-    local db_path="./data/devflow_unified.sqlite"
+    local db_path="/Users/fulvioventura/devflow/data/devflow_unified.sqlite"
     local read_active="○"
     local write_active="○"
     local read_color="$R_IDLE"
@@ -50,15 +50,28 @@ check_db_activity() {
     echo "${read_color}R:${read_active}${RESET} ${write_color}W:${write_active}${RESET}"
 }
 
-# Function to get task progress
+# Function to get task progress - Context7 Dynamic Progress System
 get_task_progress() {
     local task_name="enhanced_footer"
-    local progress=85
-    local progress_color="$PROGRESS_HIGH"
+    local progress=0
+    local progress_color="$PROGRESS_LOW"
 
-    # Try to get from database first
-    if [ -f "./data/devflow_unified.sqlite" ]; then
-        local db_task=$(sqlite3 "./data/devflow_unified.sqlite" "SELECT name, CASE WHEN status='completed' THEN 100 WHEN status='in_progress' THEN 85 ELSE 0 END as progress FROM tasks WHERE status='in_progress' ORDER BY updated_at DESC LIMIT 1" 2>/dev/null)
+    # Context7 Pattern: Dynamic progress calculation using AI Dev Tasks methodology
+    if [ -f "/Users/fulvioventura/devflow/scripts/dynamic-progress-calculator.js" ]; then
+        local dynamic_data=$(cd /Users/fulvioventura/devflow && node scripts/dynamic-progress-calculator.js 2>/dev/null)
+
+        if [ -n "$dynamic_data" ]; then
+            local calc_success=$(echo "$dynamic_data" | jq -r '.progress // null' 2>/dev/null)
+            if [ "$calc_success" != "null" ] && [ -n "$calc_success" ]; then
+                task_name=$(echo "$dynamic_data" | jq -r '.taskName // "dynamic_task"' 2>/dev/null)
+                progress=$(echo "$dynamic_data" | jq -r '.progress // 0' 2>/dev/null)
+            fi
+        fi
+    fi
+
+    # Fallback 1: Database query with Context7 weighted calculation
+    if [ "$progress" -eq 0 ] && [ -f "/Users/fulvioventura/devflow/data/devflow_unified.sqlite" ]; then
+        local db_task=$(sqlite3 "/Users/fulvioventura/devflow/data/devflow_unified.sqlite" "SELECT name, CASE WHEN status='completed' THEN 100 WHEN status='in_progress' THEN (SELECT COALESCE(CAST(COUNT(CASE WHEN status='completed' THEN 1 END) * 100.0 / COUNT(*) AS INTEGER), 50) FROM tasks WHERE parent_task_id = t.id) ELSE 10 END as progress FROM tasks t WHERE status IN ('in_progress', 'pending') ORDER BY updated_at DESC LIMIT 1" 2>/dev/null)
 
         if [ -n "$db_task" ]; then
             task_name=$(echo "$db_task" | cut -d'|' -f1)
@@ -66,15 +79,15 @@ get_task_progress() {
         fi
     fi
 
-    # Fallback: footer-state.json
-    if [ -f ".devflow/footer-state.json" ]; then
-        local footer_progress=$(jq -r '.progress // "85%"' ".devflow/footer-state.json" 2>/dev/null | sed 's/%//')
+    # Fallback 2: footer-state.json (legacy support)
+    if [ "$progress" -eq 0 ] && [ -f "/Users/fulvioventura/devflow/.devflow/footer-state.json" ]; then
+        local footer_progress=$(jq -r '.progress // "10%"' "/Users/fulvioventura/devflow/.devflow/footer-state.json" 2>/dev/null | sed 's/%//')
         if [ -n "$footer_progress" ] && [ "$footer_progress" != "null" ]; then
             progress="$footer_progress"
         fi
     fi
 
-    # Set color based on progress
+    # Context7 Progress Color Algorithm
     if [ "$progress" -ge 80 ]; then
         progress_color="$PROGRESS_HIGH"
     elif [ "$progress" -ge 40 ]; then
@@ -128,11 +141,11 @@ get_agent_mode() {
 # Function to get agent count
 get_agent_count() {
     local active=1  # Claude sempre attivo
-    local total=5
+    local total=8
     local count_color="$PROGRESS_HIGH"
 
-    # Try orchestrator first
-    local agent_status=$(curl -s --connect-timeout 2 "http://localhost:3005/api/agents/status" 2>/dev/null | jq -r '.active // 1, .total // 5' 2>/dev/null || echo "1 5")
+    # Try new realtime status endpoint first
+    local agent_status=$(curl -s --connect-timeout 2 "http://localhost:3005/api/agents/realtime-status" 2>/dev/null | jq -r '.active // 1, .total // 8' 2>/dev/null || echo "1 8")
 
     if [ -n "$agent_status" ]; then
         active=$(echo "$agent_status" | head -n1)
@@ -167,8 +180,8 @@ get_token_counters() {
     local task_tokens=0
 
     # Use simple token monitor with timeout for clean token counts
-    if [ -f "scripts/simple-token-monitor.ts" ]; then
-        local real_time_data=$(npx ts-node scripts/simple-token-monitor.ts & PID=$!; sleep 3; kill -9 $PID 2>/dev/null; wait $PID 2>/dev/null)
+    if [ -f "/Users/fulvioventura/devflow/scripts/simple-token-monitor.ts" ]; then
+        local real_time_data=$(cd /Users/fulvioventura/devflow && npx ts-node scripts/simple-token-monitor.ts & PID=$!; sleep 3; kill -9 $PID 2>/dev/null; wait $PID 2>/dev/null)
         if [ -n "$real_time_data" ]; then
             local success=$(echo "$real_time_data" | jq -r '.success // false' 2>/dev/null || echo "false")
             if [ "$success" = "true" ]; then
@@ -218,8 +231,8 @@ get_pending_count() {
     local pending_color="$DIM"
 
     # Try database query
-    if [ -f "./data/devflow_unified.sqlite" ]; then
-        pending=$(sqlite3 "./data/devflow_unified.sqlite" "SELECT COUNT(*) FROM tasks WHERE status IN ('pending', 'in_progress')" 2>/dev/null || echo "0")
+    if [ -f "/Users/fulvioventura/devflow/data/devflow_unified.sqlite" ]; then
+        pending=$(sqlite3 "/Users/fulvioventura/devflow/data/devflow_unified.sqlite" "SELECT COUNT(*) FROM tasks WHERE status IN ('pending', 'in_progress')" 2>/dev/null || echo "0")
     fi
 
     if [ "$pending" -gt 0 ]; then

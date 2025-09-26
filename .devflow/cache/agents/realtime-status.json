@@ -1,0 +1,112 @@
+{
+  "active": 7,
+  "total": 8,
+  "health_ratio": 0.88,
+  "timestamp": 1758887356527,
+  "agents": [
+    {
+      "id": "claude-sonnet",
+      "name": "Claude Sonnet (Supreme Orchestrator)",
+      "type": "claude",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 1,
+      "capabilities": [
+        "reasoning",
+        "analysis",
+        "code",
+        "orchestration"
+      ]
+    },
+    {
+      "id": "qwen3-coder",
+      "name": "Qwen3 Coder (Synthetic)",
+      "type": "synthetic",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 0.95,
+      "capabilities": [
+        "code",
+        "reasoning",
+        "tools"
+      ]
+    },
+    {
+      "id": "kimi-k2",
+      "name": "Kimi K2 (Synthetic)",
+      "type": "synthetic",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 0.95,
+      "capabilities": [
+        "frontend",
+        "refactoring"
+      ]
+    },
+    {
+      "id": "glm-4.5",
+      "name": "GLM 4.5 (Synthetic)",
+      "type": "synthetic",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 0.95,
+      "capabilities": [
+        "backend",
+        "automation"
+      ]
+    },
+    {
+      "id": "deepseek-3.1",
+      "name": "DeepSeek 3.1 (Synthetic)",
+      "type": "synthetic",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 0.95,
+      "capabilities": [
+        "reasoning",
+        "complex-analysis"
+      ]
+    },
+    {
+      "id": "qwen-cli",
+      "name": "Qwen Code CLI",
+      "type": "cli",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 0.9,
+      "capabilities": [
+        "backend",
+        "automation",
+        "fast-patching"
+      ]
+    },
+    {
+      "id": "gemini-cli",
+      "name": "Gemini CLI",
+      "type": "cli",
+      "status": "inactive",
+      "last_ping": 1758887356527,
+      "health_score": 0,
+      "capabilities": [
+        "frontend",
+        "refactoring",
+        "analysis"
+      ]
+    },
+    {
+      "id": "codex-cli",
+      "name": "Codex CLI (GPT-5)",
+      "type": "cli",
+      "status": "active",
+      "last_ping": 1758887356527,
+      "health_score": 1,
+      "capabilities": [
+        "code",
+        "reasoning",
+        "tools",
+        "heavy-computation"
+      ]
+    }
+  ],
+  "cache_updated": 1758887356527
+}

@@ -1,0 +1,130 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "DevFlow Agent Real-Time Status API Schema",
+  "description": "Context7-compliant schema for /api/agents/realtime-status endpoint",
+  "version": "1.0",
+  "type": "object",
+  "properties": {
+    "active": {
+      "type": "integer",
+      "description": "Number of currently active agents",
+      "minimum": 0,
+      "example": 7
+    },
+    "total": {
+      "type": "integer",
+      "description": "Total number of registered agents",
+      "minimum": 1,
+      "example": 8
+    },
+    "health_ratio": {
+      "type": "number",
+      "description": "Ratio of active to total agents (0.0 to 1.0)",
+      "minimum": 0.0,
+      "maximum": 1.0,
+      "example": 0.88
+    },
+    "timestamp": {
+      "type": "integer",
+      "description": "Unix timestamp when status was generated",
+      "example": 1758880113934
+    },
+    "cache_updated": {
+      "type": "integer",
+      "description": "Unix timestamp when cache was last updated",
+      "example": 1758880113934
+    },
+    "response_time_ms": {
+      "type": "integer",
+      "description": "Response generation time in milliseconds",
+      "minimum": 0,
+      "example": 3
+    },
+    "cache_hit": {
+      "type": "boolean",
+      "description": "Whether response was served from cache",
+      "example": false
+    },
+    "schema_version": {
+      "type": "string",
+      "description": "API schema version",
+      "pattern": "^\\d+\\.\\d+$",
+      "example": "1.0"
+    },
+    "agents": {
+      "type": "array",
+      "description": "Array of agent status objects",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "description": "Unique agent identifier",
+            "examples": ["claude-sonnet", "qwen3-coder", "gemini-cli"]
+          },
+          "name": {
+            "type": "string",
+            "description": "Human-readable agent name",
+            "examples": ["Claude Sonnet (Supreme Orchestrator)", "Qwen3 Coder (Synthetic)"]
+          },
+          "type": {
+            "type": "string",
+            "enum": ["claude", "synthetic", "cli"],
+            "description": "Agent category type"
+          },
+          "status": {
+            "type": "string",
+            "enum": ["active", "inactive", "error"],
+            "description": "Current agent status"
+          },
+          "last_ping": {
+            "type": "integer",
+            "description": "Unix timestamp of last health check",
+            "example": 1758880113934
+          },
+          "health_score": {
+            "type": "number",
+            "description": "Agent health score (0.0 to 1.0)",
+            "minimum": 0.0,
+            "maximum": 1.0,
+            "example": 0.95
+          },
+          "capabilities": {
+            "type": "array",
+            "description": "Array of agent capabilities",
+            "items": {
+              "type": "string",
+              "examples": ["code", "reasoning", "frontend", "backend", "orchestration"]
+            }
+          }
+        },
+        "required": ["id", "name", "type", "status", "last_ping", "health_score", "capabilities"]
+      }
+    }
+  },
+  "required": ["active", "total", "health_ratio", "timestamp", "agents", "cache_updated", "response_time_ms", "cache_hit", "schema_version"],
+  "additionalProperties": false,
+  "examples": [
+    {
+      "active": 7,
+      "total": 8,
+      "health_ratio": 0.88,
+      "timestamp": 1758880113934,
+      "cache_updated": 1758880113934,
+      "response_time_ms": 3,
+      "cache_hit": false,
+      "schema_version": "1.0",
+      "agents": [
+        {
+          "id": "claude-sonnet",
+          "name": "Claude Sonnet (Supreme Orchestrator)",
+          "type": "claude",
+          "status": "active",
+          "last_ping": 1758880113934,
+          "health_score": 1.0,
+          "capabilities": ["reasoning", "analysis", "code", "orchestration"]
+        }
+      ]
+    }
+  ]
+}

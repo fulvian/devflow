@@ -9,6 +9,8 @@
 import { config } from 'dotenv';
 import { resolve, join } from 'path';
 import { exec } from 'child_process';
+import * as fs from 'fs';
+import * as path from 'path';
 
 // Load environment variables from project root .env file
 config({ path: resolve(process.cwd(), '../../../.env') });
@@ -25,6 +27,7 @@ import { CrossPlatformHandoffSystem, PlatformType } from './handoff/cross-platfo
 import { OperationalModesManager, ModeCommandInterface } from './modes/operational-modes-manager.js';
 import { MCPFallbackSystem, MCPToolCall, MCPResponse } from './fallback/mcp-fallback-system.js';
 import { OAuthCredentialManager } from './auth/oauth-credential-manager.js';
+import agentsRealtimeRouter from './routes/agents-realtime.js';
 
 // Configurazione server
 const PORT = process.env.ORCHESTRATOR_PORT || 3005;
@@ -59,6 +62,9 @@ const oauthManager = new OAuthCredentialManager();
 app.use(cors());
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
+
+// Mount agent realtime status routes
+app.use('/api/agents', agentsRealtimeRouter);
 
 // Logging middleware semplice
 app.use((req, res, next) => {
@@ -1219,6 +1225,11 @@ app.post('/api/tasks', async (req, res) => {
       modesManager.updatePerformanceMetrics(0, 1, fallbackResult.totalExecutionTime);
     }
 
+    // Update agent cache based on real usage (SMART CACHE UPDATE)
+    if (fallbackResult.agentUsed && fallbackResult.agentUsed !== 'claude-emergency') {
+      await updateAgentCacheOnUsage(fallbackResult.agentUsed, fallbackResult.success, fallbackResult.totalExecutionTime);
+    }
+
     // Emit WebSocket event for real-time task monitoring
     io.emit('taskCompleted', {
       taskId,
@@ -1306,6 +1317,243 @@ app.get('/api/platforms', (req, res) => {
     res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
   }
 });
+
+// Smart cache-based agents status endpoint - Context7 Cachified Pattern
+app.get('/api/agents/realtime-status', async (req, res) => {
+  try {
+    const cacheFile = path.join(process.cwd(), '.devflow', 'cache', 'agents', 'realtime-status.json');
+    const forceRefresh = req.query.refresh === 'true';
+
+    // Context7 Pattern: Check cache validity with TTL
+    if (!forceRefresh && fs.existsSync(cacheFile)) {
+      const cached = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+      const cacheAge = Date.now() - (cached.cache_updated || 0);
+      const maxAge = 300_000; // 5 minutes TTL
+
+      // Serve stale cache immediately (Context7 stale-while-revalidate)
+      if (cacheAge < maxAge) {
+        return res.json({
+          ...cached,
+          cache_hit: true,
+          cache_age_seconds: Math.floor(cacheAge / 1000),
+          response_time_ms: 0
+        });
+      }
+    }
+
+    // Context7 Pattern: Initialize conservative state only once
+    let result;
+    const isFirstRun = !fs.existsSync(cacheFile);
+
+    if (isFirstRun) {
+      // First initialization: use real agent health monitor
+      const healthMonitor = new (await import('./health/agent-health-monitor.js')).AgentHealthMonitor();
+      result = await healthMonitor.getRealtimeStatus();
+      console.log(`[CACHE-INIT] First run: initialized real agent cache (${result.active}/${result.total} active)`);
+    } else {
+      // Subsequent updates: preserve existing state, update metadata only
+      const existing = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+      result = {
+        ...existing,
+        timestamp: Date.now(),
+        cache_updated: Date.now(),
+        cache_hit: false,
+        response_time_ms: 0
+      };
+      console.log('[CACHE-REFRESH] Cache refreshed, state preserved');
+    }
+
+    // Create cache directory and file
+    await fs.promises.mkdir(path.dirname(cacheFile), { recursive: true });
+    await fs.promises.writeFile(cacheFile, JSON.stringify(result, null, 2));
+
+    res.json(result);
+  } catch (error) {
+    console.error('[CACHE-ERROR]', error);
+    res.status(500).json({ error: error instanceof Error ? error.message : String(error) });
+  }
+});
+
+// Initialize agent cache with conservative states (called only at startup or cache miss)
+async function initializeAgentCache() {
+  const agents = [
+    {
+      id: "claude-sonnet",
+      name: "Claude Sonnet (Supreme Orchestrator)",
+      type: "claude",
+      status: "active", // Always active if server running
+      last_ping: Date.now(),
+      health_score: 1,
+      capabilities: ["reasoning", "analysis", "code", "orchestration"]
+    },
+    {
+      id: "qwen3-coder",
+      name: "Qwen3 Coder (Synthetic)",
+      type: "synthetic",
+      status: "unknown", // Will be updated on first real usage
+      last_ping: Date.now(),
+      health_score: 0.5,
+      capabilities: ["code", "reasoning", "tools"]
+    },
+    {
+      id: "kimi-k2",
+      name: "Kimi K2 (Synthetic)",
+      type: "synthetic",
+      status: "unknown",
+      last_ping: Date.now(),
+      health_score: 0.5,
+      capabilities: ["frontend", "refactoring"]
+    },
+    {
+      id: "glm-4.5",
+      name: "GLM 4.5 (Synthetic)",
+      type: "synthetic",
+      status: "unknown",
+      last_ping: Date.now(),
+      health_score: 0.5,
+      capabilities: ["backend", "automation"]
+    },
+    {
+      id: "deepseek-3.1",
+      name: "DeepSeek 3.1 (Synthetic)",
+      type: "synthetic",
+      status: "unknown",
+      last_ping: Date.now(),
+      health_score: 0.5,
+      capabilities: ["reasoning", "complex-analysis"]
+    },
+    {
+      id: "qwen-cli",
+      name: "Qwen Code CLI",
+      type: "cli",
+      status: "unknown",
+      last_ping: Date.now(),
+      health_score: 0.5,
+      capabilities: ["backend", "automation", "fast-patching"]
+    },
+    {
+      id: "gemini-cli",
+      name: "Gemini CLI",
+      type: "cli",
+      status: "inactive", // Known to be inactive due to OAuth issues
+      last_ping: Date.now(),
+      health_score: 0,
+      capabilities: ["frontend", "refactoring", "analysis"]
+    },
+    {
+      id: "codex-cli",
+      name: "Codex CLI (GPT-5)",
+      type: "cli",
+      status: "unknown",
+      last_ping: Date.now(),
+      health_score: 0.5,
+      capabilities: ["code", "reasoning", "tools", "heavy-computation"]
+    }
+  ];
+
+  // Count active agents (only Claude is guaranteed active at startup, unknown agents count as inactive for counting)
+  const activeAgents = agents.filter(a => a.status === "active").length;
+  const totalAgents = agents.length;
+  const healthRatio = parseFloat((activeAgents / totalAgents).toFixed(2));
+
+  return {
+    active: activeAgents,
+    total: totalAgents,
+    health_ratio: healthRatio,
+    timestamp: Date.now(),
+    agents: agents,
+    cache_updated: Date.now(),
+    response_time_ms: 0,
+    cache_hit: false,
+    schema_version: "1.0"
+  };
+}
+
+// Smart cache update function - updates agent status based on real usage
+async function updateAgentCacheOnUsage(agentUsed, success, executionTime) {
+  try {
+    const cacheFile = path.join(process.cwd(), '.devflow', 'cache', 'agents', 'realtime-status.json');
+
+    // Read existing cache or initialize if missing
+    let cacheData;
+    if (fs.existsSync(cacheFile)) {
+      cacheData = JSON.parse(fs.readFileSync(cacheFile, 'utf-8'));
+    } else {
+      cacheData = await initializeAgentCache();
+    }
+
+    // Map agent names to IDs for cache lookup
+    const agentIdMap = {
+      'qwen3-coder': 'qwen3-coder',
+      'kimi-k2': 'kimi-k2',
+      'glm-4.5': 'glm-4.5',
+      'deepseek-3.1': 'deepseek-3.1',
+      'qwen-code-cli': 'qwen-cli',
+      'gemini-cli': 'gemini-cli',
+      'codex-cli': 'codex-cli'
+    };
+
+    // Find agent in cache and update its status
+    const agentId = agentIdMap[agentUsed] || agentUsed;
+    const agentIndex = cacheData.agents.findIndex(agent => agent.id === agentId);
+
+    if (agentIndex !== -1) {
+      const agent = cacheData.agents[agentIndex];
+
+      // Update agent status based on real usage
+      if (success) {
+        agent.status = "active";
+        agent.last_ping = Date.now();
+
+        // Calculate health score based on execution time (performance-based)
+        if (executionTime < 2000) {
+          agent.health_score = 1.0;
+        } else if (executionTime < 5000) {
+          agent.health_score = 0.95;
+        } else if (executionTime < 10000) {
+          agent.health_score = 0.9;
+        } else {
+          agent.health_score = 0.8;
+        }
+
+        console.log(`[CACHE-UPDATE] Agent ${agentId} marked as ACTIVE (exec: ${executionTime}ms, score: ${agent.health_score})`);
+      } else {
+        agent.status = "inactive";
+        agent.last_ping = Date.now();
+        agent.health_score = 0;
+        console.log(`[CACHE-UPDATE] Agent ${agentId} marked as INACTIVE (task failed)`);
+      }
+
+      // Recalculate summary metrics
+      const activeAgents = cacheData.agents.filter(a => a.status === "active").length;
+      const totalAgents = cacheData.agents.length;
+
+      cacheData.active = activeAgents;
+      cacheData.total = totalAgents;
+      cacheData.health_ratio = parseFloat((activeAgents / totalAgents).toFixed(2));
+      cacheData.cache_updated = Date.now();
+      cacheData.timestamp = Date.now();
+
+      // Write updated cache
+      await fs.promises.writeFile(cacheFile, JSON.stringify(cacheData, null, 2));
+
+      console.log(`[CACHE-UPDATE] Cache updated: ${activeAgents}/${totalAgents} agents active`);
+    }
+
+  } catch (error) {
+    console.error('[CACHE-UPDATE] Error updating agent cache:', error);
+  }
+}
+
+// Helper function for agent capabilities
+function getAgentCapabilities(type) {
+  const capabilities = {
+    claude: ["reasoning", "analysis", "code", "orchestration"],
+    synthetic: ["code", "reasoning", "tools"],
+    cli: ["backend", "automation", "fast-patching"]
+  };
+  return capabilities[type] || [];
+}
 
 // Fallback system test endpoint
 app.post('/api/test-fallback', async (req, res) => {
