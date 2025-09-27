@@ -1,0 +1,133 @@
+groups:
+  - name: devflow-context7
+    rules:
+      - alert: Context7QualityCritical
+        expr: devflow_context7_quality_score < 0.5
+        for: 2m
+        labels:
+          severity: critical
+          team: devflow
+          component: context7
+        annotations:
+          summary: "Context7 quality score critically low"
+          description: "Context7 quality score is {{ $value | humanizePercentage }}, below critical threshold of 50%"
+          runbook_url: "https://docs.devflow.internal/runbooks/context7-quality"
+
+      - alert: Context7QualityWarning
+        expr: devflow_context7_quality_score < 0.75
+        for: 5m
+        labels:
+          severity: warning
+          team: devflow
+          component: context7
+        annotations:
+          summary: "Context7 quality below Full Mode threshold"
+          description: "Context7 quality score is {{ $value | humanizePercentage }}, below Full Mode threshold of 75%"
+          runbook_url: "https://docs.devflow.internal/runbooks/context7-quality"
+
+  - name: devflow-tasks
+    rules:
+      - alert: TaskExecutionTimeLong
+        expr: devflow_task_execution_time_seconds > 300
+        for: 1m
+        labels:
+          severity: warning
+          team: devflow
+          component: tasks
+        annotations:
+          summary: "Task execution time is unusually long"
+          description: "Average task execution time is {{ $value }}s, exceeding 5 minutes"
+
+      - alert: TaskQueueBackup
+        expr: devflow_tasks_total{status="pending"} > 50
+        for: 3m
+        labels:
+          severity: warning
+          team: devflow
+          component: tasks
+        annotations:
+          summary: "Task queue backup detected"
+          description: "{{ $value }} tasks are pending, indicating possible processing bottleneck"
+
+      - alert: TaskFailureRateHigh
+        expr: rate(devflow_tasks_total{status="failed"}[5m]) > 0.1
+        for: 2m
+        labels:
+          severity: critical
+          team: devflow
+          component: tasks
+        annotations:
+          summary: "High task failure rate detected"
+          description: "Task failure rate is {{ $value | humanize }} failures per second"
+
+  - name: devflow-database
+    rules:
+      - alert: DatabaseQuerySlow
+        expr: devflow_database_query_time_ms > 1000
+        for: 1m
+        labels:
+          severity: warning
+          team: devflow
+          component: database
+        annotations:
+          summary: "Database queries are slow"
+          description: "Average database query time is {{ $value }}ms, exceeding 1 second"
+
+      - alert: DatabaseSizeLarge
+        expr: devflow_database_size_bytes > 1e9
+        for: 5m
+        labels:
+          severity: warning
+          team: devflow
+          component: database
+        annotations:
+          summary: "Database size is getting large"
+          description: "Database size is {{ $value | humanizeBytes }}, consider cleanup or archiving"
+
+  - name: devflow-orchestrator
+    rules:
+      - alert: OrchestratorUnhealthy
+        expr: devflow_orchestrator_success_rate < 80
+        for: 2m
+        labels:
+          severity: critical
+          team: devflow
+          component: orchestrator
+        annotations:
+          summary: "Orchestrator success rate is low"
+          description: "Orchestrator success rate is {{ $value }}%, below acceptable threshold"
+
+      - alert: OrchestratorResponseSlow
+        expr: devflow_orchestrator_response_time_ms > 5000
+        for: 1m
+        labels:
+          severity: warning
+          team: devflow
+          component: orchestrator
+        annotations:
+          summary: "Orchestrator response time is slow"
+          description: "Orchestrator average response time is {{ $value }}ms, exceeding 5 seconds"
+
+  - name: devflow-system
+    rules:
+      - alert: MonitoringSystemDown
+        expr: up{job="devflow-metrics"} == 0
+        for: 1m
+        labels:
+          severity: critical
+          team: devflow
+          component: monitoring
+        annotations:
+          summary: "DevFlow monitoring system is down"
+          description: "DevFlow metrics collection is not responding"
+
+      - alert: FullModeReadiness
+        expr: devflow_context7_quality_score > 0.75 and devflow_orchestrator_success_rate > 95
+        for: 5m
+        labels:
+          severity: info
+          team: devflow
+          component: context7
+        annotations:
+          summary: "System ready for Context7 Full Mode"
+          description: "Quality score: {{ index . 0 | humanizePercentage }}, Orchestrator success: {{ index . 1 }}%"
