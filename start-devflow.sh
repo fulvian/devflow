@@ -1085,6 +1085,15 @@ show_status() {
         print_status "❌ Database Manager: Stopped"
     fi
 
+    # Check Model Registry Daemon (CRITICAL)
+    if curl -sf --max-time 2 "http://localhost:${MODEL_REGISTRY_PORT}/health" >/dev/null 2>&1; then
+        local registry_health=$(curl -s "http://localhost:${MODEL_REGISTRY_PORT}/health" 2>/dev/null)
+        local registry_status=$(echo "$registry_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        print_status "✅ Model Registry: Running (Status: $registry_status, Port: $MODEL_REGISTRY_PORT)"
+    else
+        print_status "❌ Model Registry: Stopped - AI model management disabled"
+    fi
+
     # Check Vector Memory Service
     if netstat -an 2>/dev/null | grep -q "${VECTOR_MEMORY_PORT}.*LISTEN"; then
         print_status "✅ Vector Memory: Running (Port: $VECTOR_MEMORY_PORT)"
