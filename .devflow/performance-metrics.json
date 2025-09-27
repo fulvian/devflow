@@ -1,101 +1,5 @@
 [
   {
-    "timestamp": "2025-09-27T09:54:39.222203",
-    "cpu_percent": 47.64404296875,
-    "memory_percent": 0.18463134765625,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__get-library-docs",
-    "execution_time": 1758959679.2222679
-  },
-  {
-    "timestamp": "2025-09-27T09:54:43.771901",
-    "cpu_percent": 46.826171875,
-    "memory_percent": 0.17833709716796875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__resolve-library-id",
-    "execution_time": 1758959683.771926
-  },
-  {
-    "timestamp": "2025-09-27T09:54:48.762545",
-    "cpu_percent": 47.076416015625,
-    "memory_percent": 0.18157958984375,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__get-library-docs",
-    "execution_time": 1758959688.762609
-  },
-  {
-    "timestamp": "2025-09-27T09:54:55.090324",
-    "cpu_percent": 49.310302734375,
-    "memory_percent": 0.17547607421875,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758959695.090349
-  },
-  {
-    "timestamp": "2025-09-27T09:55:00.560787",
-    "cpu_percent": 50.3662109375,
-    "memory_percent": 0.17871856689453125,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__resolve-library-id",
-    "execution_time": 1758959700.5608478
-  },
-  {
-    "timestamp": "2025-09-27T09:55:05.466915",
-    "cpu_percent": 50.335693359375,
-    "memory_percent": 0.1811981201171875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__get-library-docs",
-    "execution_time": 1758959705.4669912
-  },
-  {
-    "timestamp": "2025-09-27T09:55:12.209593",
-    "cpu_percent": 51.1962890625,
-    "memory_percent": 0.1800537109375,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758959712.209617
-  },
-  {
-    "timestamp": "2025-09-27T09:55:16.879546",
-    "cpu_percent": 58.10546875,
-    "memory_percent": 0.17566680908203125,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__resolve-library-id",
-    "execution_time": 1758959716.880162
-  },
-  {
-    "timestamp": "2025-09-27T09:55:22.016125",
-    "cpu_percent": 58.453369140625,
-    "memory_percent": 0.186920166015625,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__get-library-docs",
-    "execution_time": 1758959722.0161579
-  },
-  {
-    "timestamp": "2025-09-27T09:55:28.904013",
-    "cpu_percent": 66.78466796875,
-    "memory_percent": 0.180816650390625,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758959728.904038
-  },
-  {
-    "timestamp": "2025-09-27T09:55:33.547210",
-    "cpu_percent": 75.445556640625,
-    "memory_percent": 0.17681121826171875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__resolve-library-id",
-    "execution_time": 1758959733.5472682
-  },
-  {
-    "timestamp": "2025-09-27T09:55:39.067348",
-    "cpu_percent": 77.410888671875,
-    "memory_percent": 0.183868408203125,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__get-library-docs",
-    "execution_time": 1758959739.0674088
-  },
-  {
     "timestamp": "2025-09-27T09:55:44.876710",
     "cpu_percent": 75.213623046875,
     "memory_percent": 0.179290771484375,
@@ -798,5 +702,101 @@
     "disk_usage": 0.0,
     "tool_name": "Write",
     "execution_time": 1758964015.237439
+  },
+  {
+    "timestamp": "2025-09-27T11:07:09.908963",
+    "cpu_percent": 19.378662109375,
+    "memory_percent": 0.1800537109375,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964029.909305
+  },
+  {
+    "timestamp": "2025-09-27T11:07:16.679036",
+    "cpu_percent": 21.826171875,
+    "memory_percent": 0.18482208251953125,
+    "disk_usage": 0.0,
+    "tool_name": "TodoWrite",
+    "execution_time": 1758964036.679065
+  },
+  {
+    "timestamp": "2025-09-27T11:07:34.670468",
+    "cpu_percent": 18.75,
+    "memory_percent": 0.17986297607421875,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964054.670493
+  },
+  {
+    "timestamp": "2025-09-27T11:07:54.050755",
+    "cpu_percent": 17.66357421875,
+    "memory_percent": 0.180816650390625,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964074.050782
+  },
+  {
+    "timestamp": "2025-09-27T11:08:09.162555",
+    "cpu_percent": 21.8994140625,
+    "memory_percent": 0.17910003662109375,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964089.1625779
+  },
+  {
+    "timestamp": "2025-09-27T11:08:17.995400",
+    "cpu_percent": 34.58251953125,
+    "memory_percent": 0.177001953125,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964097.995423
+  },
+  {
+    "timestamp": "2025-09-27T11:08:24.376700",
+    "cpu_percent": 38.818359375,
+    "memory_percent": 0.17986297607421875,
+    "disk_usage": 0.0,
+    "tool_name": "TodoWrite",
+    "execution_time": 1758964104.376724
+  },
+  {
+    "timestamp": "2025-09-27T11:08:28.639666",
+    "cpu_percent": 38.70849609375,
+    "memory_percent": 0.182342529296875,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964108.639693
+  },
+  {
+    "timestamp": "2025-09-27T11:08:36.836255",
+    "cpu_percent": 37.43896484375,
+    "memory_percent": 0.17566680908203125,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758964116.8362792
+  },
+  {
+    "timestamp": "2025-09-27T11:24:58.538768",
+    "cpu_percent": 26.904296875,
+    "memory_percent": 0.1773834228515625,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758965098.538791
+  },
+  {
+    "timestamp": "2025-09-27T11:25:08.705900",
+    "cpu_percent": 29.52880859375,
+    "memory_percent": 0.17681121826171875,
+    "disk_usage": 0.0,
+    "tool_name": "Read",
+    "execution_time": 1758965108.705935
+  },
+  {
+    "timestamp": "2025-09-27T11:25:13.988482",
+    "cpu_percent": 29.16259765625,
+    "memory_percent": 0.1834869384765625,
+    "disk_usage": 0.0,
+    "tool_name": "Edit",
+    "execution_time": 1758965113.988532
   }
 ]
