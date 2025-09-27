@@ -742,6 +742,12 @@ start_services() {
         print_warning "Automatic embedding queue processing will not be active"
     fi
 
+    # Start DevFlow Metrics Server (performance monitoring and Context7 quality tracking)
+    if ! start_metrics_server; then
+        print_warning "DevFlow Metrics Server failed to start - CONTINUING WITHOUT MONITORING"
+        print_warning "Context7 quality tracking and performance metrics will not be available"
+    fi
+
     print_status "🎉 DevFlow Unified System v1.0 Started Successfully!"
     print_status "✅ Database Manager: Running on port $DB_MANAGER_PORT"
     print_status "✅ Vector Memory: Running on port $VECTOR_MEMORY_PORT"
