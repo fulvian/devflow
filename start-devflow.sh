@@ -53,6 +53,87 @@ is_process_running() {
     fi
 }
 
+# Enhanced health check function (Context7 compliant)
+wait_for_health_check() {
+    local url=$1
+    local service_name=$2
+    local max_attempts=${3:-30}
+    local attempt=1
+
+    print_info "⏳ Waiting for $service_name health check..."
+
+    while [ $attempt -le $max_attempts ]; do
+        if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+            print_status "✅ $service_name is healthy"
+            return 0
+        fi
+
+        if [ $((attempt % 5)) -eq 0 ]; then
+            print_info "⏳ Waiting for $service_name health check (attempt $attempt/$max_attempts)..."
+        fi
+
+        sleep 2
+        ((attempt++))
+    done
+
+    print_error "❌ $service_name health check failed after $max_attempts attempts"
+    return 1
+}
+
+# Process health check for background services (Context7 pattern)
+check_process_health() {
+    local pid=$1
+    local service_name=$2
+
+    if kill -0 $pid 2>/dev/null; then
+        print_status "✅ $service_name process is running (PID: $pid)"
+        return 0
+    else
+        print_error "❌ $service_name process failed to start"
+        return 1
+    fi
+}
+
+# Multi-service health checker (inspired by goadesign/clue)
+validate_service_dependencies() {
+    local service_name=$1
+    local dependencies=("${@:2}")
+
+    print_info "🔍 Validating dependencies for $service_name..."
+
+    for dep in "${dependencies[@]}"; do
+        case $dep in
+            "database")
+                if ! curl -sf --max-time 2 "http://localhost:${DB_MANAGER_PORT}/health" >/dev/null 2>&1; then
+                    print_error "❌ Dependency check failed: Database Manager not healthy"
+                    return 1
+                fi
+                ;;
+            "orchestrator")
+                if ! curl -sf --max-time 2 "http://localhost:${ORCHESTRATOR_PORT}/health" >/dev/null 2>&1; then
+                    print_error "❌ Dependency check failed: Unified Orchestrator not healthy"
+                    return 1
+                fi
+                ;;
+            "model_registry")
+                if ! curl -sf --max-time 2 "http://localhost:${MODEL_REGISTRY_PORT}/health" >/dev/null 2>&1; then
+                    print_error "❌ Dependency check failed: Model Registry not healthy"
+                    return 1
+                fi
+                ;;
+            "cli_integration")
+                if ! curl -sf --max-time 2 "http://localhost:${CLI_INTEGRATION_PORT}/health" >/dev/null 2>&1; then
+                    print_error "❌ Dependency check failed: CLI Integration not healthy"
+                    return 1
+                fi
+                ;;
+        esac
+    done
+
+    print_status "✅ All dependencies validated for $service_name"
+    return 0
+}
+
 # Load environment variables from .env
 load_environment() {
     if [ -f .env ]; then
