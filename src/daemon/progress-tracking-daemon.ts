@@ -5,8 +5,8 @@
  * Periodically updates the progress percentage to simulate real token usage
  */
 
-import { ProgressTracker } from '../core/monitoring/progress-tracker.js';
-import { ClaudeCodeUsageMonitor } from '../core/monitoring/claude-usage-monitor.js';
+import { ProgressTracker } from '../core/orchestration/task-progress-tracker.js';
+import { UsageMonitor } from '../core/ui/enhanced-footer/task-progress-tracker.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
