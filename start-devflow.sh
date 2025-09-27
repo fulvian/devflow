@@ -164,7 +164,7 @@ cleanup_services() {
     pkill -f "devflow-metrics-collector" 2>/dev/null || true
 
     # Clean up ports brutally (all configurable ports from .env)
-    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $ENHANCED_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
+    local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $ENHANCED_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT $DEVFLOW_METRICS_PORT)
 
     for port in "${DEVFLOW_PORTS[@]}"; do
         local port_pids=$(lsof -ti:$port 2>/dev/null || true)
