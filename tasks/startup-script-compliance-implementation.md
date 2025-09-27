@@ -57,22 +57,169 @@ Based on the detailed compliance analysis in `DevFlow-Startup-Script-Compliance-
 - Best practices for service dependency management
 - Modern approaches to system integration testing
 
-## Implementation Phases
+## Detailed Implementation Plan
 
-### Phase 1: Critical Services (Same Day)
-- Model Registry Daemon startup implementation
-- CLI Integration Daemon startup implementation
-- Port configuration updates
+### Phase 1: Critical Infrastructure Services (Priority: CRITICAL - Day 1-2)
 
-### Phase 2: Important Services (Within Week)
-- Real Dream Team Orchestrator startup
-- Progress Tracking Daemon startup
-- Project Lifecycle API startup
+#### 1.1 Model Registry Daemon (CRITICAL)
+**Implementation Location**: `src/core/services/model-registry-daemon.ts`
+**Port**: 3004
+**Dependencies**: Database Manager (3002)
+**Health Check Pattern**: HTTP endpoint `/health` with model availability status
 
-### Phase 3: Enhancement Services (Within Month)
-- Monitoring Dashboard startup
-- Health check standardization
-- Integration testing and validation
+**Implementation Steps**:
+1. Add startup function to `start-devflow.sh`:
+```bash
+start_model_registry() {
+    echo "Starting Model Registry Daemon on port ${MODEL_REGISTRY_PORT:-3004}..."
+    npx ts-node src/core/services/model-registry-daemon.ts > logs/model-registry.log 2>&1 &
+    local PID=$!
+    echo $PID > .model-registry.pid
+    wait_for_health_check "http://localhost:${MODEL_REGISTRY_PORT:-3004}/health" "Model Registry"
+}
+```
+2. Update `set_defaults()` with MODEL_REGISTRY_PORT=3004
+3. Add to startup sequence with database dependency
+4. Implement health check validation
+
+#### 1.2 CLI Integration Daemon (CRITICAL)
+**Implementation Location**: `src/core/mcp/cli-integration-daemon.ts`
+**Port**: 3201
+**Dependencies**: Unified Orchestrator (3005)
+**Health Check Pattern**: HTTP endpoint `/health` with MCP connectivity status
+
+**Implementation Steps**:
+1. Add startup function with MCP integration:
+```bash
+start_cli_integration() {
+    echo "Starting CLI Integration Daemon on port ${CLI_INTEGRATION_PORT:-3201}..."
+    npx ts-node src/core/mcp/cli-integration-daemon.ts > logs/cli-integration.log 2>&1 &
+    local PID=$!
+    echo $PID > .cli-integration.pid
+    wait_for_health_check "http://localhost:${CLI_INTEGRATION_PORT:-3201}/health" "CLI Integration"
+}
+```
+2. Configure MCP authentication and orchestrator communication
+3. Add to startup sequence after orchestrator is ready
+
+### Phase 2: Advanced Orchestration Services (Priority: IMPORTANT - Day 3-5)
+
+#### 2.1 Real Dream Team Orchestrator (IMPORTANT)
+**Implementation Location**: `src/core/orchestration/real-dream-team-daemon.ts`
+**Port**: 3200
+**Dependencies**: Model Registry (3004), CLI Integration (3201)
+**Advanced Features**: Circuit breakers, multi-agent coordination, fallback strategies
+
+**Implementation Steps**:
+1. Add startup function with circuit breaker initialization:
+```bash
+start_dream_team_orchestrator() {
+    echo "Starting Real Dream Team Orchestrator on port ${DREAM_TEAM_PORT:-3200}..."
+    npx ts-node src/core/orchestration/real-dream-team-daemon.ts > logs/dream-team.log 2>&1 &
+    local PID=$!
+    echo $PID > .dream-team.pid
+    wait_for_health_check "http://localhost:${DREAM_TEAM_PORT:-3200}/health" "Dream Team Orchestrator"
+}
+```
+2. Configure agent coordination and circuit breaker patterns
+3. Implement advanced health checks with agent status
+
+#### 2.2 Progress Tracking Daemon (IMPORTANT)
+**Implementation Location**: `src/daemon/progress-tracking-daemon.ts`
+**Dependencies**: Database Manager (3002)
+**Features**: Real-time progress updates, task lifecycle monitoring
+
+**Implementation Steps**:
+1. Add background process startup:
+```bash
+start_progress_tracking() {
+    echo "Starting Progress Tracking Daemon..."
+    npx ts-node src/daemon/progress-tracking-daemon.ts > logs/progress-tracking.log 2>&1 &
+    local PID=$!
+    echo $PID > .progress-tracking.pid
+    sleep 2 && check_process_health $PID "Progress Tracking"
+}
+```
+2. Configure real-time database updates and WebSocket integration
+
+#### 2.3 Project Lifecycle API (IMPORTANT)
+**Implementation Location**: `src/api/project-lifecycle-api.js`
+**Port**: 3003
+**Dependencies**: Database Manager (3002), Progress Tracking
+**Features**: REST API for project management, automation hooks
+
+**Implementation Steps**:
+1. Add API server startup:
+```bash
+start_project_api() {
+    echo "Starting Project Lifecycle API on port ${PROJECT_API_PORT:-3003}..."
+    node src/api/project-lifecycle-api.js > logs/project-api.log 2>&1 &
+    local PID=$!
+    echo $PID > .project-api.pid
+    wait_for_health_check "http://localhost:${PROJECT_API_PORT:-3003}/health" "Project API"
+}
+```
+
+### Phase 3: Monitoring and Enhancement Services (Priority: ENHANCEMENT - Day 6-7)
+
+#### 3.1 Monitoring Dashboard (ENHANCEMENT)
+**Implementation Location**: `src/core/ui/monitoring-dashboard.ts`
+**Ports**: 3202 (HTTP), 3203 (WebSocket)
+**Dependencies**: All services for comprehensive monitoring
+**Features**: Real-time dashboards, WebSocket live updates, system health visualization
+
+**Implementation Steps**:
+1. Add dual-port startup for HTTP and WebSocket:
+```bash
+start_monitoring_dashboard() {
+    echo "Starting Monitoring Dashboard on ports ${DASHBOARD_PORT:-3202}/${WS_PORT:-3203}..."
+    npx ts-node src/core/ui/monitoring-dashboard.ts > logs/monitoring.log 2>&1 &
+    local PID=$!
+    echo $PID > .monitoring-dashboard.pid
+    wait_for_health_check "http://localhost:${DASHBOARD_PORT:-3202}/health" "Monitoring Dashboard"
+}
+```
+
+### Health Check Standardization (Context7 Compliance)
+
+#### Enhanced Health Check Function
+```bash
+wait_for_health_check() {
+    local url=$1
+    local service_name=$2
+    local max_attempts=30
+    local attempt=1
+
+    while [ $attempt -le $max_attempts ]; do
+        if curl -sf --max-time 5 "$url" > /dev/null 2>&1; then
+            echo "✅ $service_name is healthy"
+            return 0
+        fi
+        echo "⏳ Waiting for $service_name health check (attempt $attempt/$max_attempts)..."
+        sleep 2
+        ((attempt++))
+    done
+
+    echo "❌ $service_name health check failed after $max_attempts attempts"
+    return 1
+}
+```
+
+#### Process Health Check for Background Services
+```bash
+check_process_health() {
+    local pid=$1
+    local service_name=$2
+
+    if kill -0 $pid 2>/dev/null; then
+        echo "✅ $service_name process is running (PID: $pid)"
+        return 0
+    else
+        echo "❌ $service_name process failed to start"
+        return 1
+    fi
+}
+```
 
 ## Risk Assessment
 

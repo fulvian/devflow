@@ -1,8 +1,8 @@
 {
-  "last_updated": "2025-09-27T13:01:42.011228",
+  "last_updated": "2025-09-27T13:03:58.684211",
   "status": "warning",
   "metrics": {
-    "timestamp": "2025-09-27T13:01:42.011228",
+    "timestamp": "2025-09-27T13:03:58.684211",
     "session_id": "7f0799be-9ebf-4e9c-96eb-5b6f23cccc4e",
     "hook_system": {
       "total_hooks": 45,
@@ -20,16 +20,16 @@
         "sessions": 7
       },
       "recent_activity": 0,
-      "last_activity": "2025-09-27T13:01:42.012691"
+      "last_activity": "2025-09-27T13:03:58.691432"
     },
     "tasks": {
-      "current_task": "startup-script-compliance-implementation",
+      "current_task": null,
       "total_tasks": 31,
       "in_progress": 0,
       "pending": 6,
       "completed": 25,
       "tasks_today": 11,
-      "status": "active"
+      "status": "idle"
     },
     "memory_usage": {
       "session_entries": 0,
@@ -45,7 +45,7 @@
     "orchestrator": {
       "status": "active",
       "endpoint": "localhost:3005",
-      "last_check": "2025-09-27T13:01:42.015810",
+      "last_check": "2025-09-27T13:03:58.695292",
       "mode": "all-mode"
     }
   }
