@@ -1237,9 +1237,6 @@ EOF
     else
         print_error "Codex CLI is not working properly"
         return 1
-    else
-        print_error "Failed to start Codex Server"
-        return 1
     fi
 }
 
@@ -1415,10 +1412,11 @@ start_services() {
     fi
 
     # Check embedding scheduler status
-    if pgrep -f "embedding-scheduler-daemon" >/dev/null 2>&1; then
-        local scheduler_running=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"scheduler_running"' | grep -o 'true\|false' || echo "unknown")
-        local pending_entries=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"pending_entries"' | grep -o '[0-9]*' || echo "unknown")
-        print_status "✅ Embedding Scheduler: Running (Active: $scheduler_running, Queue: $pending_entries entries)"
+    if pgrep -f "apscheduler-embedding-daemon" >/dev/null 2>&1; then
+        local daemon_running=$(python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --status 2>/dev/null | grep '"daemon_running"' | grep -o 'true\|false' || echo "unknown")
+        local pending_entries=$(python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --status 2>/dev/null | grep '"pending_entries"' | grep -o '[0-9]*' || echo "unknown")
+        local coverage=$(python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --status 2>/dev/null | grep '"coverage_percentage"' | grep -o '[0-9.]*' || echo "unknown")
+        print_status "✅ Embedding Scheduler: Running (Active: $daemon_running, Queue: $pending_entries entries, Coverage: $coverage%)"
     else
         print_warning "⚠️  Embedding Scheduler: Not Running - automatic embedding processing disabled"
     fi
