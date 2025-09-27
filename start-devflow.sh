@@ -904,9 +904,19 @@ stop_services() {
 start_services() {
     print_status "🚀 Starting DevFlow Unified System v1.0..."
 
+    # Phase 1: Infrastructure Services (CRITICAL)
+    print_status "📦 Phase 1: Starting Infrastructure Services..."
+
     # Start Database Manager (infrastructure first)
     if ! start_database; then
         print_error "Failed to start Database Manager - CRITICAL ERROR"
+        return 1
+    fi
+
+    # Start Model Registry Daemon (depends on database - CRITICAL for AI functionality)
+    if ! start_model_registry; then
+        print_error "Failed to start Model Registry Daemon - CRITICAL ERROR"
+        print_error "AI model management functionality will be unavailable"
         return 1
     fi
 
