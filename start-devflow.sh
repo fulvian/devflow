@@ -1261,8 +1261,8 @@ start_services() {
         print_warning "Multi-agent coordination and circuit breakers will not be available"
     fi
 
-    # Start Progress Tracking Daemon (depends on database)
-    if ! start_progress_tracking; then
+    # Start Progress Tracking Daemon (depends on database) - Enhanced version
+    if ! start_progress_tracking_fixed; then
         print_warning "Progress Tracking Daemon failed to start - CONTINUING WITHOUT REAL-TIME TRACKING"
         print_warning "Task lifecycle monitoring will not be available"
     fi
