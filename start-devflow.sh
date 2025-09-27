@@ -706,6 +706,126 @@ start_project_api() {
     fi
 }
 
+# Start Monitoring Dashboard (ENHANCEMENT SERVICE - Real-time System Visualization)
+start_monitoring_dashboard() {
+    print_status "Starting Monitoring Dashboard..."
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${DASHBOARD_PORT}/health" >/dev/null 2>&1; then
+        print_status "Monitoring Dashboard already running on port $DASHBOARD_PORT"
+        return 0
+    fi
+
+    # Check if monitoring dashboard exists
+    if [ ! -f "$PROJECT_ROOT/src/core/ui/monitoring-dashboard.ts" ]; then
+        print_error "Monitoring Dashboard not found at src/core/ui/monitoring-dashboard.ts"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Monitoring Dashboard in background (TypeScript via ts-node)
+    print_info "📊 Starting Real-time Monitoring Dashboard with WebSocket integration..."
+    nohup env DASHBOARD_PORT=$DASHBOARD_PORT WS_PORT=$WS_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" PROMETHEUS_URL="http://localhost:$DEVFLOW_METRICS_PORT" npx ts-node "$PROJECT_ROOT/src/core/ui/monitoring-dashboard.ts" > "$PROJECT_ROOT/logs/monitoring-dashboard.log" 2>&1 &
+    local dashboard_pid=$!
+
+    # Give it time to start (dashboard needs more initialization time)
+    sleep 5
+
+    # Verify it's running with process check
+    if ! check_process_health $dashboard_pid "Monitoring Dashboard"; then
+        return 1
+    fi
+
+    # Enhanced health check validation with dual-port setup
+    if wait_for_health_check "http://localhost:${DASHBOARD_PORT}/health" "Monitoring Dashboard"; then
+        echo $dashboard_pid > "$PROJECT_ROOT/.monitoring-dashboard.pid"
+        print_status "✅ Monitoring Dashboard started (PID: $dashboard_pid, HTTP: $DASHBOARD_PORT, WS: $WS_PORT)"
+
+        # Check WebSocket and dashboard capabilities
+        local dashboard_health=$(curl -s --max-time 3 "http://localhost:${DASHBOARD_PORT}/status" 2>/dev/null || echo '{"websocket": false, "prometheus": false}')
+        local websocket_enabled=$(echo "$dashboard_health" | grep -o '"websocket":[^,}]*' | cut -d':' -f2 | tr -d ' "' 2>/dev/null || echo "false")
+        local prometheus_connected=$(echo "$dashboard_health" | grep -o '"prometheus":[^,}]*' | cut -d':' -f2 | tr -d ' "' 2>/dev/null || echo "false")
+
+        if [ "$websocket_enabled" = "true" ]; then
+            print_status "✅ Real-time Dashboard: WebSocket streaming active, Prometheus: $prometheus_connected"
+        else
+            print_status "✅ Real-time Dashboard: HTTP monitoring ready, WebSocket initializing"
+        fi
+        return 0
+    else
+        print_error "Monitoring Dashboard health check failed"
+        return 1
+    fi
+}
+
+# Fix Progress Tracking Daemon with enhanced process management
+start_progress_tracking_fixed() {
+    print_status "Starting Progress Tracking Daemon (Enhanced)..."
+
+    # Validate dependencies first
+    if ! validate_service_dependencies "Progress Tracking" "database"; then
+        print_error "Progress Tracking dependency validation failed"
+        return 1
+    fi
+
+    # Check if progress tracking daemon exists
+    if [ ! -f "$PROJECT_ROOT/src/daemon/progress-tracking-daemon.ts" ]; then
+        print_error "Progress Tracking Daemon not found at src/daemon/progress-tracking-daemon.ts"
+        return 1
+    fi
+
+    # Enhanced check for already running processes
+    local existing_pid=$(pgrep -f "progress-tracking-daemon" | head -1)
+    if [ -n "$existing_pid" ] && kill -0 "$existing_pid" 2>/dev/null; then
+        print_status "Progress Tracking Daemon already running (PID: $existing_pid)"
+        echo $existing_pid > "$PROJECT_ROOT/.progress-tracking.pid"
+        return 0
+    fi
+
+    # Clean up any stale processes
+    pkill -f "progress-tracking-daemon" 2>/dev/null || true
+    sleep 1
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Progress Tracking Daemon with enhanced environment
+    print_info "📊 Starting Enhanced Real-time Progress Tracking..."
+    nohup env DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" NODE_ENV="production" npx ts-node --transpile-only "$PROJECT_ROOT/src/daemon/progress-tracking-daemon.ts" > "$PROJECT_ROOT/logs/progress-tracking.log" 2>&1 &
+    local progress_pid=$!
+
+    # Give it extended time to start
+    sleep 5
+
+    # Enhanced process validation
+    if kill -0 $progress_pid 2>/dev/null; then
+        echo $progress_pid > "$PROJECT_ROOT/.progress-tracking.pid"
+        print_status "✅ Progress Tracking Daemon started (PID: $progress_pid)"
+
+        # Check daemon initialization in logs
+        sleep 2
+        local init_check=$(tail -10 "$PROJECT_ROOT/logs/progress-tracking.log" 2>/dev/null | grep -i "started\|ready\|listening\|tracking" | wc -l)
+        if [ "$init_check" -gt 0 ]; then
+            print_status "✅ Real-time Tracking: Enhanced task lifecycle monitoring operational"
+        else
+            print_warning "⚠️  Real-time Tracking: Started but initialization status unclear"
+        fi
+        return 0
+    else
+        print_error "Progress Tracking Daemon process validation failed"
+        # Show last error lines for debugging
+        if [ -f "$PROJECT_ROOT/logs/progress-tracking.log" ]; then
+            print_error "Last daemon log entries:"
+            tail -5 "$PROJECT_ROOT/logs/progress-tracking.log" | while read line; do
+                print_error "  $line"
+            done
+        fi
+        return 1
+    fi
+}
+
 # Start Vector Memory Service
 start_vector() {
     print_status "Starting Vector Memory Service..."
