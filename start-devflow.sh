@@ -1348,6 +1348,32 @@ show_status() {
         print_status "❌ CLI Integration: Stopped - MCP command execution disabled"
     fi
 
+    # Check Real Dream Team Orchestrator (IMPORTANT)
+    if curl -sf --max-time 2 "http://localhost:${DREAM_TEAM_PORT}/health" >/dev/null 2>&1; then
+        local dream_health=$(curl -s "http://localhost:${DREAM_TEAM_PORT}/health" 2>/dev/null)
+        local dream_status=$(echo "$dream_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        print_status "✅ Real Dream Team Orchestrator: Running (Status: $dream_status, Port: $DREAM_TEAM_PORT)"
+    else
+        print_status "❌ Real Dream Team Orchestrator: Stopped - Advanced orchestration disabled"
+    fi
+
+    # Check Progress Tracking Daemon (IMPORTANT)
+    if pgrep -f "progress-tracking-daemon" >/dev/null 2>&1; then
+        local progress_pid=$(pgrep -f "progress-tracking-daemon" | head -1)
+        print_status "✅ Progress Tracking: Running (PID: $progress_pid) - Real-time monitoring active"
+    else
+        print_status "❌ Progress Tracking: Stopped - Task lifecycle monitoring disabled"
+    fi
+
+    # Check Project Lifecycle API (IMPORTANT)
+    if curl -sf --max-time 2 "http://localhost:${PROJECT_API_PORT}/health" >/dev/null 2>&1; then
+        local api_health=$(curl -s "http://localhost:${PROJECT_API_PORT}/health" 2>/dev/null)
+        local api_status=$(echo "$api_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        print_status "✅ Project Lifecycle API: Running (Status: $api_status, Port: $PROJECT_API_PORT)"
+    else
+        print_status "❌ Project Lifecycle API: Stopped - Programmatic management disabled"
+    fi
+
     # Check Codex Server
     if curl -sf --max-time 2 "http://localhost:${CODEX_SERVER_PORT}/health" >/dev/null 2>&1; then
         print_status "✅ Codex Server: Running (Port: $CODEX_SERVER_PORT)"
