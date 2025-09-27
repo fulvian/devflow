@@ -95,9 +95,17 @@ set_defaults() {
     # Core DevFlow Services (range 3000-3999)
     export ORCHESTRATOR_PORT=${ORCHESTRATOR_PORT:-3005}        # Unified Orchestrator
     export DB_MANAGER_PORT=${DB_MANAGER_PORT:-3002}            # Database Manager
+    export PROJECT_API_PORT=${PROJECT_API_PORT:-3003}          # Project Lifecycle API
+    export MODEL_REGISTRY_PORT=${MODEL_REGISTRY_PORT:-3004}    # Model Registry Daemon
     export CONTEXT_BRIDGE_PORT=${CONTEXT_BRIDGE_PORT:-3007}    # Context Bridge Service (enhanced embedding)
     export VECTOR_MEMORY_PORT=${VECTOR_MEMORY_PORT:-3008}      # Vector Memory Service
     export ENHANCED_MEMORY_PORT=${ENHANCED_MEMORY_PORT:-3009}  # Enhanced Memory System (Phase 1-3)
+
+    # Advanced Orchestration Services (range 3200-3299)
+    export DREAM_TEAM_PORT=${DREAM_TEAM_PORT:-3200}            # Real Dream Team Orchestrator
+    export CLI_INTEGRATION_PORT=${CLI_INTEGRATION_PORT:-3201}  # CLI Integration Daemon
+    export DASHBOARD_PORT=${DASHBOARD_PORT:-3202}              # Monitoring Dashboard HTTP
+    export WS_PORT=${WS_PORT:-3203}                            # Monitoring Dashboard WebSocket
 
     # External Bridge Services (range 8000-8999)
     export CODEX_SERVER_PORT=${CODEX_SERVER_PORT:-8013}        # OpenAI Codex MCP Server
