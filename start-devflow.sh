@@ -972,6 +972,9 @@ start_services() {
         print_warning "Automatic embedding queue processing will not be active"
     fi
 
+    # Phase 3: Monitoring and Support Services (OPTIONAL)
+    print_status "📊 Phase 3: Starting Monitoring and Support Services..."
+
     # Start DevFlow Metrics Server (performance monitoring and Context7 quality tracking)
     if ! start_metrics_server; then
         print_warning "DevFlow Metrics Server failed to start - CONTINUING WITHOUT MONITORING"
@@ -980,8 +983,10 @@ start_services() {
 
     print_status "🎉 DevFlow Unified System v1.0 Started Successfully!"
     print_status "✅ Database Manager: Running on port $DB_MANAGER_PORT"
+    print_status "✅ Model Registry: Running on port $MODEL_REGISTRY_PORT"
     print_status "✅ Vector Memory: Running on port $VECTOR_MEMORY_PORT"
     print_status "✅ Unified Orchestrator: Running on port $ORCHESTRATOR_PORT"
+    print_status "✅ CLI Integration: Running on port $CLI_INTEGRATION_PORT"
 
     # Check Context Bridge Service status
     if curl -sf --max-time 2 "http://localhost:$CONTEXT_BRIDGE_PORT/health" >/dev/null 2>&1; then
