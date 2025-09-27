@@ -1,52 +1,6 @@
 {
-  "last_updated": "2025-09-27T11:43:05.283002",
-  "status": "warning",
-  "metrics": {
-    "timestamp": "2025-09-27T11:43:05.283002",
-    "session_id": "375d5d86-b121-4409-a241-9e37a412e7f4",
-    "hook_system": {
-      "total_hooks": 45,
-      "context7_compliant": 6,
-      "compliance_rate": 13.3,
-      "status": "warning"
-    },
-    "database": {
-      "status": "connected",
-      "tables_count": 47,
-      "record_counts": {
-        "tasks": 31,
-        "projects": 18,
-        "memory_streams": 0,
-        "sessions": 7
-      },
-      "recent_activity": 0,
-      "last_activity": "2025-09-27T11:43:05.285511"
-    },
-    "tasks": {
-      "current_task": null,
-      "total_tasks": 31,
-      "in_progress": 0,
-      "pending": 7,
-      "completed": 24,
-      "tasks_today": 12,
-      "status": "idle"
-    },
-    "memory_usage": {
-      "session_entries": 0,
-      "session_size_bytes": 0,
-      "recent_growth": 0,
-      "status": "normal"
-    },
-    "performance": {
-      "top_tools": {},
-      "ops_per_minute": 0.0,
-      "activity_level": "low"
-    },
-    "orchestrator": {
-      "status": "active",
-      "endpoint": "localhost:3005",
-      "last_check": "2025-09-27T11:43:05.288844",
-      "mode": "all-mode"
-    }
-  }
+  "progress": "77%",
+  "completed": 24,
+  "total": 31,
+  "timestamp": "2025-09-27T09:43:45.533Z"
 }
