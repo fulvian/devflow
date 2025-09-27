@@ -807,7 +807,9 @@ start_services() {
         print_warning "⚠️  Enhanced Memory: System verification failed - check Ollama and components"
     fi
 
-    print_status "🔄 System ready for task orchestration with enhanced context injection, semantic memory, and automatic embedding processing"
+    print_status "🔄 System ready for task orchestration with enhanced context injection, semantic memory, automatic embedding processing, and real-time monitoring"
+    print_status "📊 DevFlow Metrics: Context7 quality tracking, task performance monitoring, and Prometheus-compatible metrics"
+    print_status "🎯 Full Mode Readiness: Quality threshold 75% for Context7 Full Mode transition"
 
     return 0
 }
