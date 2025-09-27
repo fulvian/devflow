@@ -1,0 +1,76 @@
+{
+  "log": true,
+  "NON_INTERACTIVE_MODE": true,
+  "Providers": [
+    {
+      "name": "synthetic_provider",
+      "api_base_url": "https://api.synthetic.new/v1/chat/completions",
+      "api_key": "${SYNTHETIC_API_KEY}",
+      "models": [
+        "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "hf:deepseek-ai/DeepSeek-V3",
+        "hf:Qwen/Qwen-72B-Chat",
+        "hf:mistralai/Mistral-7B-Instruct-v0.3"
+      ],
+      "fallback_models": [
+        "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "hf:mistralai/Mistral-7B-Instruct-v0.3"
+      ]
+    }
+  ],
+  "Router": {
+    "default": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "codex": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "synthetic": "synthetic_provider,hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+    "longContext": "synthetic_provider,hf:deepseek-ai/DeepSeek-V3",
+    "fallback": "synthetic_provider,hf:mistralai/Mistral-7B-Instruct-v0.3"
+  },
+  "transformers": [
+    {
+      "path": "./packages/core/src/coordination/ccr-transformers/devflow-context-transformer.js",
+      "options": {
+        "preserveMemoryBlocks": true,
+        "compressContext": true,
+        "maxContextSize": 1024
+      }
+    }
+  ],
+  "fallback": {
+    "enabled": true,
+    "chain": [
+      "default",
+      "codex",
+      "fallback"
+    ],
+    "timeout": 30000,
+    "retryAttempts": 3,
+    "billing_error_fallback": true
+  },
+  "devflow": {
+    "memoryManager": {
+      "databasePath": "./packages/core/devflow.sqlite",
+      "enableCompression": true,
+      "maxMemoryBlocks": 1000
+    },
+    "sessionManagement": {
+      "enableProactiveMonitoring": true,
+      "warningThreshold": 0.7,
+      "criticalThreshold": 0.85,
+      "emergencyThreshold": 0.95
+    }
+  },
+  "error_handling": {
+    "billing_errors": {
+      "enabled": true,
+      "fallback_to_free_models": true,
+      "retry_with_different_model": true
+    },
+    "model_unavailable": {
+      "enabled": true,
+      "fallback_chain": [
+        "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "hf:mistralai/Mistral-7B-Instruct-v0.3"
+      ]
+    }
+  }
+}

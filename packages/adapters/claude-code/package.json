@@ -1,0 +1,26 @@
+{
+  "name": "@devflow/claude-adapter",
+  "version": "0.1.0",
+  "private": false,
+  "type": "module",
+  "main": "dist/index.js",
+  "module": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsc -b",
+    "dev": "tsc -b -w",
+    "clean": "rimraf dist",
+    "lint": "eslint src --ext .ts,.tsx",
+    "type-check": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run src"
+  },
+  "dependencies": {
+    "@devflow/core": "workspace:*",
+    "@devflow/shared": "workspace:*",
+    "@modelcontextprotocol/sdk": "*",
+    "zod": "*"
+  }
+}

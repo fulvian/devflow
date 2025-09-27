@@ -1,0 +1,171 @@
+import { VectorDatabase } from './vector-database';
+import { EmbeddingModel } from './embedding-pipeline';
+
+export interface SearchResult {
+  id: string;
+  content: string;
+  score: number;
+  metadata: Record<string, any>;
+}
+
+export interface SearchQuery {
+  text: string;
+  filters?: Record<string, any>;
+  limit?: number;
+  includeKeywords?: boolean;
+  keywordWeight?: number;
+}
+
+export class SemanticSearch {
+  private vectorDb: VectorDatabase;
+  private embeddingModel: EmbeddingModel;
+
+  constructor(vectorDb: VectorDatabase, embeddingModel: EmbeddingModel) {
+    this.vectorDb = vectorDb;
+    this.embeddingModel = embeddingModel;
+  }
+
+  async search(query: SearchQuery): Promise<SearchResult[]> {
+    // Generate embedding for query
+    const queryEmbedding = await this.embeddingModel.generateEmbedding(query.text);
+    
+    // Perform vector search
+    const vectorResults = await this.vectorDb.query(
+      queryEmbedding,
+      query.limit || 10,
+      query.filters
+    );
+    
+    // Process results
+    let results = this.processVectorResults(vectorResults);
+    
+    // If keyword search is enabled, combine with keyword matching
+    if (query.includeKeywords) {
+      const keywordResults = this.keywordSearch(query.text, results);
+      results = this.combineResults(results, keywordResults, query.keywordWeight || 0.3);
+    }
+    
+    // Rank and sort results
+    return this.rankResults(results);
+  }
+
+  private processVectorResults(vectorResults: any): SearchResult[] {
+    if (!vectorResults || !vectorResults.ids) {
+      return [];
+    }
+
+    return vectorResults.ids[0].map((id: string, index: number) => ({
+      id,
+      content: vectorResults.documents[0][index],
+      score: vectorResults.distances[0][index],
+      metadata: vectorResults.metadatas[0][index] || {}
+    }));
+  }
+
+  private keywordSearch(queryText: string, vectorResults: SearchResult[]): SearchResult[] {
+    const keywords = queryText.toLowerCase().split(/\s+/).filter(word => word.length > 2);
+    
+    return vectorResults.map(result => {
+      const content = result.content.toLowerCase();
+      let keywordMatches = 0;
+      
+      for (const keyword of keywords) {
+        if (content.includes(keyword)) {
+          keywordMatches++;
+        }
+      }
+      
+      // Boost score based on keyword matches
+      const keywordScore = keywordMatches / keywords.length;
+      return {
+        ...result,
+        score: result.score * (1 + keywordScore)
+      };
+    });
+  }
+
+  private combineResults(
+    vectorResults: SearchResult[],
+    keywordResults: SearchResult[],
+    keywordWeight: number
+  ): SearchResult[] {
+    // Merge results by ID, combining scores
+    const combined: Record<string, SearchResult> = {};
+    
+    // Add vector results
+    for (const result of vectorResults) {
+      combined[result.id] = {
+        ...result,
+        score: result.score * (1 - keywordWeight)
+      };
+    }
+    
+    // Add/combine keyword results
+    for (const result of keywordResults) {
+      if (combined[result.id]) {
+        combined[result.id].score += result.score * keywordWeight;
+      } else {
+        combined[result.id] = {
+          ...result,
+          score: result.score * keywordWeight
+        };
+      }
+    }
+    
+    return Object.values(combined);
+  }
+
+  private rankResults(results: SearchResult[]): SearchResult[] {
+    // Normalize scores and sort
+    return results
+      .map(result => ({
+        ...result,
+        score: this.normalizeScore(result.score)
+      }))
+      .sort((a, b) => b.score - a.score);
+  }
+
+  private normalizeScore(score: number): number {
+    // Convert distance to similarity score (0-1)
+    // Assuming cosine distance (0 = identical, 2 = opposite)
+    return Math.max(0, 1 - (score / 2));
+  }
+
+  async similaritySearch(text: string, candidateTexts: string[]): Promise<{ text: string; similarity: number }[]> {
+    const queryEmbedding = await this.embeddingModel.generateEmbedding(text);
+    const similarities: { text: string; similarity: number }[] = [];
+    
+    for (const candidate of candidateTexts) {
+      const candidateEmbedding = await this.embeddingModel.generateEmbedding(candidate);
+      const similarity = this.cosineSimilarity(queryEmbedding, candidateEmbedding);
+      similarities.push({ text: candidate, similarity });
+    }
+    
+    return similarities.sort((a, b) => b.similarity - a.similarity);
+  }
+
+  private cosineSimilarity(vecA: number[], vecB: number[]): number {
+    if (vecA.length !== vecB.length) {
+      throw new Error('Vectors must have the same dimensions');
+    }
+    
+    let dotProduct = 0;
+    let magnitudeA = 0;
+    let magnitudeB = 0;
+    
+    for (let i = 0; i < vecA.length; i++) {
+      dotProduct += vecA[i] * vecB[i];
+      magnitudeA += vecA[i] * vecA[i];
+      magnitudeB += vecB[i] * vecB[i];
+    }
+    
+    magnitudeA = Math.sqrt(magnitudeA);
+    magnitudeB = Math.sqrt(magnitudeB);
+    
+    if (magnitudeA === 0 || magnitudeB === 0) {
+      return 0;
+    }
+    
+    return dotProduct / (magnitudeA * magnitudeB);
+  }
+}

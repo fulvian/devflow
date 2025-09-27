@@ -1,0 +1,23 @@
+{
+  "name": "@devflow/gemini-adapter",
+  "version": "1.0.0",
+  "description": "Gemini CLI adapter for DevFlow orchestration system",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "bin": {
+    "gemini-mcp": "dist/bin/start-gemini-mcp.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "test": "jest",
+    "start": "node dist/bin/start-gemini-mcp.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.0.3",
+    "@modelcontextprotocol/sdk": "^1.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^18.0.0",
+    "typescript": "^4.7.4"
+  }
+}

@@ -1,0 +1,7 @@
+[TokenOptimizer] Initializing production token optimizer...
+[TokenOptimizer] Strategy: balanced
+[TokenOptimizer] Max tokens: 4096
+[TokenOptimizer] Production service running on port 3009
+[TokenOptimizer] Health check: http://localhost:3009/health
+[TokenOptimizer] Optimization endpoint: POST http://localhost:3009/optimize
+[TokenOptimizer] Shutting down...

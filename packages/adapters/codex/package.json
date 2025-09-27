@@ -1,0 +1,31 @@
+{
+  "name": "@devflow/codex-adapter",
+  "version": "1.0.0",
+  "description": "DevFlow OpenAI Codex CLI MCP Adapter",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/mcp/codex-mcp-server.js",
+    "dev": "tsx src/mcp/codex-mcp-server.ts",
+    "test": "jest"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.18.1",
+    "openai": "^4.70.0",
+    "dotenv": "^16.0.0",
+    "axios": "^1.6.0",
+    "p-queue": "^8.0.0",
+    "p-retry": "^6.0.0"
+  },
+  "devDependencies": {
+    "@types/node": "^20.0.0",
+    "typescript": "^5.0.0",
+    "tsx": "^4.0.0",
+    "jest": "^29.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  }
+}

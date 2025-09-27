@@ -1,0 +1,50 @@
+{
+  "timestamp": "2025-09-27T20:03:13.641628",
+  "database": {
+    "status": "healthy",
+    "tables_count": 49,
+    "missing_tables": [],
+    "last_checked": "2025-09-27T20:03:13.642922"
+  },
+  "hooks": {
+    "status": "healthy",
+    "total_hooks": 46,
+    "critical_hooks_present": 4,
+    "missing_critical": [],
+    "last_checked": "2025-09-27T20:03:13.643017"
+  },
+  "filesystem": {
+    "status": "healthy",
+    "directories": {
+      "/Users/fulvioventura/devflow/.claude/hooks": {
+        "exists": true,
+        "writable": true
+      },
+      "/Users/fulvioventura/devflow/.devflow": {
+        "exists": true,
+        "writable": true
+      },
+      "/Users/fulvioventura/devflow/data": {
+        "exists": true,
+        "writable": true
+      },
+      "/Users/fulvioventura/devflow/logs": {
+        "exists": true,
+        "writable": true
+      }
+    },
+    "last_checked": "2025-09-27T20:03:13.643088"
+  },
+  "devflow": {
+    "status": "healthy",
+    "files_present": 3,
+    "total_files": 3,
+    "file_status": {
+      "/Users/fulvioventura/devflow/CLAUDE.md": true,
+      "/Users/fulvioventura/devflow/.claude/settings.json": true,
+      "/Users/fulvioventura/devflow/.claude/state/current_task.json": true
+    },
+    "last_checked": "2025-09-27T20:03:13.643105"
+  },
+  "overall_health": "excellent"
+}

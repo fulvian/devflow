@@ -1,0 +1,61 @@
+{
+  "mcpServers": {
+    "devflow-orchestrator": {
+      "command": "node",
+      "args": ["mcp-servers/orchestrator/dist/index.js"],
+      "env": {
+        "PORT": "3001",
+        "REDIS_URL": "redis://localhost:6379"
+      }
+    },
+    "devflow-synthetic-cc-sessions": {
+      "command": "node",
+      "args": ["mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}"
+      }
+    },
+    "codex-cli": {
+      "command": "npx",
+      "args": ["codex-mcp-server"],
+      "env": {
+        "OPENAI_AUTH_TYPE": "personal",
+        "OPENAI_SESSION_TOKEN": "${OPENAI_SESSION_TOKEN}",
+        "CODEX_RATE_LIMIT": "disabled",
+        "CODEX_FALLBACK_MODE": "enabled"
+      }
+    },
+    "gemini-cli": {
+      "command": "npx",
+      "args": ["gemini-mcp-tool"],
+      "env": {
+        "GOOGLE_API_KEY": "${GOOGLE_API_KEY}",
+        "GEMINI_MODEL": "gemini-2.5-pro",
+        "GEMINI_RATE_LIMIT": "60"
+      }
+    },
+    "qwen-code": {
+      "command": "npx",
+      "args": ["qwen-mcp-tool"],
+      "env": {
+        "QWEN_API_KEY": "${QWEN_API_KEY}",
+        "QWEN_MODEL": "qwen-2.5-coder-32b-instruct",
+        "QWEN_RATE_LIMIT": "60"
+      }
+    },
+    "github-mcp-server": {
+      "command": "./scripts/github-mcp-server",
+      "args": ["stdio"],
+      "env": {
+        "GITHUB_PERSONAL_ACCESS_TOKEN": "${GITHUB_PERSONAL_ACCESS_TOKEN}"
+      }
+    },
+    "devflow-ops": {
+      "command": "node",
+      "args": ["mcp-servers/devflow-ops/dist/index.js"],
+      "env": {
+        "DEVFLOW_MODE": "production"
+      }
+    }
+  }
+}

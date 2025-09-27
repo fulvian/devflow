@@ -1,0 +1,33 @@
+{
+  "enabled": true,
+  "session_backup": true,
+  "commit_backup": true,
+  "wal_threshold_mb": 50,
+  "min_interval_minutes": 5,
+  "emergency_threshold_mb": 100,
+  "backup_retention": {
+    "hourly": 24,
+    "daily": 7,
+    "weekly": 4,
+    "monthly": 12
+  },
+  "priority_overrides": {
+    "HIGH": {
+      "max_interval_minutes": 30,
+      "wal_threshold_mb": 25
+    },
+    "MEDIUM": {
+      "max_interval_minutes": 60,
+      "wal_threshold_mb": 50
+    },
+    "LOW": {
+      "max_interval_minutes": 120,
+      "wal_threshold_mb": 75
+    }
+  },
+  "notifications": {
+    "backup_success": true,
+    "backup_failure": true,
+    "threshold_warnings": true
+  }
+}

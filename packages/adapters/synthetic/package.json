@@ -1,0 +1,31 @@
+{
+  "name": "@devflow/synthetic",
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Synthetic.new adapter for DevFlow multi-platform AI coordination",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "scripts": {
+    "build": "tsc -b --force --verbose",
+    "test": "vitest",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint src",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@devflow/shared": "workspace:*",
+    "openai": "^4.63.0",
+    "zod": "^3.23.8"
+  },
+  "devDependencies": {
+    "@types/node": "^20.19.13",
+    "typescript": "^5.6.3",
+    "vitest": "^1.6.1"
+  }
+}

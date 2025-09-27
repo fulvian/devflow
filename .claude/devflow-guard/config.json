@@ -1,0 +1,41 @@
+{
+  "guardEnabled": true,
+  "maxLines": 100,
+  "enforcementMode": "strict",
+  "ignorePatterns": [
+    "*.md",
+    "*.json",
+    "*.yml",
+    "*.yaml",
+    "*.txt",
+    "*.css",
+    "*.scss",
+    "*.config.*",
+    "package.json",
+    "package-lock.json",
+    ".env*",
+    "**/*.generated.*",
+    "**/dist/**",
+    "**/build/**",
+    "**/node_modules/**",
+    "**/.git/**",
+    "**/logs/**",
+    "**/temp/**"
+  ],
+  "allowedLargeFilePatterns": [
+    "**/test/**",
+    "**/*.test.*",
+    "**/*.spec.*"
+  ],
+  "delegation": {
+    "enabled": true,
+    "orchestratorUrl": "http://localhost:3005",
+    "autoSplit": true,
+    "maxRetries": 3
+  },
+  "logging": {
+    "enabled": true,
+    "level": "info",
+    "logFile": ".claude/devflow-guard/enforcement.log"
+  }
+}

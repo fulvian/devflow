@@ -1,0 +1,9 @@
+{
+    "emergency_mode": true,
+    "timestamp": "2025-09-27T04:57:44.000Z",
+    "native_context_only": true,
+    "enhanced_memory_disabled": true,
+    "context_interception_disabled": true,
+    "rollback_reason": "emergency_activation",
+    "restore_command": "bash .claude/emergency/context-restore.sh"
+}

@@ -1,0 +1,156 @@
+import { ISQLiteMemoryManager, MemoryBlock, SemanticSearchOptions, SemanticSearchResult, IVectorEmbeddingService } from '@devflow/core';
+
+export interface ISemanticSearchService {
+  hybridSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]>;
+  vectorSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]>;
+  keywordSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]>;
+}
+
+type SearchType = 'hybrid' | 'vector' | 'keyword';
+
+export class SemanticSearchService implements ISemanticSearchService {
+  private memoryManager: ISQLiteMemoryManager;
+  private vectorService: IVectorEmbeddingService;
+
+  constructor(dependencies: { memoryManager: ISQLiteMemoryManager; vectorService: IVectorEmbeddingService }) {
+    this.memoryManager = dependencies.memoryManager;
+    this.vectorService = dependencies.vectorService;
+  }
+
+  async hybridSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
+    try {
+      // Get results from both search methods
+      const [vectorResults, keywordResults] = await Promise.all([
+        this.vectorSearch(query, options),
+        this.keywordSearch(query, options)
+      ]);
+
+      // Combine and deduplicate results
+      const combinedResults = new Map<string, SemanticSearchResult>();
+      
+      // Add vector results (higher weight)
+      vectorResults.forEach(result => {
+        combinedResults.set(result.block.id, {
+          ...result,
+          relevanceScore: result.similarity * 0.7 // Weight vector similarity
+        });
+      });
+
+      // Add keyword results (lower weight) and combine with existing
+      keywordResults.forEach(result => {
+        const existing = combinedResults.get(result.block.id);
+        if (existing) {
+          // Combine scores if block exists in both results
+          combinedResults.set(result.block.id, {
+            ...existing,
+            relevanceScore: existing.relevanceScore + (result.relevanceScore * 0.3)
+          });
+        } else {
+          combinedResults.set(result.block.id, {
+            ...result,
+            relevanceScore: result.relevanceScore * 0.3 // Weight keyword relevance
+          });
+        }
+      });
+
+      // Convert to array and sort by relevance
+      const results = Array.from(combinedResults.values())
+        .sort((a, b) => b.relevanceScore - a.relevanceScore);
+
+      // Apply threshold and limit
+      const threshold = options?.threshold ?? 0.1;
+      const maxResults = options?.maxResults ?? 20;
+
+      return results
+        .filter(result => result.relevanceScore >= threshold)
+        .slice(0, maxResults);
+    } catch (error) {
+      console.error('Hybrid search failed:', error);
+      throw new Error(`Hybrid search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  async vectorSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
+    return this.performSearch('vector', query, options);
+  }
+
+  async keywordSearch(query: string, options?: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
+    return this.performSearch('keyword', query, options);
+  }
+
+  private async performSearch(
+    type: SearchType,
+    query: string,
+    options?: SemanticSearchOptions
+  ): Promise<SemanticSearchResult[]> {
+    try {
+      const maxResults = options?.maxResults ?? 20;
+      const threshold = options?.threshold ?? 0.1;
+
+      if (type === 'vector') {
+        // Use vector embedding service for similarity search
+        const similarBlocks = await this.vectorService.findSimilarMemoryBlocks(query, {
+          limit: maxResults * 2, // Get more results to filter
+          blockTypes: options?.blockTypes,
+          platforms: options?.platforms,
+          taskIds: options?.taskIds
+        });
+
+        // Filter by threshold and limit results
+        return similarBlocks
+          .filter(block => block.similarity >= threshold)
+          .slice(0, maxResults)
+          .map(block => ({
+            block: block.block,
+            similarity: block.similarity,
+            relevanceScore: block.similarity,
+            context: this.extractContext(block.block.content, query)
+          }));
+      } else {
+        // Use FTS5 for keyword search
+        const keywordBlocks = await this.memoryManager.searchMemoryBlocks(query, {
+          limit: maxResults * 2,
+          blockTypes: options?.blockTypes,
+          platforms: options?.platforms,
+          taskIds: options?.taskIds
+        });
+
+        // Convert to SemanticSearchResult format
+        return keywordBlocks
+          .filter(block => block.relevanceScore >= threshold)
+          .slice(0, maxResults)
+          .map(block => ({
+            block,
+            similarity: block.relevanceScore,
+            relevanceScore: block.relevanceScore,
+            context: this.extractContext(block.content, query)
+          }));
+      }
+    } catch (error) {
+      console.error(`${type} search failed:`, error);
+      throw new Error(`${type} search failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
+    }
+  }
+
+  private extractContext(content: string, query: string, contextLength: number = 200): string {
+    // Find the position of the query in the content
+    const queryIndex = content.toLowerCase().indexOf(query.toLowerCase());
+    
+    if (queryIndex === -1) {
+      // If query not found, return beginning of content
+      return content.substring(0, Math.min(content.length, contextLength));
+    }
+
+    // Calculate start and end positions for context
+    const start = Math.max(0, queryIndex - Math.floor(contextLength / 2));
+    const end = Math.min(content.length, queryIndex + query.length + Math.floor(contextLength / 2));
+    
+    let context = content.substring(start, end);
+    
+    // Add ellipsis if context doesn't include the full beginning or end
+    if (start > 0) context = '...' + context;
+    if (end < content.length) context = context + '...';
+    
+    return context;
+  }
+}

@@ -1,0 +1,41 @@
+{
+  "mcpServers": {
+    "devflow-synthetic-mcp": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "COST_TRACKING_ENABLED": "true",
+        "AUTONOMOUS_MODE": "false"
+      }
+    },
+    "devflow-synthetic-enhanced": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/enhanced-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "AUTONOMOUS_FILE_OPERATIONS": "true",
+        "REQUIRE_APPROVAL": "false",
+        "CREATE_BACKUPS": "true",
+        "ALLOWED_FILE_EXTENSIONS": ".ts,.js,.json,.md,.py,.tsx,.jsx,.css,.scss,.html,.yml,.yaml"
+      }
+    },
+    "devflow-openai-codex": {
+      "command": "node", 
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/codex/dist/index.js"],
+      "env": {
+        "OPENAI_API_KEY": "${OPENAI_API_KEY}",
+        "CODEX_MODEL": "gpt-4",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow"
+      }
+    }
+  }
+}

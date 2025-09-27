@@ -1,0 +1,15 @@
+{
+  "Providers": [
+    {
+      "name": "synthetic_provider",
+      "api_base_url": "https://api.synthetic.new/v1/chat/completions",
+      "api_key": "$SYNTHETIC_API_KEY",
+      "models": [
+        "hf:zai-org/GLM-4.5"
+      ]
+    }
+  ],
+  "Router": {
+    "default": "synthetic_provider,hf:zai-org/GLM-4.5"
+  }
+}

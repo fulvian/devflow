@@ -1,0 +1,18 @@
+export enum LogLevel {
+  DEBUG = 'debug',
+  INFO = 'info',
+  WARN = 'warn',
+  ERROR = 'error',
+  CRITICAL = 'critical'
+}
+
+export interface Logger {
+  log(level: LogLevel, message: string, meta?: any): void;
+}
+
+export class EnforcementLogger implements Logger {
+  log(level: LogLevel, message: string, meta?: any): void {
+    const timestamp = new Date().toISOString();
+    console.log(`[${timestamp}] [${level.toUpperCase()}] ${message}`, meta || '');
+  }
+}

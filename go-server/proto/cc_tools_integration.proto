@@ -1,0 +1,74 @@
+syntax = "proto3";
+
+package cc_tools_integration;
+option go_package = "github.com/devflow/cc-tools-server/proto";
+
+// Validation request message
+message ValidationRequest {
+  string project_root = 1;          // Root directory of the project
+  string hook_type = 2;             // Type of hook being validated (pre-commit, pre-push, etc.)
+  repeated string file_paths = 3;   // Files to be validated
+  map<string, string> context = 4;  // Additional context data
+  int32 timeout_ms = 5;             // Timeout for validation in milliseconds
+}
+
+// Project metadata message
+message ProjectMetadata {
+  string project_type = 1;          // Detected project type (npm, cargo, make, etc.)
+  string project_root = 2;          // Root directory
+  repeated string config_files = 3; // Configuration files found
+  map<string, string> commands = 4; // Available commands (lint, test, build)
+  string language = 5;              // Primary programming language
+}
+
+// Lock status message
+message LockStatus {
+  string lock_id = 1;               // Unique lock identifier
+  string project_path = 2;          // Path being locked
+  int32 process_id = 3;             // Process ID holding the lock
+  int64 acquired_at = 4;            // Timestamp when lock was acquired
+  bool is_locked = 5;               // Current lock status
+}
+
+// Validation response message
+message ValidationResponse {
+  bool success = 1;                 // Overall validation success
+  repeated ValidationResult results = 2; // Individual validation results
+  ProjectMetadata metadata = 3;     // Project metadata
+  int64 execution_time_ms = 4;      // Total execution time
+  string error_message = 5;         // Error message if failed
+}
+
+// Individual validation result
+message ValidationResult {
+  string validator = 1;             // Name of the validator (lint, test, etc.)
+  bool success = 2;                 // Validation success
+  string output = 3;                // Command output
+  string error = 4;                 // Error message if failed
+  int64 execution_time_ms = 5;      // Execution time for this validator
+}
+
+// Lock request message
+message LockRequest {
+  string project_path = 1;          // Path to lock
+  int32 timeout_ms = 2;             // Lock timeout
+  bool force_release = 3;           // Force release if locked by dead process
+}
+
+// gRPC service definition
+service CCToolsIntegration {
+  // Validate project with cc-tools
+  rpc ValidateProject(ValidationRequest) returns (ValidationResponse);
+
+  // Get project metadata
+  rpc GetProjectMetadata(ValidationRequest) returns (ProjectMetadata);
+
+  // Acquire lock for project
+  rpc AcquireLock(LockRequest) returns (LockStatus);
+
+  // Release lock for project
+  rpc ReleaseLock(LockRequest) returns (LockStatus);
+
+  // Check lock status
+  rpc CheckLock(LockRequest) returns (LockStatus);
+}

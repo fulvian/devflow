@@ -1,0 +1,52 @@
+{
+  "mcpServers": {
+    "devflow-synthetic-dual": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "DEVFLOW_STORAGE_MODE": "auto",
+        "AUTONOMOUS_FILE_OPERATIONS": "true",
+        "REQUIRE_APPROVAL": "false",
+        "CREATE_BACKUPS": "true",
+        "ALLOWED_FILE_EXTENSIONS": ".ts,.js,.json,.md,.py,.tsx,.jsx,.css,.scss,.html,.yml,.yaml"
+      }
+    },
+    "devflow-synthetic-cc-sessions": {
+      "command": "node",
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/simple-batch-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "DEVFLOW_STORAGE_MODE": "cc-sessions",
+        "AUTONOMOUS_FILE_OPERATIONS": "true",
+        "REQUIRE_APPROVAL": "false",
+        "CREATE_BACKUPS": "true",
+        "ALLOWED_FILE_EXTENSIONS": ".ts,.js,.json,.md,.py,.tsx,.jsx,.css,.scss,.html,.yml,.yaml"
+      }
+    },
+    "devflow-synthetic-multi-layer": {
+      "command": "node", 
+      "args": ["/Users/fulvioventura/devflow/mcp-servers/synthetic/dist/dual-enhanced-index.js"],
+      "env": {
+        "SYNTHETIC_API_KEY": "${SYNTHETIC_API_KEY}",
+        "DEFAULT_CODE_MODEL": "hf:Qwen/Qwen3-Coder-480B-A35B-Instruct",
+        "DEFAULT_REASONING_MODEL": "hf:deepseek-ai/DeepSeek-V3",
+        "DEFAULT_CONTEXT_MODEL": "hf:Qwen/Qwen2.5-Coder-32B-Instruct",
+        "DEVFLOW_PROJECT_ROOT": "/Users/fulvioventura/devflow",
+        "DEVFLOW_STORAGE_MODE": "multi-layer",
+        "AUTONOMOUS_FILE_OPERATIONS": "true",
+        "REQUIRE_APPROVAL": "false", 
+        "CREATE_BACKUPS": "true",
+        "ALLOWED_FILE_EXTENSIONS": ".ts,.js,.json,.md,.py,.tsx,.jsx,.css,.scss,.html,.yml,.yaml"
+      }
+    }
+  }
+}

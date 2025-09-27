@@ -1,0 +1,86 @@
+{
+  "version": "1.0.0",
+  "description": "Safety configuration for DevFlow hooks to prevent system crashes",
+  "enabled": true,
+  "last_updated": "2025-09-25T23:30:00Z",
+
+  "subprocess_limits": {
+    "max_concurrent": 3,
+    "default_timeout": 8,
+    "max_timeout": 15,
+    "kill_timeout": 5,
+    "memory_limit_mb": 50
+  },
+
+  "rate_limiting": {
+    "max_calls_per_minute": 10,
+    "max_calls_per_hour": 100,
+    "cooldown_period": 60,
+    "burst_limit": 3
+  },
+
+  "memory_management": {
+    "max_heap_mb": 100,
+    "cleanup_threshold_mb": 80,
+    "emergency_threshold_mb": 120,
+    "gc_interval_seconds": 30
+  },
+
+  "context_injection": {
+    "enabled": true,
+    "max_prompt_length": 2000,
+    "max_context_length": 3000,
+    "max_enhanced_length": 5000,
+    "quality_threshold": 0.3
+  },
+
+  "circuit_breaker": {
+    "failure_threshold": 2,
+    "recovery_timeout_seconds": 180,
+    "half_open_max_calls": 1
+  },
+
+  "hook_timeouts": {
+    "UserPromptSubmit": {
+      "timeout_seconds": 8,
+      "retry_attempts": 1,
+      "fallback_enabled": true
+    },
+    "PostToolUse": {
+      "timeout_seconds": 5,
+      "retry_attempts": 0,
+      "fallback_enabled": false
+    },
+    "SessionStart": {
+      "timeout_seconds": 10,
+      "retry_attempts": 2,
+      "fallback_enabled": true
+    }
+  },
+
+  "emergency_actions": {
+    "memory_pressure_cleanup": true,
+    "process_termination": true,
+    "hook_disabling": true,
+    "alert_logging": true
+  },
+
+  "monitoring": {
+    "system_health_checks": true,
+    "performance_logging": true,
+    "resource_tracking": true,
+    "alert_thresholds": {
+      "cpu_percent": 70,
+      "memory_mb": 6400,
+      "subprocess_count": 15
+    }
+  },
+
+  "safe_mode": {
+    "enabled": false,
+    "disable_context_injection": false,
+    "disable_memory_storage": false,
+    "minimal_processing": false,
+    "emergency_only": false
+  }
+}

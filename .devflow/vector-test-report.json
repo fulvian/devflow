@@ -1,0 +1,214 @@
+{
+  "execution_summary": {
+    "total_tests": 20,
+    "successful_tests": 20,
+    "success_rate": 1.0,
+    "total_score": 1000,
+    "average_score": 50.0,
+    "total_contexts_found": 100,
+    "average_execution_time_ms": 46.7235
+  },
+  "detailed_results": [
+    {
+      "test_id": 1,
+      "query": "database",
+      "complexity": "low",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 46.85,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 2,
+      "query": "hook",
+      "complexity": "low",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 38.01,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 3,
+      "query": "embedding",
+      "complexity": "low",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 44.32,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 4,
+      "query": "context",
+      "complexity": "low",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 36.96,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 5,
+      "query": "daemon",
+      "complexity": "low",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 39.29,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 6,
+      "query": "orchestrator management",
+      "complexity": "medium",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 37.62,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 7,
+      "query": "performance monitoring",
+      "complexity": "medium",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 42.85,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 8,
+      "query": "semantic vector search",
+      "complexity": "medium",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 49.53,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/search/index.ts.backup-2025-09-21T00-06-58-815Z\", \"state\": {\"m..."
+    },
+    {
+      "test_id": 9,
+      "query": "automated processing",
+      "complexity": "medium",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 48.77,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 10,
+      "query": "context injection system",
+      "complexity": "medium",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 42.34,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"packages/adapters/claude-code/src/filesystem/persistent-debouncer...."
+    },
+    {
+      "test_id": 11,
+      "query": "context7 architecture implementation",
+      "complexity": "high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 46.52,
+      "success": true,
+      "sample_context": "{\"session_id\": \"db81717a-e4ad-4181-bc34-6352f2c80bca\", \"transcript_path\": \"/Users/fulvioventura/.cla..."
+    },
+    {
+      "test_id": 12,
+      "query": "vector embedding processing optimization",
+      "complexity": "high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 53.39,
+      "success": true,
+      "sample_context": "{\"session_id\": \"bb0cac31-6e0d-4fd9-92b5-a28a7ace7b1b\", \"transcript_path\": \"/Users/fulvioventura/.cla..."
+    },
+    {
+      "test_id": 13,
+      "query": "multi-agent orchestration with fallback",
+      "complexity": "high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 51.6,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 14,
+      "query": "enforcement rules penalty system",
+      "complexity": "high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 55.47,
+      "success": true,
+      "sample_context": "{\"session_id\": \"bb0cac31-6e0d-4fd9-92b5-a28a7ace7b1b\", \"transcript_path\": \"/Users/fulvioventura/.cla..."
+    },
+    {
+      "test_id": 15,
+      "query": "unified orchestrator api selection",
+      "complexity": "high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 35.59,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"packages/orchestrator/unified/node_modules/https-proxy-agent/node_..."
+    },
+    {
+      "test_id": 16,
+      "query": "end-to-end embedding creation with rollback",
+      "complexity": "very_high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 59.17,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"packages/core/src/ml/VectorEmbeddingService.d.ts\", \"state\": {\"mtim..."
+    },
+    {
+      "test_id": 17,
+      "query": "semantic vector injection with cross-verification",
+      "complexity": "very_high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 50.63,
+      "success": true,
+      "sample_context": "{\"session_id\": \"bb0cac31-6e0d-4fd9-92b5-a28a7ace7b1b\", \"transcript_path\": \"/Users/fulvioventura/.cla..."
+    },
+    {
+      "test_id": 18,
+      "query": "multi-agent orchestration performance monitoring",
+      "complexity": "very_high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 52.97,
+      "success": true,
+      "sample_context": "{\"type\": \"file_created\", \"path\": \"src/core/orchestration/verification/continuous-verification-loop.t..."
+    },
+    {
+      "test_id": 19,
+      "query": "cryptographic audit trail penalty escalation",
+      "complexity": "very_high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 55.93,
+      "success": true,
+      "sample_context": "{\"session_id\": \"bb0cac31-6e0d-4fd9-92b5-a28a7ace7b1b\", \"transcript_path\": \"/Users/fulvioventura/.cla..."
+    },
+    {
+      "test_id": 20,
+      "query": "complete devflow architecture enforcement",
+      "complexity": "very_high",
+      "contexts_found": 5,
+      "semantic_score": 50,
+      "execution_time_ms": 46.66,
+      "success": true,
+      "sample_context": "{\"session_id\": \"2c416306-1217-4ec7-9e90-c8ccb67da0e7\", \"transcript_path\": \"/Users/fulvioventura/.cla..."
+    }
+  ],
+  "timestamp": 1758992344.820388
+}

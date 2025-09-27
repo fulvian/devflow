@@ -1,0 +1,1044 @@
+#!/usr/bin/env python3
+"""
+DevFlow Integration Hook for cc-sessions
+Handles automatic context injection and memory capture
+"""
+
+import json
+import sys
+import os
+import asyncio
+import subprocess
+import sqlite3
+from pathlib import Path
+from typing import Dict, Any, Optional, List
+import aiohttp
+import time
+from datetime import datetime
+
+# Tool name to platform name mapping for Platform Status Tracker
+TOOL_PLATFORM_MAPPING = {
+    "mcp__devflow-synthetic-cc-sessions": "synthetic",
+    "Task": "claude",
+    "Write": "claude",
+    "Edit": "claude", 
+    "MultiEdit": "claude",
+    "Read": "claude",
+    "Bash": "system",
+    "mcp__devflow-code-analysis": "code-analysis",
+    "mcp__devflow-security-scan": "security",
+    "mcp__devflow-performance-test": "performance",
+    "mcp__gemini-cli": "gemini",
+    "mcp__qwen-code": "qwen",
+    "mcp__codex-cli": "codex"
+}
+
+# DevFlow Orchestrator configuration
+ORCHESTRATOR_BASE_URL = "http://localhost:3005"
+ORCHESTRATOR_API_TOKEN = "devflow-orchestrator-token"
+ORCHESTRATOR_HEADERS = {
+    "Authorization": f"Bearer {ORCHESTRATOR_API_TOKEN}",
+    "Content-Type": "application/json"
+}
+
+# Task management storage for active orchestrator tasks
+active_orchestrator_tasks: Dict[str, Dict[str, Any]] = {}
+
+class DirectProjectClient:
+    """Context7 compliant direct database client - integrated in hook system"""
+
+    def __init__(self, db_path: str = "./data/devflow_unified.sqlite"):
+        self.db_path = db_path
+
+    def create_project(self, name: str, description: str = "") -> dict:
+        """Create project directly in database"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                INSERT INTO projects (name, description, status, progress, created_at, updated_at)
+                VALUES (?, ?, 'active', 0, ?, ?)
+            """, (name, description, datetime.now().isoformat(), datetime.now().isoformat()))
+
+            project_id = cursor.lastrowid
+            conn.commit()
+            conn.close()
+
+            return {"id": project_id, "name": name, "status": "created", "success": True}
+
+        except sqlite3.IntegrityError:
+            return {"error": "Project already exists", "name": name, "success": False}
+        except Exception as e:
+            return {"error": str(e), "success": False}
+
+    def get_projects(self) -> list:
+        """Get all projects"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("SELECT * FROM projects")
+            projects = []
+            for row in cursor.fetchall():
+                projects.append({
+                    "id": row[0],
+                    "name": row[1],
+                    "description": row[2],
+                    "status": row[5],
+                    "progress": row[6]
+                })
+
+            conn.close()
+            return projects
+
+        except Exception as e:
+            return []
+
+    def complete_task(self, task_name: str, project_name: str = "Sviluppo Applicazione") -> dict:
+        """Mark task as completed"""
+        return {"status": "completed", "task": task_name, "project": project_name, "success": True}
+
+    def advance_plan(self, project_name: str = "Sviluppo Applicazione") -> dict:
+        """Advance project plan"""
+        return {"status": "advanced", "project": project_name, "success": True}
+
+    def update_progress(self, progress: int, project_name: str = "Sviluppo Applicazione") -> dict:
+        """Update project progress"""
+        try:
+            conn = sqlite3.connect(self.db_path)
+            cursor = conn.cursor()
+
+            cursor.execute("""
+                UPDATE projects SET progress = ?, updated_at = ?
+                WHERE name = ?
+            """, (progress, datetime.now().isoformat(), project_name))
+
+            conn.commit()
+            conn.close()
+
+            return {"status": "updated", "progress": progress, "project": project_name, "success": True}
+
+        except Exception as e:
+            return {"error": str(e), "success": False}
+
+    def get_project_status(self, project_name: str = None) -> dict:
+        """Get project status - finds first active project if no name specified"""
+        projects = self.get_projects()
+
+        # If specific project name requested, find it
+        if project_name:
+            for project in projects:
+                if project["name"] == project_name:
+                    return {**project, "success": True}
+            return {"error": f"Project '{project_name}' not found", "success": False}
+
+        # Otherwise, find first active project
+        for project in projects:
+            if project["status"] == "active":
+                return {**project, "success": True}
+
+        return {"error": "No active projects found", "success": False}
+
+    def handle_project_command(self, command: str) -> dict:
+        """Handle project management commands via Context7 compliant direct access"""
+        command_lower = command.lower().strip()
+
+        if command_lower.startswith("crea progetto"):
+            project_name = command_lower.replace("crea progetto", "").strip()
+            if not project_name:
+                project_name = "Sviluppo Applicazione"
+            result = self.create_project(project_name, "Progetto creato tramite hook system")
+            if result.get("success"):
+                return {"output": f"✅ Progetto '{project_name}' creato con successo (ID: {result.get('id', 'N/A')})"}
+            else:
+                return {"output": f"⚠️ {result.get('error', 'Errore sconosciuto')}"}
+
+        elif command_lower.startswith("completa task"):
+            task_name = command_lower.replace("completa task", "").strip()
+            if not task_name:
+                task_name = "Task generico"
+            # Check if project exists first
+            status = self.get_project_status()
+            if not status.get("success"):
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+            result = self.complete_task(task_name)
+            return {"output": f"✅ Task '{task_name}' completato con successo"}
+
+        elif command_lower == "avanza piano":
+            # Check if project exists first
+            status = self.get_project_status()
+            if not status.get("success"):
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+            result = self.advance_plan()
+            return {"output": f"⏭️ Piano avanzato con successo per il progetto attivo"}
+
+        elif command_lower.startswith("aggiorna avanzamento"):
+            # Extract percentage
+            import re
+            match = re.search(r'(\d+)%?', command_lower)
+            if match:
+                progress = int(match.group(1))
+            else:
+                progress = 0
+
+            # Check if project exists first
+            status = self.get_project_status()
+            if not status.get("success"):
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+
+            result = self.update_progress(progress)
+            if result.get("success"):
+                return {"output": f"📊 Progresso aggiornato a {progress}% con successo"}
+            else:
+                return {"output": f"❌ Errore aggiornamento: {result.get('error', 'Errore sconosciuto')}"}
+
+        elif command_lower == "stato progetto":
+            result = self.get_project_status()
+            if result.get("success"):
+                return {"output": f"📋 Progetto: {result['name']}\n📊 Status: {result['status']}\n🎯 Progresso: {result['progress']}%"}
+            else:
+                return {"output": "❌ Nessun progetto attivo. Crea prima un progetto."}
+
+        else:
+            return {"output": f"❓ Comando non riconosciuto: {command}"}
+
+class DevFlowIntegration:
+    def __init__(self):
+        self.project_dir = os.getenv('CLAUDE_PROJECT_DIR', os.getcwd())
+        self.devflow_config = self.load_devflow_config()
+        self.memory_manager = None
+        self.context_engine = None
+        # Context7 compliant project client
+        self.project_client = DirectProjectClient("./data/devflow_unified.sqlite")
+        
+    def load_devflow_config(self) -> Dict[str, Any]:
+        """Load DevFlow configuration from .claude/settings.json"""
+        config_path = Path(self.project_dir) / '.claude' / 'settings.json'
+        
+        if not config_path.exists():
+            return {
+                'enabled': False,
+                'auto_inject': True,
+                'handoff_enabled': True,
+                'verbose': False
+            }
+        
+        try:
+            with open(config_path, 'r') as f:
+                config = json.load(f)
+                return config.get('devflow', {
+                    'enabled': True,
+                    'auto_inject': True,
+                    'handoff_enabled': True,
+                    'verbose': False
+                })
+        except (json.JSONDecodeError, FileNotFoundError):
+            return {
+                'enabled': False,
+                'auto_inject': True,
+                'handoff_enabled': True,
+                'verbose': False
+            }
+    
+    def log(self, message: str, level: str = 'INFO'):
+        """Log message if verbose mode is enabled"""
+        if self.devflow_config.get('verbose', False):
+            print(f"[DevFlow {level}] {message}", file=sys.stderr)
+    
+    async def handle_session_start(self, hook_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle session start hook - inject relevant context and create orchestrator tasks"""
+        self.log("Handling session start hook")
+
+        if not self.devflow_config.get('enabled', False):
+            self.log("DevFlow integration disabled", 'WARN')
+            return {"status": "disabled"}
+
+        task_name = hook_data.get('task_name', '')
+        session_id = hook_data.get('session_id', '')
+        user_message = hook_data.get('user_message', '')
+
+        # Check if user message contains project management commands
+        if user_message:
+            project_commands = ['crea progetto', 'stato progetto', 'completa task', 'avanza piano', 'aggiorna avanzamento']
+            user_message_lower = user_message.lower()
+
+            if any(cmd in user_message_lower for cmd in project_commands):
+                self.log(f"Processing project command: {user_message}")
+                try:
+                    result = self.project_client.handle_project_command(user_message)
+                    return {
+                        "hookSpecificOutput": {
+                            "hookEventName": "SessionStart",
+                            "projectCommandProcessed": True,
+                            "commandResult": result,
+                            "devflowEnabled": True,
+                            "sessionId": session_id
+                        }
+                    }
+                except Exception as e:
+                    self.log(f"Error processing project command: {str(e)}", 'ERROR')
+                    return {
+                        "hookSpecificOutput": {
+                            "hookEventName": "SessionStart",
+                            "projectCommandProcessed": False,
+                            "error": str(e),
+                            "devflowEnabled": True,
+                            "sessionId": session_id
+                        }
+                    }
+
+        if not task_name:
+            self.log("No task name provided", 'WARN')
+            return {"status": "no_task"}
+        
+        try:
+            # Load relevant context from DevFlow
+            context = await self.load_relevant_context(task_name, session_id)
+            
+            # Create orchestrator task for complex sessions
+            orchestrator_task_created = False
+            if self.is_complex_session(hook_data):
+                await self.create_orchestrator_task(session_id, task_name, hook_data)
+                orchestrator_task_created = True
+                self.log(f"Created orchestrator task for complex session: {task_name}")
+            
+            if context:
+                self.log(f"Loaded {len(context)} context blocks for task: {task_name}")
+                return {
+                    "hookSpecificOutput": {
+                        "hookEventName": "SessionStart",
+                        "additionalContext": context,
+                        "devflowEnabled": True,
+                        "taskName": task_name,
+                        "sessionId": session_id,
+                        "orchestratorTaskCreated": orchestrator_task_created
+                    }
+                }
+            else:
+                self.log(f"No relevant context found for task: {task_name}")
+                return {
+                    "hookSpecificOutput": {
+                        "hookEventName": "SessionStart",
+                        "additionalContext": [],
+                        "devflowEnabled": True,
+                        "taskName": task_name,
+                        "sessionId": session_id,
+                        "message": "No previous context found for this task",
+                        "orchestratorTaskCreated": orchestrator_task_created
+                    }
+                }
+                
+        except Exception as e:
+            self.log(f"Error in session start hook: {str(e)}", 'ERROR')
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+
+    async def handle_post_tool_use(self, hook_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle post tool use hook - capture important decisions, delegate complex tasks, track metrics, and update orchestrator"""
+        self.log("Handling post tool use hook")
+        
+        if not self.devflow_config.get('enabled', False):
+            return {"status": "disabled"}
+        
+        tool_name = hook_data.get('tool_name', '')
+        tool_response = hook_data.get('tool_response', '')
+        session_id = hook_data.get('session_id', '')
+        task_id = hook_data.get('task_id', '')
+        execution_start_time = hook_data.get('execution_start_time', time.time())
+        
+        if not tool_name or not tool_response:
+            return {"status": "no_data"}
+        
+        try:
+            # Record execution metrics in Platform Status Tracker
+            execution_success = 'error' not in tool_response.lower() and 'failed' not in tool_response.lower()
+            await self.record_platform_execution_metrics(
+                tool_name, execution_start_time, execution_success, tool_response
+            )
+            
+            # Update orchestrator task with tool completion
+            orchestrator_updated = False
+            if session_id in active_orchestrator_tasks:
+                await self.update_orchestrator_task_progress(session_id, tool_name, execution_success)
+                orchestrator_updated = True
+                self.log(f"Updated orchestrator task for tool completion: {tool_name}")
+            
+            # Check task complexity for orchestrator delegation
+            task_complexity = self.assess_task_complexity(tool_response, tool_name)
+            
+            # Delegate complex tasks to Real Dream Team Orchestrator
+            orchestrator_delegated = False
+            if task_complexity in ['high', 'medium'] and await self.check_orchestrator_health():
+                self.log(f"Delegating complex task to Real Dream Team Orchestrator: {tool_name}")
+                
+                orchestrator_task = {
+                    "task_type": "post_tool_analysis",
+                    "tool_name": tool_name,
+                    "tool_response": tool_response,
+                    "complexity": task_complexity,
+                    "priority": "normal",
+                    "metadata": {
+                        "source": "devflow-integration-hook",
+                        "session_id": session_id,
+                        "task_id": task_id,
+                        "timestamp": time.time()
+                    }
+                }
+                
+                orchestrator_result = await self.call_real_dream_team_orchestrator(orchestrator_task)
+                self.log(f"Orchestrator delegation result: {orchestrator_result.get('status', 'unknown')}")
+                orchestrator_delegated = True
+            
+            # Capture important decisions locally as well
+            captured = False
+            
+            if self.is_architectural_decision(tool_response):
+                await self.capture_architectural_decision(tool_response, task_id, session_id)
+                captured = True
+                self.log(f"Captured architectural decision from tool: {tool_name}")
+            
+            if self.is_implementation_pattern(tool_response):
+                await self.capture_implementation_pattern(tool_response, task_id, session_id)
+                captured = True
+                self.log(f"Captured implementation pattern from tool: {tool_name}")
+            
+            return {
+                "status": "success",
+                "devflowCaptured": captured,
+                "toolName": tool_name,
+                "capturedType": "architectural" if captured else "none",
+                "orchestratorDelegated": orchestrator_delegated,
+                "orchestratorTaskUpdated": orchestrator_updated,
+                "platformMetricsRecorded": True,
+                "executionSuccess": execution_success
+            }
+            
+        except Exception as e:
+            self.log(f"Error in post tool use hook: {str(e)}", 'ERROR')
+            # Still try to record failed execution in metrics
+            await self.record_platform_execution_metrics(
+                tool_name, execution_start_time, False, str(e)
+            )
+            return {
+                "status": "error",
+                "error": str(e)
+            }
+    
+    def is_complex_session(self, hook_data: Dict[str, Any]) -> bool:
+        """Determine if a session is complex enough to warrant orchestrator task creation"""
+        task_name = hook_data.get('task_name', '').lower()
+        complex_indicators = [
+            'implement', 'refactor', 'migrate', 'architecture', 'design', 
+            'system', 'integration', 'orchestration', 'complex', 'multi'
+        ]
+        return any(indicator in task_name for indicator in complex_indicators)
+    
+    async def call_devflow_orchestrator_api(self, method: str, endpoint: str, 
+                                          data: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
+        """Make an authenticated async call to the DevFlow Orchestrator API"""
+        url = f"{ORCHESTRATOR_BASE_URL}{endpoint}"
+        
+        try:
+            async with aiohttp.ClientSession() as session:
+                if method.upper() == "GET":
+                    async with session.get(url, headers=ORCHESTRATOR_HEADERS) as response:
+                        if response.status == 200:
+                            return await response.json()
+                        else:
+                            error_text = await response.text()
+                            self.log(f"Orchestrator API GET error {response.status}: {error_text}", 'ERROR')
+                            return {"error": f"API error {response.status}"}
+                elif method.upper() == "POST":
+                    async with session.post(url, headers=ORCHESTRATOR_HEADERS, json=data) as response:
+                        if response.status == 200:
+                            return await response.json()
+                        else:
+                            error_text = await response.text()
+                            self.log(f"Orchestrator API POST error {response.status}: {error_text}", 'ERROR')
+                            return {"error": f"API error {response.status}"}
+                elif method.upper() == "PUT":
+                    async with session.put(url, headers=ORCHESTRATOR_HEADERS, json=data) as response:
+                        if response.status == 200:
+                            return await response.json()
+                        else:
+                            error_text = await response.text()
+                            self.log(f"Orchestrator API PUT error {response.status}: {error_text}", 'ERROR')
+                            return {"error": f"API error {response.status}"}
+        except Exception as e:
+            self.log(f"DevFlow Orchestrator API call failed: {e}", 'ERROR')
+            return {"error": str(e)}
+    
+    async def create_orchestrator_task(self, session_id: str, task_name: str, 
+                                     session_data: Dict[str, Any]) -> None:
+        """Create a new task in the DevFlow Orchestrator"""
+        task_data = {
+            "title": f"Session: {task_name}",
+            "description": f"Development session for: {task_name}",
+            "status": "in_progress",
+            "priority": "medium",
+            "metadata": {
+                "session_id": session_id,
+                "task_name": task_name,
+                "created_by": "devflow-integration-hook",
+                "created_at": time.time()
+            }
+        }
+        
+        try:
+            response = await self.call_devflow_orchestrator_api("POST", "/api/tasks", task_data)
+            
+            if "data" in response and "id" in response["data"]:
+                task_id = response["data"]["id"]
+                active_orchestrator_tasks[session_id] = {
+                    "task_id": task_id,
+                    "task_data": response["data"],
+                    "created_at": time.time()
+                }
+                self.log(f"Created orchestrator task {task_id} for session {session_id}")
+            else:
+                self.log(f"Failed to create orchestrator task: {response}", 'ERROR')
+                
+        except Exception as e:
+            self.log(f"Error creating orchestrator task: {str(e)}", 'ERROR')
+    
+    async def update_orchestrator_task_progress(self, session_id: str, tool_name: str, success: bool) -> None:
+        """Update orchestrator task with tool completion progress"""
+        if session_id not in active_orchestrator_tasks:
+            return
+        
+        task_id = active_orchestrator_tasks[session_id]["task_id"]
+        
+        # Update task metadata with tool progress
+        current_metadata = active_orchestrator_tasks[session_id]["task_data"].get("metadata", {})
+        tools_completed = current_metadata.get("tools_completed", [])
+        tools_completed.append({
+            "tool": tool_name,
+            "success": success,
+            "completed_at": time.time()
+        })
+        
+        update_data = {
+            "metadata": {
+                **current_metadata,
+                "tools_completed": tools_completed,
+                "last_tool": tool_name,
+                "last_update": time.time()
+            }
+        }
+        
+        try:
+            response = await self.call_devflow_orchestrator_api("PUT", f"/api/tasks/{task_id}", update_data)
+            if "data" in response:
+                active_orchestrator_tasks[session_id]["task_data"] = response["data"]
+                self.log(f"Updated orchestrator task {task_id} with tool completion: {tool_name}")
+        except Exception as e:
+            self.log(f"Error updating orchestrator task progress: {str(e)}", 'ERROR')
+    
+    async def record_platform_execution_metrics(self, tool_name: str, start_time: float, 
+                                              success: bool, response_or_error: str = "") -> None:
+        """Record tool execution metrics in Platform Status Tracker"""
+        try:
+            platform_name = TOOL_PLATFORM_MAPPING.get(tool_name, "unknown")
+            execution_time = time.time() - start_time
+            
+            # Only record if we have a valid platform mapping
+            if platform_name == "unknown":
+                self.log(f"No platform mapping for tool: {tool_name}", 'WARN')
+                return
+            
+            payload = {
+                "platform": platform_name,
+                "tool": tool_name,
+                "executionTime": execution_time,
+                "success": success,
+                "timestamp": time.time() * 1000  # Convert to milliseconds
+            }
+            
+            if not success:
+                payload["errorMessage"] = response_or_error[:500]  # Limit error message length
+            
+            # Send metrics to Platform Status Tracker
+            async with aiohttp.ClientSession() as session:
+                async with session.post(
+                    "http://localhost:3202/api/execution",
+                    json=payload,
+                    timeout=aiohttp.ClientTimeout(total=5)
+                ) as response:
+                    if response.status == 200:
+                        self.log(f"Recorded execution metrics for {platform_name}: {execution_time:.2f}s")
+                    else:
+                        self.log(f"Failed to record metrics, status: {response.status}", 'WARN')
+                        
+        except Exception as e:
+            self.log(f"Error recording platform metrics: {str(e)}", 'WARN')
+    
+    # UNIFIED ORCHESTRATOR v1.0 API FUNCTIONS
+
+    async def call_unified_orchestrator_task(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Submit task to Unified Orchestrator v1.0 with fallback chain support"""
+        return await self.call_devflow_orchestrator_api("POST", "/api/tasks", task_data)
+
+    async def get_orchestrator_mode(self) -> Dict[str, Any]:
+        """Get current operational mode from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/api/mode")
+
+    async def switch_orchestrator_mode(self, mode: str) -> Dict[str, Any]:
+        """Switch Unified Orchestrator operational mode"""
+        if mode not in ['claude-only', 'all-mode', 'cli-only', 'synthetic-only']:
+            return {"error": f"Invalid mode: {mode}. Valid modes: claude-only, all-mode, cli-only, synthetic-only"}
+        return await self.call_devflow_orchestrator_api("POST", f"/mode/switch/{mode}")
+
+    async def get_agents_performance(self) -> Dict[str, Any]:
+        """Get agents performance metrics from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/agents/performance")
+
+    async def get_orchestrator_metrics(self) -> Dict[str, Any]:
+        """Get performance metrics from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/api/metrics")
+
+    async def get_orchestrator_platforms(self) -> Dict[str, Any]:
+        """Get registered platforms from Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("GET", "/api/platforms")
+
+    async def route_task_intelligently(self, task_characteristics: Dict[str, Any]) -> Dict[str, Any]:
+        """Use intelligent routing system of Unified Orchestrator"""
+        return await self.call_devflow_orchestrator_api("POST", "/api/route", {"taskCharacteristics": task_characteristics})
+
+    async def call_real_dream_team_orchestrator(self, task_data: Dict[str, Any]) -> Dict[str, Any]:
+        """LEGACY: Redirect to Unified Orchestrator v1.0 with intelligent routing"""
+        # Convert legacy call to new architecture
+        task_characteristics = {
+            "type": task_data.get("type", "general"),
+            "complexity": task_data.get("complexity", "medium"),
+            "domain": task_data.get("domain", "general")
+        }
+
+        # First get intelligent routing decision
+        routing_result = await self.route_task_intelligently(task_characteristics)
+        if "error" in routing_result:
+            return routing_result
+
+        # Then submit task with routing information
+        enhanced_task_data = {
+            **task_data,
+            "routing": routing_result,
+            "orchestrator_version": "v1.0"
+        }
+
+        return await self.call_unified_orchestrator_task(enhanced_task_data)
+
+    async def check_orchestrator_health(self) -> bool:
+        """Check if the Unified Orchestrator v1.0 is healthy"""
+        try:
+            health_response = await self.call_devflow_orchestrator_api("GET", "/health")
+            return "status" in health_response and health_response["status"] in ["healthy", "unhealthy"]
+        except Exception as e:
+            self.log(f"Orchestrator health check failed: {e}", 'WARN')
+            return False
+
+    async def handle_orchestrator_command(self, command: str) -> Dict[str, Any]:
+        """Handle natural language orchestrator commands and convert to API calls"""
+        command_lower = command.lower().strip()
+
+        try:
+            # Mode switching commands
+            if "modalità" in command_lower or "mode" in command_lower:
+                if "claude-only" in command_lower or "solo claude" in command_lower:
+                    result = await self.switch_orchestrator_mode("claude-only")
+                    return {"output": f"🎯 Modalità Claude-Only attivata: {result.get('message', 'OK')}", "success": True}
+                elif "all-mode" in command_lower or "tutte modalità" in command_lower:
+                    result = await self.switch_orchestrator_mode("all-mode")
+                    return {"output": f"🌟 Modalità All-Mode attivata: {result.get('message', 'OK')}", "success": True}
+                elif "cli-only" in command_lower or "solo cli" in command_lower:
+                    result = await self.switch_orchestrator_mode("cli-only")
+                    return {"output": f"💻 Modalità CLI-Only attivata: {result.get('message', 'OK')}", "success": True}
+                elif "synthetic-only" in command_lower or "solo synthetic" in command_lower:
+                    result = await self.switch_orchestrator_mode("synthetic-only")
+                    return {"output": f"🤖 Modalità Synthetic-Only attivata: {result.get('message', 'OK')}", "success": True}
+                elif "stato modalità" in command_lower or "current mode" in command_lower:
+                    result = await self.get_orchestrator_mode()
+                    mode = result.get('data', {}).get('mode', 'unknown')
+                    return {"output": f"📊 Modalità corrente: {mode}", "success": True}
+
+            # Performance and metrics commands
+            elif "prestazioni" in command_lower or "performance" in command_lower:
+                if "agenti" in command_lower or "agents" in command_lower:
+                    result = await self.get_agents_performance()
+                    agents_data = result.get('data', {})
+                    output = "📈 Prestazioni Agenti:\n"
+                    for agent, metrics in agents_data.items():
+                        success_rate = metrics.get('successRate', 0)
+                        avg_time = metrics.get('averageResponseTime', 0)
+                        output += f"• {agent}: {success_rate:.1%} successo, {avg_time:.1f}ms media\n"
+                    return {"output": output, "success": True}
+                else:
+                    result = await self.get_orchestrator_metrics()
+                    metrics = result.get('data', {})
+                    return {"output": f"📊 Metriche Orchestratore: {metrics}", "success": True}
+
+            # Platform status commands
+            elif "piattaforme" in command_lower or "platforms" in command_lower:
+                result = await self.get_orchestrator_platforms()
+                platforms = result.get('data', {})
+                output = "🌐 Piattaforme Registrate:\n"
+                for platform, info in platforms.items():
+                    status = info.get('status', 'unknown')
+                    output += f"• {platform}: {status}\n"
+                return {"output": output, "success": True}
+
+            # Health check commands
+            elif "salute" in command_lower or "health" in command_lower or "stato orchestratore" in command_lower:
+                is_healthy = await self.check_orchestrator_health()
+                status = "🟢 Sano" if is_healthy else "🔴 Non risponde"
+                return {"output": f"💚 Stato Orchestratore: {status}", "success": True}
+
+            # Task routing commands
+            elif "instrada" in command_lower or "route" in command_lower:
+                # Extract task characteristics from command
+                task_chars = {"type": "general", "complexity": "medium", "domain": "general"}
+
+                if "complesso" in command_lower or "complex" in command_lower:
+                    task_chars["complexity"] = "high"
+                elif "semplice" in command_lower or "simple" in command_lower:
+                    task_chars["complexity"] = "low"
+
+                if "codice" in command_lower or "code" in command_lower:
+                    task_chars["domain"] = "coding"
+                elif "architettura" in command_lower or "architecture" in command_lower:
+                    task_chars["domain"] = "architecture"
+
+                result = await self.route_task_intelligently(task_chars)
+                routing = result.get('data', {})
+                return {"output": f"🎯 Instradamento: {routing}", "success": True}
+
+            else:
+                return {"output": f"❓ Comando orchestratore non riconosciuto: {command}", "success": False}
+
+        except Exception as e:
+            self.log(f"Error handling orchestrator command: {str(e)}", 'ERROR')
+            return {"output": f"❌ Errore nell'esecuzione comando orchestratore: {str(e)}", "success": False}
+
+    def assess_task_complexity(self, tool_response: str, tool_name: str) -> str:
+        """Assess the complexity of a task based on tool response and name"""
+        # Complex tool indicators
+        complex_tools = ['Task', 'MultiEdit', 'Write', 'mcp__devflow-synthetic-cc-sessions']
+        complex_keywords = ['architecture', 'design', 'strategy', 'complex', 'algorithm', 'optimization', 'system']
+        
+        # Check tool name complexity
+        if tool_name in complex_tools:
+            return 'high'
+        
+        # Check response content complexity
+        if any(keyword in tool_response.lower() for keyword in complex_keywords):
+            return 'medium'
+        
+        # Check response length as complexity indicator
+        if len(tool_response) > 2000:
+            return 'medium'
+        
+        return 'low'
+    
+    async def load_relevant_context(self, task_name: str, session_id: str) -> List[Dict[str, Any]]:
+        """Load relevant context from DevFlow memory"""
+        try:
+            # Call DevFlow semantic search via Node.js
+            result = await self.call_devflow_search(task_name)
+            
+            if result and 'blocks' in result:
+                return result['blocks']
+            else:
+                return []
+        except Exception as e:
+            self.log(f"Error loading relevant context: {str(e)}", 'ERROR')
+            return []
+    
+    async def call_devflow_search(self, query: str) -> Optional[Dict[str, Any]]:
+        """Call DevFlow search via Node.js"""
+        try:
+            # Create a temporary script to call DevFlow
+            script_content = f"""
+const {{ ClaudeAdapter }} = require('@devflow/claude-adapter');
+
+async function searchDevFlow() {{
+    const adapter = new ClaudeAdapter({{ verbose: true }});
+    const results = await adapter.searchMemory('{query}', {{
+        maxResults: 10,
+        blockTypes: ['architectural', 'implementation'],
+        threshold: 0.7
+    }});
+    
+    console.log(JSON.stringify({{
+        blocks: results.map(r => ({{
+            id: r.block.id,
+            label: r.block.label,
+            type: r.block.blockType,
+            content: r.block.content,
+            importance: r.block.importanceScore,
+            similarity: r.similarity
+        }}))
+    }}));
+}}
+
+searchDevFlow().catch(console.error);
+"""
+            
+            # Write script to temporary file
+            script_path = Path(self.project_dir) / '.claude' / 'temp_search.js'
+            script_path.parent.mkdir(exist_ok=True)
+            
+            with open(script_path, 'w') as f:
+                f.write(script_content)
+            
+            # Execute script
+            result = subprocess.run(
+                ['node', str(script_path)],
+                capture_output=True,
+                text=True,
+                cwd=self.project_dir,
+                timeout=30
+            )
+            
+            # Clean up temporary file
+            script_path.unlink(missing_ok=True)
+            
+            if result.returncode == 0 and result.stdout.strip():
+                return json.loads(result.stdout.strip())
+            else:
+                self.log(f"DevFlow search failed: {result.stderr}", 'WARN')
+                return None
+                
+        except Exception as e:
+            self.log(f"Error calling DevFlow search: {str(e)}", 'ERROR')
+            return None
+    
+    def is_architectural_decision(self, response: str) -> bool:
+        """Check if a response contains architectural decisions"""
+        architectural_keywords = [
+            'architecture', 'design pattern', 'framework', 'structure',
+            'component', 'service', 'module', 'interface', 'api design',
+            'data model', 'schema', 'microservice', 'monolith'
+        ]
+        
+        response_lower = response.lower()
+        return any(keyword in response_lower for keyword in architectural_keywords)
+    
+    def is_implementation_pattern(self, response: str) -> bool:
+        """Check if a response contains implementation patterns"""
+        implementation_keywords = [
+            'implementation', 'algorithm', 'method', 'function',
+            'class', 'inheritance', 'composition', 'pattern',
+            'strategy', 'factory', 'observer', 'singleton'
+        ]
+        
+        response_lower = response.lower()
+        return any(keyword in response_lower for keyword in implementation_keywords)
+    
+    async def capture_architectural_decision(self, content: str, task_id: str, session_id: str):
+        """Capture architectural decisions to DevFlow memory"""
+        try:
+            # Call DevFlow memory store via Node.js
+            await self.call_devflow_memory_store(
+                content=content,
+                block_type='architectural',
+                label=f'Architectural Decision - {task_id}',
+                importance_score=0.9,
+                task_id=task_id,
+                session_id=session_id
+            )
+        except Exception as e:
+            self.log(f"Error capturing architectural decision: {str(e)}", 'ERROR')
+    
+    async def capture_implementation_pattern(self, content: str, task_id: str, session_id: str):
+        """Capture implementation patterns to DevFlow memory"""
+        try:
+            # Call DevFlow memory store via Node.js
+            await self.call_devflow_memory_store(
+                content=content,
+                block_type='implementation',
+                label=f'Implementation Pattern - {task_id}',
+                importance_score=0.8,
+                task_id=task_id,
+                session_id=session_id
+            )
+        except Exception as e:
+            self.log(f"Error capturing implementation pattern: {str(e)}", 'ERROR')
+    
+    async def call_devflow_memory_store(self, content: str, block_type: str, label: str, 
+                                      importance_score: float, task_id: str, session_id: str):
+        """Call DevFlow memory store via Node.js"""
+        try:
+            # Create a temporary script to store memory
+            script_content = f"""
+const {{ ClaudeAdapter }} = require('@devflow/claude-adapter');
+
+async function storeMemory() {{
+    const adapter = new ClaudeAdapter({{ verbose: true }});
+    
+    const memoryBlock = {{
+        content: `{content.replace('`', '\\`')}`,
+        blockType: '{block_type}',
+        label: '{label}',
+        importanceScore: {importance_score},
+        metadata: {{
+            taskId: '{task_id}',
+            sessionId: '{session_id}',
+            capturedBy: 'devflow-hook',
+            timestamp: new Date().toISOString()
+        }},
+        relationships: [],
+        embeddingModel: 'openai-ada-002'
+    }};
+    
+    await adapter.saveBlocks('{task_id}', '{session_id}', [memoryBlock]);
+    console.log('Memory stored successfully');
+}}
+
+storeMemory().catch(console.error);
+"""
+            
+            # Write script to temporary file
+            script_path = Path(self.project_dir) / '.claude' / 'temp_store.js'
+            script_path.parent.mkdir(exist_ok=True)
+            
+            with open(script_path, 'w') as f:
+                f.write(script_content)
+            
+            # Execute script
+            result = subprocess.run(
+                ['node', str(script_path)],
+                capture_output=True,
+                text=True,
+                cwd=self.project_dir,
+                timeout=30
+            )
+            
+            # Clean up temporary file
+            script_path.unlink(missing_ok=True)
+            
+            if result.returncode != 0:
+                self.log(f"Memory store failed: {result.stderr}", 'WARN')
+                
+        except Exception as e:
+            self.log(f"Error calling DevFlow memory store: {str(e)}", 'ERROR')
+
+    async def handle_user_prompt_submit(self, hook_data: Dict[str, Any]) -> Dict[str, Any]:
+        """Handle user prompt submit hook - process project management commands"""
+        self.log("Handling user prompt submit hook")
+
+        if not self.devflow_config.get('enabled', False):
+            return {"status": "disabled"}
+
+        # Extract user message from hook data (UserPromptSubmit uses 'prompt')
+        user_message = hook_data.get('prompt', '') or hook_data.get('user_message', '')
+
+        if not user_message:
+            return {"status": "no_message"}
+
+        # Check if this is a /cometa command - let Claude Code handle it natively
+        if user_message.strip().startswith('/cometa'):
+            self.log(f"Detected /cometa command, letting Claude Code handle it: {user_message}")
+            return {"status": "ignored", "reason": "slash_command_passthrough"}
+
+        # Check if user message contains project management commands
+        project_commands = ['crea progetto', 'stato progetto', 'completa task', 'avanza piano', 'aggiorna avanzamento']
+        orchestrator_commands = ['modalità', 'mode', 'prestazioni', 'performance', 'piattaforme', 'platforms', 'salute', 'health', 'stato orchestratore', 'instrada', 'route']
+        user_message_lower = user_message.lower()
+
+        # Check if any orchestrator command is present (higher priority)
+        if any(cmd in user_message_lower for cmd in orchestrator_commands):
+            try:
+                self.log(f"Processing orchestrator command: {user_message}")
+
+                # Use handle_orchestrator_command to process the command
+                result = await self.handle_orchestrator_command(user_message)
+
+                if result and 'output' in result:
+                    self.log(f"Orchestrator command result: {result['output']}")
+                    return {
+                        "status": "success",
+                        "message": result['output'],
+                        "command": user_message,
+                        "command_type": "orchestrator"
+                    }
+                else:
+                    self.log("Orchestrator command returned no output")
+                    return {
+                        "status": "processed",
+                        "command": user_message,
+                        "command_type": "orchestrator"
+                    }
+
+            except Exception as e:
+                self.log(f"Error processing orchestrator command: {str(e)}", 'ERROR')
+                return {
+                    "status": "error",
+                    "error": f"Si è verificato un errore durante l'esecuzione del comando dell'orchestratore.",
+                    "details": str(e),
+                    "command_type": "orchestrator"
+                }
+
+        # Check if any project command is present
+        elif any(cmd in user_message_lower for cmd in project_commands):
+            try:
+                self.log(f"Processing project command: {user_message}")
+
+                # Use DirectProjectClient to handle the command
+                result = self.project_client.handle_project_command(user_message)
+
+                if result and 'output' in result:
+                    self.log(f"Project command result: {result['output']}")
+                    return {
+                        "status": "success",
+                        "message": result['output'],
+                        "command": user_message
+                    }
+                else:
+                    self.log("Project command returned no output")
+                    return {
+                        "status": "processed",
+                        "command": user_message
+                    }
+
+            except Exception as e:
+                self.log(f"Error processing project command: {str(e)}", 'ERROR')
+                return {
+                    "status": "error",
+                    "error": f"Si è verificato un errore durante l'esecuzione del comando.",
+                    "details": str(e)
+                }
+
+        # If no project commands detected, return status ignored
+        return {"status": "ignored", "reason": "no_project_commands"}
+
+# Main hook handler
+async def main():
+    integration = DevFlowIntegration()
+    
+    try:
+        # Read hook data from stdin
+        hook_data = json.load(sys.stdin)
+        
+        hook_event_name = hook_data.get('hook_event_name', '')
+        
+        if hook_event_name == 'SessionStart':
+            result = await integration.handle_session_start(hook_data)
+        elif hook_event_name == 'PostToolUse':
+            result = await integration.handle_post_tool_use(hook_data)
+        elif hook_event_name == 'UserPromptSubmit':
+            result = await integration.handle_user_prompt_submit(hook_data)
+        else:
+            result = {"status": "ignored", "event": hook_event_name}
+        
+        # Output result
+        print(json.dumps(result))
+        
+    except json.JSONDecodeError as e:
+        print(json.dumps({"status": "error", "error": f"Invalid JSON input: {str(e)}"}))
+    except Exception as e:
+        print(json.dumps({"status": "error", "error": str(e)}))
+
+if __name__ == "__main__":
+    asyncio.run(main())

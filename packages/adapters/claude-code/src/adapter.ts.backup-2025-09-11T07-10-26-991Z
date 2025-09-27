@@ -1,0 +1,17 @@
+import { SQLiteMemoryManager, VectorEmbeddingService } from '@devflow/core';
+import { SemanticSearchService } from './semantic-search';
+import { SemanticSearchOptions, SemanticSearchResult } from '@devflow/core';
+
+export class ClaudeAdapter {
+  private semanticSearchService: SemanticSearchService;
+  private vectorService: VectorEmbeddingService;
+
+  constructor(memoryManager: SQLiteMemoryManager, vectorService: VectorEmbeddingService) {
+    this.vectorService = vectorService;
+    this.semanticSearchService = new SemanticSearchService(memoryManager, vectorService);
+  }
+
+  async performSearch(query: string, options: SemanticSearchOptions): Promise<SemanticSearchResult[]> {
+    return this.semanticSearchService.hybridSearch(query, options);
+  }
+}

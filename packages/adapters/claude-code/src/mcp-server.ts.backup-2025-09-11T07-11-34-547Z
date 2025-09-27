@@ -1,0 +1,138 @@
+import { ClaudeAdapter } from './adapter';
+
+interface MCPTool {
+  name: string;
+  description: string;
+  inputSchema: any;
+  handler: (input: any) => Promise<any>;
+}
+
+interface DevFlowMCPServerConfig {
+  adapter: ClaudeAdapter;
+  port: number;
+}
+
+export class DevFlowMCPServer {
+  private adapter: ClaudeAdapter;
+  private port: number;
+  private tools: Map<string, MCPTool>;
+  private server: any; // Express server instance
+  
+  constructor(config: DevFlowMCPServerConfig) {
+    this.adapter = config.adapter;
+    this.port = config.port;
+    this.tools = new Map();
+    
+    this.initializeTools();
+  }
+
+  private initializeTools(): void {
+    this.registerTool({
+      name: 'devflow_search',
+      description: 'Search memory using semantic search',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          query: { type: 'string' },
+          limit: { type: 'number' }
+        },
+        required: ['query']
+      },
+      handler: this.handleSearch.bind(this)
+    });
+    
+    this.registerTool({
+      name: 'devflow_handoff',
+      description: 'Generate platform handoff',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          platform: { type: 'string' },
+          task: { type: 'object' },
+          context: { type: 'object' }
+        },
+        required: ['platform', 'task', 'context']
+      },
+      handler: this.handleHandoff.bind(this)
+    });
+    
+    this.registerTool({
+      name: 'devflow_memory_store',
+      description: 'Store information in memory',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          taskId: { type: 'string' },
+          sessionId: { type: 'string' },
+          blocks: { type: 'array' }
+        },
+        required: ['taskId', 'sessionId', 'blocks']
+      },
+      handler: this.handleMemoryStore.bind(this)
+    });
+    
+    this.registerTool({
+      name: 'devflow_context_inject',
+      description: 'Inject context into session',
+      inputSchema: {
+        type: 'object',
+        properties: {
+          sessionId: { type: 'string' },
+          context: { type: 'object' }
+        },
+        required: ['sessionId', 'context']
+      },
+      handler: this.handleContextInject.bind(this)
+    });
+    
+    this.registerTool({
+      name: 'devflow_analytics',
+      description: 'Get system analytics',
+      inputSchema: {
+        type: 'object',
+        properties: {}
+      },
+      handler: this.handleAnalytics.bind(this)
+    });
+  }
+
+  private registerTool(tool: MCPTool): void {
+    this.tools.set(tool.name, tool);
+  }
+
+  private async handleSearch(input: any): Promise<any> {
+    const results = await this.adapter.searchMemory(input.query, { limit: input.limit });
+    return { results };
+  }
+
+  private async handleHandoff(input: any): Promise<any> {
+    const result = await this.adapter.generateHandoff(input.platform, input.task, input.context);
+    return { result };
+  }
+
+  private async handleMemoryStore(input: any): Promise<any> {
+    await this.adapter.saveBlocks(input.taskId, input.sessionId, input.blocks);
+    return { success: true };
+  }
+
+  private async handleContextInject(input: any): Promise<any> {
+    // Implementation would depend on context manager interface
+    return { success: true, message: 'Context injected' };
+  }
+
+  private async handleAnalytics(input: any): Promise<any> {
+    const health = await this.adapter.healthCheck();
+    return { health };
+  }
+
+  async start(): Promise<void> {
+    // Implementation would initialize Express server
+    // and register tool endpoints
+    console.log(`MCP Server starting on port ${this.port}`);
+  }
+
+  async stop(): Promise<void> {
+    // Implementation would stop the Express server
+    console.log('MCP Server stopped');
+  }
+}

@@ -1,0 +1,13 @@
+❌ DEPRECATED DATABASE - DO NOT USE
+
+This database has been MIGRATED to: ./data/devflow_unified.sqlite
+
+IMPORTANT:
+- All services must use: DEVFLOW_DB_PATH=./data/devflow_unified.sqlite
+- This file was deprecated on: 2025-09-22
+- Migration completed successfully with 161 records transferred
+- Data consolidated with improved schema and Context7 compliance
+
+Any code referencing this deprecated database will be BLOCKED at commit.
+
+For rollback information, see: ./backups/20250922_010603/

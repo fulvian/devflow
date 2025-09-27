@@ -1,0 +1,15 @@
+[VectorMemory] Initializing production vector memory service...
+PRAGMA journal_mode = WAL
+PRAGMA synchronous = NORMAL
+[VectorMemory] Validating unified database schema...
+
+      SELECT name FROM sqlite_master
+      WHERE type='table' AND (name='memory_blocks' OR name='memory_block_embeddings');
+[VectorMemory] Unified database schema validated successfully
+SELECT name FROM sqlite_master WHERE type='table' AND name='vector_memories'
+[VectorMemory] Initializing EmbeddingGemma model...
+[VectorMemory] EmbeddingGemma model initialized
+[VectorMemory] Vector memory initialized successfully
+[VectorMemory] Production service running on port 3008
+[VectorMemory] Health check: http://localhost:3008/health
+[VectorMemory] Vector search: http://localhost:3008/search?q=<query>

@@ -1,0 +1,167 @@
+# DevFlow Phase 1 - Production Deployment Configuration
+# Generated from DEVFLOW-PROD-DEPLOY-001 analysis by DeepSeek V3
+version: '3.8'
+
+services:
+  # Multi-Platform Coordinator
+  coordinator:
+    build:
+      context: .
+      dockerfile: docker/coordinator.Dockerfile
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "3000:3000"
+    volumes:
+      - sqlite-data:/var/lib/sqlite
+      - logs:/var/log/devflow
+    depends_on:
+      - synthetic-mcp
+      - openrouter-mcp
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+
+  # Synthetic.new MCP Server
+  synthetic-mcp:
+    build:
+      context: ./mcp-servers/synthetic
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - MCP_SERVER_TYPE=synthetic
+    env_file:
+      - .env.prod
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - logs:/var/log/devflow
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # OpenRouter MCP Server  
+  openrouter-mcp:
+    build:
+      context: ./mcp-servers/codex
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+      - MCP_SERVER_TYPE=openrouter
+    env_file:
+      - .env.prod
+    healthcheck:
+      test: ["CMD", "node", "-e", "process.exit(0)"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+    volumes:
+      - logs:/var/log/devflow
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+
+  # Claude Code Adapter
+  claude-adapter:
+    build:
+      context: ./packages/claude-adapter
+      dockerfile: Dockerfile
+    environment:
+      - NODE_ENV=production
+    env_file:
+      - .env.prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3001/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "3001:3001"
+    volumes:
+      - logs:/var/log/devflow
+    depends_on:
+      - coordinator
+
+  # Cost Monitor & Budget Enforcement
+  cost-monitor:
+    build:
+      context: ./packages/core
+      dockerfile: docker/cost-monitor.Dockerfile
+    environment:
+      - NODE_ENV=production
+      - SERVICE_TYPE=cost-monitor
+    env_file:
+      - .env.prod
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3002/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    ports:
+      - "3002:3002"
+    volumes:
+      - sqlite-data:/var/lib/sqlite
+      - logs:/var/log/devflow
+
+  # Monitoring Stack
+  monitoring:
+    image: prom/prometheus:latest
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/etc/prometheus/console_libraries'
+      - '--web.console.templates=/etc/prometheus/consoles'
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./docker/prometheus.yml:/etc/prometheus/prometheus.yml
+      - prometheus-data:/prometheus
+    depends_on:
+      - coordinator
+      - cost-monitor
+
+  # Log Aggregation
+  grafana:
+    image: grafana/grafana:latest
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=devflow_admin
+    ports:
+      - "3003:3000"
+    volumes:
+      - grafana-data:/var/lib/grafana
+      - ./docker/grafana:/etc/grafana/provisioning
+    depends_on:
+      - monitoring
+
+volumes:
+  sqlite-data:
+    driver: local
+  logs:
+    driver: local
+  prometheus-data:
+    driver: local
+  grafana-data:
+    driver: local
+
+networks:
+  default:
+    name: devflow-network

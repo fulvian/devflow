@@ -1,0 +1,117 @@
+# Dependencies
+node_modules/
+
+# Build artifacts
+dist/
+coverage/
+.turbo/
+.cache/
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editors/OS
+.DS_Store
+.idea/
+.vscode/
+
+# Tests
+playwright-report/
+test-results/
+
+# TypeScript
+*.tsbuildinfo
+
+# Environment files and secrets (SECURITY CRITICAL)
+.env
+.env.*
+!.env.example
+!.env.*.example
+.env.backup-*
+.env.local
+.env.development
+.env.production
+.env.test
+
+# API Keys and sensitive configurations
+.mcp.json
+**/settings.local.json
+tools/**/synthetic-rate-monitor.js
+configs/**/ccr-config*.json
+
+# Claude Code session states (may contain API keys)
+.claude/state/
+.claude/settings.local.json
+.claude/hooks/*.py
+.devflow/sessions/
+
+# Backup directories (may contain sensitive data)
+backups/
+.backups/
+*.backup-*
+
+# Log files (may contain sensitive info)
+logs/
+*.log
+
+# PID files
+*.pid
+
+# Test files with hardcoded keys
+test**/synthetic*.ts
+test**/openai*.ts
+**/test/**/*key*.ts
+**/test/**/*secret*.ts
+.gemini/
+
+# DevFlow Cleanup - Deprecated Files (Phase 1 - Safe Deprecation)
+# Files marked for removal after 24h validation period
+*.CANDIDATE.cleanup.*
+**/temp_file.CANDIDATE.cleanup.*
+**/templates.py.CANDIDATE.cleanup.*
+**/templates.cpython-313.pyc.CANDIDATE.cleanup.*
+
+# DevFlow Cleanup Analysis and Tools
+tools/devflow-cleanup-analysis-*.json
+tools/rollback-cleanup-*.sh
+.devflow/cleanup_validation_*.json
+
+# Database files (SECURITY CRITICAL - Never commit)
+*.sqlite
+*.sqlite-wal
+*.sqlite-shm
+*.sqlite-journal
+*.db
+*.database
+data/*.sqlite*
+data/*.db*
+data/*.database*
+
+# Database backups and exports (may contain sensitive data)
+*.sql
+*.dump
+backups/**/*.sqlite*
+backups/**/*.sql
+backups/**/*.dump
+exports/**/*.sql
+
+# DevFlow-specific database patterns
+devflow*.sqlite*
+*unified*.sqlite*
+vector*.sqlite*
+embeddings*.sqlite*
+
+# Cache and temporary database files
+.devflow/cache/**/*.db*
+.devflow/cache/**/*.sqlite*
+cache/**/*.db*
+cache/**/*.sqlite*
+
+# Embedding cache files (large and personal)
+.devflow/cache/embeddings/*
+embeddings_cache/*
+*.pkl
+*.pickle

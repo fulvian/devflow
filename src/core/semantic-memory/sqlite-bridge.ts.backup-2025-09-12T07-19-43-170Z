@@ -1,0 +1,202 @@
+import { Database } from 'sqlite3';
+import { VectorDatabase } from './vector-database';
+
+export interface MetadataRecord {
+  id: string;
+  filePath: string;
+  fileName: string;
+  fileType: string;
+  lastModified: Date;
+  fileSize: number;
+  gitHash: string;
+  tags: string[];
+  summary?: string;
+}
+
+export class SQLiteBridge {
+  private sqliteDb: Database;
+  private vectorDb: VectorDatabase;
+
+  constructor(sqliteDb: Database, vectorDb: VectorDatabase) {
+    this.sqliteDb = sqliteDb;
+    this.vectorDb = vectorDb;
+  }
+
+  async initialize(): Promise<void> {
+    const createTableSQL = `
+      CREATE TABLE IF NOT EXISTS code_metadata (
+        id TEXT PRIMARY KEY,
+        file_path TEXT NOT NULL,
+        file_name TEXT NOT NULL,
+        file_type TEXT,
+        last_modified TIMESTAMP,
+        file_size INTEGER,
+        git_hash TEXT,
+        tags TEXT,
+        summary TEXT,
+        vector_id TEXT,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+      )
+    `;
+    
+    return new Promise((resolve, reject) => {
+      this.sqliteDb.run(createTableSQL, (err) => {
+        if (err) {
+          reject(new Error(`Failed to create metadata table: ${err.message}`));
+        } else {
+          resolve();
+        }
+      });
+    });
+  }
+
+  async syncMetadata(records: MetadataRecord[]): Promise<void> {
+    const batchSize = 100;
+    
+    for (let i = 0; i < records.length; i += batchSize) {
+      const batch = records.slice(i, i + batchSize);
+      await this.syncMetadataBatch(batch);
+    }
+  }
+
+  private async syncMetadataBatch(records: MetadataRecord[]): Promise<void> {
+    const insertSQL = `
+      INSERT OR REPLACE INTO code_metadata 
+      (id, file_path, file_name, file_type, last_modified, file_size, git_hash, tags, summary, vector_id)
+      VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+    `;
+    
+    return new Promise((resolve, reject) => {
+      const stmt = this.sqliteDb.prepare(insertSQL);
+      
+      this.sqliteDb.serialize(async () => {
+        try {
+          for (const record of records) {
+            stmt.run([
+              record.id,
+              record.filePath,
+              record.fileName,
+              record.fileType,
+              record.lastModified.toISOString(),
+              record.fileSize,
+              record.gitHash,
+              JSON.stringify(record.tags),
+              record.summary || null,
+              record.id // vector_id
+            ]);
+          }
+          
+          stmt.finalize();
+          resolve();
+        } catch (error) {
+          stmt.finalize();
+          reject(error);
+        }
+      });
+    });
+  }
+
+  async crossReferenceQuery(vectorQuery: number[], metadataFilters?: Record<string, any>): Promise<any[]> {
+    // First, perform vector search
+    const vectorResults = await this.vectorDb.query(vectorQuery, 50, metadataFilters);
+    
+    if (!vectorResults.ids || vectorResults.ids[0].length === 0) {
+      return [];
+    }
+    
+    // Extract IDs from vector results
+    const vectorIds = vectorResults.ids[0];
+    
+    // Query SQLite for corresponding metadata
+    const metadataQuery = `
+      SELECT * FROM code_metadata 
+      WHERE vector_id IN (${vectorIds.map(() => '?').join(',')})
+    `;
+    
+    const metadataResults = await new Promise<any[]>((resolve, reject) => {
+      this.sqliteDb.all(metadataQuery, vectorIds, (err, rows) => {
+        if (err) {
+          reject(err);
+        } else {
+          resolve(rows);
+        }
+      });
+    });
+    
+    // Combine vector results with metadata
+    return this.combineResults(vectorResults, metadataResults);
+  }
+
+  private combineResults(vectorResults: any, metadataResults: any[]): any[] {
+    const metadataMap = new Map(metadataResults.map(row => [row.vector_id, row]));
+    
+    return vectorResults.ids[0].map((id: string, index: number) => ({
+      id,
+      content: vectorResults.documents[0][index],
+      score: vectorResults.distances[0][index],
+      metadata: {
+        ...vectorResults.metadatas[0][index],
+        ...metadataMap.get(id)
+      }
+    }));
+  }
+
+  async validateConsistency(): Promise<{ consistent: boolean; discrepancies: string[] }> {
+    // Check for records in SQLite that don't exist in vector DB
+    const sqliteOnlyQuery = `
+      SELECT cm.id FROM code_metadata cm
+      LEFT JOIN vector_records vr ON cm.vector_id = vr.id
+      WHERE vr.id IS NULL
+    `;
+    
+    const discrepancies: string[] = [];
+    
+    try {
+      const sqliteOnly = await new Promise<any[]>((resolve, reject) => {
+        this.sqliteDb.all(sqliteOnlyQuery, (err, rows) => {
+          if (err) reject(err);
+          else resolve(rows);
+        });
+      });
+      
+      for (const row of sqliteOnly) {
+        discrepancies.push(`SQLite record ${row.id} has no corresponding vector record`);
+      }
+      
+      return {
+        consistent: discrepancies.length === 0,
+        discrepancies
+      };
+    } catch (error) {
+      throw new Error(`Consistency validation failed: ${error}`);
+    }
+  }
+
+  async getMetadataStats(): Promise<{ totalRecords: number; fileTypeBreakdown: Record<string, number> }> {
+    const countQuery = `SELECT COUNT(*) as count FROM code_metadata`;
+    const typeQuery = `SELECT file_type, COUNT(*) as count FROM code_metadata GROUP BY file_type`;
+    
+    const totalRecords = await new Promise<number>((resolve, reject) => {
+      this.sqliteDb.get(countQuery, (err, row: any) => {
+        if (err) reject(err);
+        else resolve(row.count);
+      });
+    });
+    
+    const fileTypeBreakdown = await new Promise<Record<string, number>>((resolve, reject) => {
+      this.sqliteDb.all(typeQuery, (err, rows: any[]) => {
+        if (err) reject(err);
+        else {
+          const breakdown: Record<string, number> = {};
+          for (const row of rows) {
+            breakdown[row.file_type || 'unknown'] = row.count;
+          }
+          resolve(breakdown);
+        }
+      });
+    });
+    
+    return { totalRecords, fileTypeBreakdown };
+  }
+}

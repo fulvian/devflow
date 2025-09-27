@@ -1,0 +1,28 @@
+{
+  "developer_name": "Fulvio",
+  "trigger_phrases": [
+    "make it so",
+    "run that",
+    "go ahead",
+    "yert",
+    "procedi",
+    "procediamo",
+    "implementa",
+    "implementiamo"
+  ],
+  "blocked_tools": [],
+  "task_detection": {
+    "enabled": true
+  },
+  "branch_enforcement": {
+    "enabled": true
+  },
+  "api_mode": false,
+  "enhanced_memory": {
+    "enabled": true,
+    "database_path": "./data/devflow_unified.sqlite",
+    "sensitivity": "high",
+    "min_keywords": 2,
+    "max_results": 5
+  }
+}

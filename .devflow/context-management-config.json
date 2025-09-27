@@ -1,0 +1,42 @@
+{
+  "context_threshold": 0.90,
+  "max_context_tokens": 200000,
+  "enable_task_creation_trigger": true,
+  "enable_context_limit_trigger": true,
+  "require_user_confirmation": false,
+  "preserve_critical_context": true,
+  "auto_reload_context": true,
+  "trigger_patterns": {
+    "task_creation": [
+      "(?i)(creiamo|facciamo)\\s+(un\\s+)?nuovo\\s+(task|progetto|sistema|piattaforma)",
+      "(?i)dobbiamo\\s+(implementare|creare|sviluppare|realizzare)",
+      "(?i)serve\\s+(un\\s+)?(progetto|task|sistema)\\s+per",
+      "(?i)facciamo\\s+(una\\s+)?feature\\s+per",
+      "(?i)(create|implement|develop|build)\\s+(a\\s+)?(new\\s+)?(system|project|feature|task)",
+      "(?i)let\\s+(us|me)\\s+(create|implement|start|begin)"
+    ],
+    "context_clear": [
+      "(?i)/clear",
+      "(?i)clear\\s+context",
+      "(?i)start\\s+fresh",
+      "(?i)new\\s+session"
+    ]
+  },
+  "file_monitoring": {
+    "patterns": ["*.py", "*.ts", "*.js", "*.md", "*.json"],
+    "lookback_hours": 1,
+    "max_file_size_bytes": 1048576
+  },
+  "conversation_history": {
+    "lookback_hours": 2,
+    "max_entries": 20
+  },
+  "rollback": {
+    "enabled": true,
+    "keep_rollback_files": 5
+  },
+  "logging": {
+    "level": "INFO",
+    "detailed_context_stats": false
+  }
+}

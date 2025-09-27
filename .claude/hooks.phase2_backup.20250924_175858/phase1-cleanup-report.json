@@ -1,0 +1,84 @@
+{
+  "start_time": "2025-09-24T17:55:50.406332",
+  "operations": [
+    {
+      "operation": "remove_deprecated_directory",
+      "target": ".deprecated/",
+      "files_removed": 3,
+      "timestamp": "2025-09-24T17:55:50.432758"
+    },
+    {
+      "operation": "consolidate_cometa_system",
+      "removed": 12,
+      "preserved": 4,
+      "target_architecture": "17_to_4_hooks",
+      "timestamp": "2025-09-24T17:55:50.433965"
+    },
+    {
+      "operation": "optimize_core_hooks",
+      "removed": 1,
+      "preserved": 3,
+      "timestamp": "2025-09-24T17:55:50.434167"
+    },
+    {
+      "operation": "cleanup_system_hooks",
+      "removed": 3,
+      "consolidated_into": "cometa-system-status-hook.py",
+      "timestamp": "2025-09-24T17:55:50.434469"
+    }
+  ],
+  "deleted_hooks": [
+    ".deprecated/memory-stream-workaround.py",
+    ".deprecated/test-posttooluse.py",
+    ".deprecated/test-userprompt-hook.py",
+    "cometa_batch_manager.py",
+    "cometa_nlp_processor.py",
+    "cometa_progress_tracker.py",
+    "cometa_task_executor.py",
+    "cometa-context-search.py",
+    "cometa-memory-stream.py",
+    "cometa-nlp-hook.py",
+    "cometa-project-loader.py",
+    "cometa-slash-command.py",
+    "cometa-task-autocreator.py",
+    "cometa-user-prompt-hook.py",
+    "cometa-user-prompt-intelligence.py",
+    "user-messages.py",
+    "footer-display.py",
+    "footer-details.py",
+    "session-monitor.py"
+  ],
+  "preserved_hooks": [
+    "cometa-memory-stream-hook.py",
+    "cometa-system-status-hook.py",
+    "cometa-brain-sync.py",
+    "unified-cometa-processor.py",
+    "session-start.py",
+    "post-tool-use.py",
+    "user-prompt-submit-context7.py"
+  ],
+  "errors": [],
+  "warnings": [
+    "Hook test failed: user-prompt-submit-context7.py"
+  ],
+  "backup_location": "/Users/fulvioventura/devflow/.claude/hooks.cleanup_backup.20250924_175550",
+  "final_hook_count": 25,
+  "critical_hooks_validated": 8,
+  "status": "success",
+  "end_time": "2025-09-24T17:55:50.541441",
+  "statistics": {
+    "hooks_deleted": 19,
+    "hooks_preserved": 7,
+    "operations_completed": 4,
+    "errors_encountered": 0,
+    "warnings_generated": 1,
+    "final_hook_count": 25
+  },
+  "phase2_recommendations": [
+    "Consolidate utility hooks (shared_state.py, etc.)",
+    "Optimize integration hooks",
+    "Create new consolidated performance monitor",
+    "Implement hook lifecycle management system",
+    "Add comprehensive system diagnostics"
+  ]
+}

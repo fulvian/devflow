@@ -1,0 +1,142 @@
+{
+  "hooks": {
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "python3 $CLAUDE_PROJECT_DIR/.claude/hooks/user-prompt-submit-context7.py"
+          }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|Task|Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/unified-orchestrator-bridge.py"
+          }
+        ]
+      }
+    ],
+    "PostToolUse": [
+      {
+        "matcher": "Bash|Task|Read|Write|Edit|MultiEdit|Grep|Glob|LS|WebFetch",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
+          },
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/performance-monitor.py"
+          }
+        ]
+      }
+    ],
+    "SessionStart": [
+      {
+        "matcher": "startup|clear",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/session-start.py"
+          }
+        ]
+      },
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/cometa-brain-sync.py"
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/hook-lifecycle-manager.py"
+          }
+        ]
+      }
+    ],
+    "SubagentStop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "$CLAUDE_PROJECT_DIR/.claude/hooks/protocol-validator.py"
+          }
+        ]
+      }
+    ]
+  },
+  "statusLine": {
+    "type": "command",
+    "command": "$CLAUDE_PROJECT_DIR/.claude/cometa-footer.sh",
+    "padding": 0
+  },
+  "devflow": {
+    "enabled": true,
+    "auto_inject": true,
+    "handoff_enabled": true,
+    "verbose": false,
+    "memory_provider": "sqlite",
+    "vector_provider": "openai",
+    "platforms": {
+      "claude_code": {
+        "enabled": true,
+        "specializations": [
+          "architecture",
+          "complex_reasoning",
+          "system_design"
+        ]
+      },
+      "openai_codex": {
+        "enabled": true,
+        "api_key_env": "OPENAI_API_KEY",
+        "specializations": [
+          "implementation",
+          "bulk_coding",
+          "pattern_following"
+        ]
+      },
+      "synthetic": {
+        "enabled": true,
+        "api_key_env": "SYNTHETIC_API_KEY",
+        "specializations": [
+          "rapid_prototyping",
+          "code_generation",
+          "debugging"
+        ]
+      },
+      "gemini": {
+        "enabled": true,
+        "api_key_env": "GEMINI_API_KEY",
+        "specializations": [
+          "reasoning",
+          "analysis",
+          "documentation"
+        ]
+      }
+    },
+    "routing": {
+      "confidence_threshold": 0.8,
+      "fallback_platform": "claude_code",
+      "cost_optimization": true
+    },
+    "cc_tools_enabled": true
+  },
+  "permissions": {
+    "defaultMode": "default",
+    "allow": [
+      "mcp__devflow-synthetic-cc-sessions",
+      "mcp__devflow-synthetic-cc-sessions__.*"
+    ]
+  }
+}

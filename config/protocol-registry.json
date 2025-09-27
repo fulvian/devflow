@@ -1,0 +1,213 @@
+{
+  "version": "2.0.0",
+  "updated": "2025-09-24T00:00:00Z",
+  "description": "Master Protocol Registry for DevFlow-Cometa-Claude Code system",
+
+  "active_protocols": {
+    "core_enforcement": {
+      "path": "/CLAUDE.md",
+      "version": "2025-09-24-CRITICAL",
+      "description": "Primary enforcement protocol with 100-line limits and Unified Orchestrator requirements",
+      "authority": "FINAL_AUTHORITY",
+      "mandatory": true,
+      "last_updated": "2025-09-24"
+    },
+
+    "orchestration_architecture": {
+      "path": "/docs/architettura/architettura_orchestrazione_agenti_1.md",
+      "version": "1.0",
+      "description": "Unified Orchestrator architecture specification with CLI-Synthetic agent mapping",
+      "authority": "TECHNICAL_SPECIFICATION",
+      "mandatory": true,
+      "last_updated": "2025-09-23"
+    },
+
+    "cometa_brain_implementation": {
+      "path": "/docs/sviluppo/PIANO_ESECUTIVO_COMETA_BRAIN_V2.md",
+      "version": "2.0",
+      "description": "4-layer intelligence architecture with NLP processing and context injection",
+      "authority": "IMPLEMENTATION_GUIDE",
+      "mandatory": true,
+      "last_updated": "2025-09-24"
+    },
+
+    "session_management": {
+      "path": "/CLAUDE.md",
+      "section": "Task Management Framework",
+      "version": "2025-09-24",
+      "description": "Session management and agent delegation protocols (integrated in main CLAUDE.md)",
+      "authority": "OPERATIONAL_GUIDE",
+      "mandatory": true,
+      "last_updated": "2025-09-24"
+    },
+
+    "task_creation": {
+      "path": "/sessions/protocols/task-creation.md",
+      "version": "1.0",
+      "description": "Task creation workflow with priority prefixes and context management",
+      "authority": "PROCEDURAL_GUIDE",
+      "mandatory": true,
+      "last_updated": "2025-09-20"
+    },
+
+    "cometa_interface": {
+      "path": "/.claude/commands/cometa.md",
+      "version": "1.0",
+      "description": "Natural language task management interface through /cometa command",
+      "authority": "USER_INTERFACE",
+      "mandatory": true,
+      "last_updated": "2025-09-24"
+    }
+  },
+
+  "deprecated_protocols": {
+    "synthetic_delegation_prescriptive": {
+      "path": "/docs/old_memories/governance/synthetic-delegation-rules-prescriptive.md",
+      "version": "OUTDATED",
+      "reason": "DAIC mode deprecated, superseded by Unified Orchestrator",
+      "replacement": "CLAUDE.md Section 'MCP Integration Standards'",
+      "deprecated_date": "2025-09-24",
+      "removal_scheduled": "2025-10-01"
+    },
+
+    "legacy_synthetic_rules_js": {
+      "path": "/rules/synthetic-delegation-rules.js",
+      "version": "OUTDATED",
+      "reason": "MDR implementation replaced by centralized orchestrator",
+      "replacement": "/.claude/hooks/unified-orchestrator-bridge.py",
+      "deprecated_date": "2025-09-24",
+      "removal_scheduled": "2025-10-01"
+    }
+  },
+
+  "hook_integrations": {
+    "unified_orchestrator_bridge": {
+      "path": "/.claude/hooks/unified-orchestrator-bridge.py",
+      "version": "1.0",
+      "description": "Critical security hook intercepting all coding operations for orchestrator routing",
+      "triggers": ["Edit", "Write", "MultiEdit", "Bash", "mcp__*"],
+      "mandatory": true,
+      "security_critical": true
+    },
+
+    "devflow_enforcement_guard": {
+      "path": "/.claude/hooks/devflow-enforcement-guard.js",
+      "version": "1.0",
+      "description": "File line limit enforcement and anti-circumvention measures",
+      "triggers": ["pre-tool-use"],
+      "mandatory": true
+    },
+
+    "devflow_integration": {
+      "path": "/.claude/hooks/devflow-integration.py",
+      "version": "1.0",
+      "description": "Python-based hook integration with database and context management",
+      "triggers": ["session-events"],
+      "mandatory": true
+    }
+  },
+
+  "enforcement_hierarchy": [
+    {
+      "level": 1,
+      "protocol": "core_enforcement",
+      "description": "CLAUDE.md has final authority on all enforcement decisions"
+    },
+    {
+      "level": 2,
+      "protocol": "orchestration_architecture",
+      "description": "Technical architecture specifications for agent routing"
+    },
+    {
+      "level": 3,
+      "protocol": "cometa_brain_implementation",
+      "description": "AI system integration and intelligence processing"
+    },
+    {
+      "level": 4,
+      "protocol": "procedural_guides",
+      "description": "Session management and task creation procedures"
+    }
+  ],
+
+  "integration_requirements": {
+    "unified_orchestrator": {
+      "endpoint": "http://localhost:3005",
+      "authentication": "DEVFLOW_API_TOKEN",
+      "mandatory_routing": [
+        "All coding tasks >50 lines",
+        "Security-sensitive operations",
+        "Multi-file modifications",
+        "CLI agent interactions"
+      ],
+      "timeout": 30,
+      "retries": 3
+    },
+
+    "database": {
+      "path": "./data/devflow_unified.sqlite",
+      "tables": ["projects", "tasks", "task_contexts", "cometa_sessions", "cometa_memory_stream"],
+      "mandatory_logging": ["task_creation", "orchestrator_routing", "verification_results"]
+    },
+
+    "security": {
+      "audit_trail": true,
+      "encryption": "in_transit",
+      "token_validation": true,
+      "violation_logging": "mandatory"
+    }
+  },
+
+  "validation_rules": {
+    "protocol_consistency": {
+      "rule": "All active protocols must reference Unified Orchestrator architecture",
+      "check_frequency": "pre-commit",
+      "violation_action": "block_commit"
+    },
+
+    "version_compatibility": {
+      "rule": "Protocol versions must be compatible within major version boundaries",
+      "check_frequency": "daily",
+      "violation_action": "generate_alert"
+    },
+
+    "deprecation_timeline": {
+      "rule": "Deprecated protocols must be removed within 7 days of scheduled removal",
+      "check_frequency": "daily",
+      "violation_action": "auto_remove"
+    }
+  },
+
+  "monitoring": {
+    "health_checks": {
+      "orchestrator_connectivity": "http://localhost:3005/health",
+      "database_integrity": "./data/devflow_unified.sqlite",
+      "hook_functionality": "/.claude/hooks/",
+      "protocol_consistency": "/config/protocol-registry.json"
+    },
+
+    "metrics": {
+      "orchestrator_routing_rate": "percentage of tasks routed through orchestrator",
+      "protocol_violation_count": "number of violations detected per day",
+      "deprecation_compliance": "percentage of deprecated protocols removed on schedule",
+      "security_incident_count": "number of security-related protocol violations"
+    }
+  },
+
+  "emergency_procedures": {
+    "orchestrator_failure": {
+      "action": "fail_open_with_logging",
+      "description": "Allow direct execution but log all operations for later orchestrator processing"
+    },
+
+    "security_violation": {
+      "action": "immediate_block",
+      "description": "Block operation immediately and generate security alert"
+    },
+
+    "protocol_conflict": {
+      "action": "use_highest_authority",
+      "description": "Use protocol with highest authority level in case of conflicts"
+    }
+  }
+}

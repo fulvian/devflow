@@ -1,0 +1,20 @@
+{
+  "timestamp": "2025-09-26T23:22:10.060883",
+  "phase": "gradual_deactivation",
+  "legacy_hooks": [
+    "enhanced-memory-integration.py",
+    "universal-memory-injection.py",
+    "embedding-auto-population.py",
+    "embedding-background-scheduler.py",
+    "apscheduler-embedding-daemon.py"
+  ],
+  "keep_temporarily": [
+    "cometa-memory-stream-hook.py",
+    "embedding-scheduler-daemon.py",
+    "manual-memory-trigger.py"
+  ],
+  "unified_replacements": [
+    "unified-memory-injection.py",
+    "unified-embedding-processor.py"
+  ]
+}

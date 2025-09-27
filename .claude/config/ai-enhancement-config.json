@@ -1,0 +1,36 @@
+{
+  "aiEngine": {
+    "version": "2.0",
+    "provider": "cometa-brain",
+    "model": "cb-advanced-patterns-v2",
+    "features": {
+      "patternRecognition": true,
+      "contextAnalysis": true,
+      "predictiveAnalytics": true,
+      "semanticSearch": true
+    }
+  },
+  "vectorDatabase": {
+    "provider": "pinecone",
+    "indexName": "devflow-issue-patterns",
+    "dimensions": 512,
+    "similarityThreshold": 0.8
+  },
+  "mlModels": {
+    "embeddingModel": "sentence-transformers/all-mpnet-base-v2",
+    "classificationModel": "devflow-issue-classifier-v1",
+    "predictionModel": "devflow-issue-predictor-v1"
+  },
+  "integration": {
+    "cometaBrain": {
+      "apiEndpoint": "https://api.cometa.brain/v2",
+      "apiKey": "CB_API_KEY_PLACEHOLDER",
+      "timeout": 30000
+    }
+  },
+  "performance": {
+    "maxConcurrentAnalyses": 5,
+    "cacheTTL": 3600000,
+    "batchSize": 10
+  }
+}

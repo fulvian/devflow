@@ -1,0 +1,39 @@
+#!/usr/bin/env python3
+"""
+Cometa Brain CLI Command
+Direct command-line interface for Cometa Brain functionality
+Usage: ./cometa [command]
+"""
+
+import sys
+import os
+from pathlib import Path
+
+# Ensure we can import from the hooks directory
+sys.path.insert(0, str(Path(__file__).parent / '.claude' / 'hooks'))
+
+# Import and use the slash command logic
+from cometa_slash_command import CometaSlashCommand
+
+def main():
+    """Main entry point"""
+    # Get command arguments
+    if len(sys.argv) < 2:
+        command_text = "help"
+    else:
+        command_text = " ".join(sys.argv[1:])
+
+    # Set correct working directory
+    os.chdir(Path(__file__).parent)
+
+    # Execute command
+    db_path = Path('./data/devflow_unified.sqlite')
+    cometa_cmd = CometaSlashCommand(db_path)
+    result = cometa_cmd.execute_command(command_text)
+
+    # Format and output result
+    formatted_output = cometa_cmd.format_output_for_claude(result)
+    print(formatted_output)
+
+if __name__ == "__main__":
+    main()

@@ -1,0 +1,12 @@
+Scope: all 9 workspace projects
+ WARN  There are cyclic workspace dependencies: /Users/fulvioventura/devflow/packages/adapters/openrouter, /Users/fulvioventura/devflow/packages/core
+Progress: resolved 1, reused 0, downloaded 0, added 0
+mcp-servers/codex                        |  WARN  deprecated eslint@8.57.1
+/Users/fulvioventura/devflow/mcp-servers/codex:
+ ERR_PNPM_FETCH_404  GET https://registry.npmjs.org/@codex-mcp%2Fdevflow-memory: Not Found - 404
+
+This error happened while installing a direct dependency of /Users/fulvioventura/devflow/mcp-servers/codex
+
+@codex-mcp/devflow-memory is not in the npm registry, or you have no permission to fetch it.
+
+No authorization header was set for the request.

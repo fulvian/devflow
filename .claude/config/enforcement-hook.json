@@ -1,0 +1,47 @@
+{
+  "hooks": {
+    "session-start": {
+      "enabled": true,
+      "script": ".claude/hooks/session-start.py",
+      "description": "Initialize session with project context",
+      "config": {
+        "dbPath": "./data/devflow_unified.sqlite",
+        "enableContextInjection": true,
+        "maxContextBlocks": 10,
+        "logActivity": true
+      }
+    },
+    "mcp-tools": {
+      "enabled": true,
+      "description": "Enable MCP tool calls for synthetic agents",
+      "matcher": "mcp__devflow-synthetic-cc-sessions__.*",
+      "allowDirectCall": true
+    },
+    "post-tool-use": {
+      "enabled": true,
+      "script": ".claude/hooks/post-tool-use.py",
+      "description": "Process tool outputs and maintain system state",
+      "config": {
+        "dbPath": "./data/devflow_unified.sqlite",
+        "enableMemoryCapture": true,
+        "enableMetricsTracking": true,
+        "logActivity": true
+      }
+    }
+  },
+  "enforcement": {
+    "enabled": true,
+    "mode": "orchestrator-redirect",
+    "strict": false,
+    "logging": {
+      "enabled": true,
+      "file": ".claude/logs/enforcement.log"
+    }
+  },
+  "orchestrator": {
+    "host": "localhost",
+    "port": 3005,
+    "timeout": 10000,
+    "retries": 2
+  }
+}

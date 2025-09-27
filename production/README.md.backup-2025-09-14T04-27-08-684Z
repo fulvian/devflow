@@ -1,0 +1,120 @@
+# DevFlow Enforcement System - Production Deployment
+
+## Overview
+This package contains everything needed to deploy the DevFlow Enforcement System to production.
+
+## Prerequisites
+- Node.js 18+ 
+- npm or yarn
+- systemd-based Linux system
+- Root access for installation
+
+## Installation Steps
+
+### 1. Prepare the source
+```bash
+# Copy source to deployment location
+sudo mkdir -p /tmp/enforcement-source
+sudo cp -r src/ production/ package.json /tmp/enforcement-source/
+```
+
+### 2. Run installation
+```bash
+sudo ./production/install.sh
+```
+
+### 3. Deploy the application
+```bash
+sudo ./deploy-enforcement-production.sh
+```
+
+## Architecture
+
+### System Integration
+```
+Claude Code Session
+       ↓
+src/claude-code-bootstrap.ts (Entry Point)
+       ↓
+Enforcement System (Middleware)
+       ↓
+DevFlow Services (Database, Vector, etc.)
+```
+
+### File Structure
+```
+/opt/enforcement-system/
+├── current/           # Symlink to active version
+├── versions/          # All deployed versions
+├── config/           # Configuration files
+└── logs/             # Application logs
+
+/var/log/enforcement/  # System logs
+```
+
+## Configuration
+
+### Environment Variables
+- `NODE_ENV=production`
+- `ENABLE_ENFORCEMENT=true`
+
+### Config File: `/opt/enforcement-system/config/production.json`
+
+## Operations
+
+### Check Status
+```bash
+sudo systemctl status enforcement
+```
+
+### View Logs
+```bash
+sudo journalctl -u enforcement -f
+```
+
+### Restart Service
+```bash
+sudo systemctl restart enforcement
+```
+
+### Rollback
+```bash
+sudo ./deploy-enforcement-production.sh rollback
+```
+
+## Monitoring
+
+### Health Check
+The system exposes a health endpoint at `http://localhost:8080/health`
+
+### Log Rotation
+Logs are automatically rotated daily and compressed.
+
+## Security
+
+- Runs as dedicated `enforcement` user
+- Minimal filesystem access
+- No network privileges beyond localhost
+- Systemd security restrictions enabled
+
+## Troubleshooting
+
+### Service Won't Start
+1. Check logs: `sudo journalctl -u enforcement`
+2. Verify permissions: `ls -la /opt/enforcement-system/`
+3. Test configuration: `sudo -u enforcement node /opt/enforcement-system/current/bin/bootstrap.js --test`
+
+### Performance Issues
+1. Monitor resource usage: `sudo systemctl status enforcement`
+2. Check DevFlow service connectivity
+3. Review enforcement logs for bottlenecks
+
+## Backup and Recovery
+
+Backups are automatically created during deployment and stored in `/opt/backups/enforcement/`.
+
+To restore manually:
+```bash
+sudo tar -xzf /opt/backups/enforcement/enforcement-backup-YYYYMMDD_HHMMSS.tar.gz -C /opt/enforcement-system/
+sudo systemctl restart enforcement
+```

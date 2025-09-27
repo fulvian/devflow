@@ -1,0 +1,64 @@
+// EmbeddingGemma Diagnostic
+const { exec } = require('child_process');
+const fs = require('fs');
+
+class EmbeddingDiagnostic {
+  async checkEmbeddingGemma() {
+    console.log('🧠 EMBEDDINGGEMMA DIAGNOSTIC');
+    console.log('=' * 50);
+    
+    // Check if Ollama is installed
+    console.log('Checking Ollama installation...');
+    
+    return new Promise((resolve) => {
+      exec('ollama --version', (error, stdout, stderr) => {
+        if (error) {
+          console.log('❌ Ollama not installed or not in PATH');
+          console.log(`Error: ${error.message}`);
+          resolve(false);
+          return;
+        }
+        
+        console.log(`✅ Ollama version: ${stdout.trim()}`);
+        
+        // Check if EmbeddingGemma model is available
+        exec('ollama list', (error, stdout, stderr) => {
+          if (error) {
+            console.log('❌ Cannot list Ollama models');
+            resolve(false);
+            return;
+          }
+          
+          console.log('\n📋 Available models:');
+          console.log(stdout);
+          
+          const hasEmbeddingGemma = stdout.includes('embeddinggemma') || stdout.includes('embedding');
+          console.log(`\nEmbeddingGemma available: ${hasEmbeddingGemma ? '✅' : '❌'}`);
+          
+          if (hasEmbeddingGemma) {
+            // Test embedding generation
+            console.log('\n🧪 Testing embedding generation...');
+            exec('ollama run embeddinggemma "test embedding"', { timeout: 10000 }, (error, stdout, stderr) => {
+              if (error) {
+                console.log('❌ Embedding test failed');
+                console.log(`Error: ${error.message}`);
+              } else {
+                console.log('✅ Embedding generation successful');
+                console.log(`Response length: ${stdout.length} chars`);
+              }
+              resolve(hasEmbeddingGemma);
+            });
+          } else {
+            resolve(false);
+          }
+        });
+      });
+    });
+  }
+}
+
+if (require.main === module) {
+  new EmbeddingDiagnostic().checkEmbeddingGemma();
+}
+
+module.exports = EmbeddingDiagnostic;
