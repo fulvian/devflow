@@ -1,77 +1,5 @@
 [
   {
-    "timestamp": "2025-09-27T09:51:23.868132",
-    "cpu_percent": 48.016357421875,
-    "memory_percent": 0.18444061279296875,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758959483.868166
-  },
-  {
-    "timestamp": "2025-09-27T09:51:29.829814",
-    "cpu_percent": 48.175048828125,
-    "memory_percent": 0.1861572265625,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959489.829838
-  },
-  {
-    "timestamp": "2025-09-27T09:51:34.993600",
-    "cpu_percent": 47.314453125,
-    "memory_percent": 0.1811981201171875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959494.993623
-  },
-  {
-    "timestamp": "2025-09-27T09:51:39.748599",
-    "cpu_percent": 51.531982421875,
-    "memory_percent": 0.17299652099609375,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758959499.748655
-  },
-  {
-    "timestamp": "2025-09-27T09:51:48.766144",
-    "cpu_percent": 54.21142578125,
-    "memory_percent": 0.17910003662109375,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959508.76617
-  },
-  {
-    "timestamp": "2025-09-27T09:51:54.893052",
-    "cpu_percent": 55.87158203125,
-    "memory_percent": 0.17852783203125,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959514.893075
-  },
-  {
-    "timestamp": "2025-09-27T09:51:58.219916",
-    "cpu_percent": 57.3974609375,
-    "memory_percent": 0.17986297607421875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959518.2199411
-  },
-  {
-    "timestamp": "2025-09-27T09:52:02.322741",
-    "cpu_percent": 55.79833984375,
-    "memory_percent": 0.182342529296875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959522.322767
-  },
-  {
-    "timestamp": "2025-09-27T09:52:06.640337",
-    "cpu_percent": 56.329345703125,
-    "memory_percent": 0.18157958984375,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__devflow-ops__shell_exec",
-    "execution_time": 1758959526.640387
-  },
-  {
     "timestamp": "2025-09-27T09:52:10.644304",
     "cpu_percent": 56.329345703125,
     "memory_percent": 0.18672943115234375,
@@ -798,5 +726,77 @@
     "disk_usage": 0.0,
     "tool_name": "Write",
     "execution_time": 1758963199.1698298
+  },
+  {
+    "timestamp": "2025-09-27T10:53:23.347424",
+    "cpu_percent": 38.623046875,
+    "memory_percent": 0.18310546875,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758963203.347448
+  },
+  {
+    "timestamp": "2025-09-27T10:53:28.537667",
+    "cpu_percent": 38.531494140625,
+    "memory_percent": 0.18444061279296875,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758963208.537705
+  },
+  {
+    "timestamp": "2025-09-27T10:53:32.604280",
+    "cpu_percent": 37.445068359375,
+    "memory_percent": 0.18291473388671875,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__devflow-ops__shell_exec",
+    "execution_time": 1758963212.6043031
+  },
+  {
+    "timestamp": "2025-09-27T10:53:38.116170",
+    "cpu_percent": 39.447021484375,
+    "memory_percent": 0.18177032470703125,
+    "disk_usage": 0.0,
+    "tool_name": "TodoWrite",
+    "execution_time": 1758963218.116195
+  },
+  {
+    "timestamp": "2025-09-27T11:02:45.658995",
+    "cpu_percent": 22.796630859375,
+    "memory_percent": 0.17910003662109375,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__context7__resolve-library-id",
+    "execution_time": 1758963765.659029
+  },
+  {
+    "timestamp": "2025-09-27T11:02:51.570903",
+    "cpu_percent": 23.968505859375,
+    "memory_percent": 0.186920166015625,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__context7__get-library-docs",
+    "execution_time": 1758963771.570928
+  },
+  {
+    "timestamp": "2025-09-27T11:02:56.532981",
+    "cpu_percent": 29.052734375,
+    "memory_percent": 0.18596649169921875,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__context7__resolve-library-id",
+    "execution_time": 1758963776.533043
+  },
+  {
+    "timestamp": "2025-09-27T11:03:02.180858",
+    "cpu_percent": 27.72216796875,
+    "memory_percent": 0.1773834228515625,
+    "disk_usage": 0.0,
+    "tool_name": "mcp__context7__get-library-docs",
+    "execution_time": 1758963782.180921
+  },
+  {
+    "timestamp": "2025-09-27T11:04:42.331237",
+    "cpu_percent": 20.819091796875,
+    "memory_percent": 0.1941680908203125,
+    "disk_usage": 0.0,
+    "tool_name": "Write",
+    "execution_time": 1758963882.331296
   }
 ]
