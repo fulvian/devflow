@@ -69,20 +69,42 @@ class ProgressTrackingDaemon {
 
   async start(): Promise<void> {
     if (this.isRunning) {
-      console.log('Daemon is already running');
+      console.log('🟡 Progress Tracking Daemon is already running');
       return;
     }
 
-    console.log('Starting Progress Tracking Daemon...');
+    console.log('🚀 Starting Progress Tracking Daemon - Context7 compliant...');
     this.isRunning = true;
 
-    // Update progress immediately
-    await this.updateProgress();
+    if (!this.currentTask) {
+      console.error('❌ No current task found, cannot start progress tracking');
+      return;
+    }
+
+    // Register current task with progress tracker
+    const task = {
+      id: this.currentTask.id,
+      title: this.currentTask.title,
+      description: `Progress tracking for ${this.currentTask.title}`,
+      status: this.currentTask.status,
+      microTasks: [],
+      priority: 'MEDIUM' as const,
+      estimatedTokens: 1000,
+      dependencies: [],
+      metadata: { created_at: this.currentTask.created_at }
+    };
+
+    this.progressTracker.registerTask(task);
+
+    // Initial progress update
+    await this.simulateProgressUpdate();
 
     // Set up periodic updates every 30 seconds
     this.intervalId = setInterval(() => {
-      this.updateProgress().catch(console.error);
+      this.simulateProgressUpdate().catch(console.error);
     }, 30000);
+
+    console.log(`✅ Progress Tracking Daemon started for task: ${this.currentTask.title}`);
   }
 
   async stop(): Promise<void> {
