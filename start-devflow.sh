@@ -1187,6 +1187,26 @@ start_services() {
     print_status "✅ Unified Orchestrator: Running on port $ORCHESTRATOR_PORT"
     print_status "✅ CLI Integration: Running on port $CLI_INTEGRATION_PORT"
 
+    # Check Phase 2 Advanced Orchestration Services
+    if curl -sf --max-time 2 "http://localhost:$DREAM_TEAM_PORT/health" >/dev/null 2>&1; then
+        print_status "✅ Real Dream Team Orchestrator: Running on port $DREAM_TEAM_PORT (Advanced multi-agent coordination)"
+    else
+        print_warning "⚠️  Real Dream Team Orchestrator: Not Running - Advanced orchestration disabled"
+    fi
+
+    if pgrep -f "progress-tracking-daemon" >/dev/null 2>&1; then
+        local progress_pid=$(pgrep -f "progress-tracking-daemon")
+        print_status "✅ Progress Tracking: Running (PID: $progress_pid, Real-time task monitoring)"
+    else
+        print_warning "⚠️  Progress Tracking: Not Running - Task lifecycle monitoring disabled"
+    fi
+
+    if curl -sf --max-time 2 "http://localhost:$PROJECT_API_PORT/health" >/dev/null 2>&1; then
+        print_status "✅ Project Lifecycle API: Running on port $PROJECT_API_PORT (Programmatic project management)"
+    else
+        print_warning "⚠️  Project Lifecycle API: Not Running - REST API management disabled"
+    fi
+
     # Check Context Bridge Service status
     if curl -sf --max-time 2 "http://localhost:$CONTEXT_BRIDGE_PORT/health" >/dev/null 2>&1; then
         print_status "✅ Context Bridge: Running on port $CONTEXT_BRIDGE_PORT (Enhanced embedding with embeddinggemma)"
