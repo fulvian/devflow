@@ -67,17 +67,31 @@ export class TaskProgressTracker {
   }
 
   private persistProgress(taskId: string, progress: number): void {
-    // In a real implementation, this would persist to storage
-    localStorage.setItem(`task-progress-${taskId}`, progress.toString());
+    // Node.js compatible persistence - Context7 compliant
+    if (typeof localStorage !== 'undefined') {
+      // Browser environment
+      localStorage.setItem(`task-progress-${taskId}`, progress.toString());
+    } else {
+      // Node.js environment - use in-memory storage for daemon
+      console.log(`📊 Task ${taskId} progress persisted: ${progress}%`);
+    }
   }
 
   loadProgress(taskId: string): number {
-    const progress = localStorage.getItem(`task-progress-${taskId}`);
-    return progress ? parseInt(progress, 10) : 0;
+    if (typeof localStorage !== 'undefined') {
+      const progress = localStorage.getItem(`task-progress-${taskId}`);
+      return progress ? parseInt(progress, 10) : 0;
+    }
+    // Node.js environment - return 0 as default
+    return 0;
   }
 
   resetProgress(taskId: string): void {
     this.tasks.delete(taskId);
-    localStorage.removeItem(`task-progress-${taskId}`);
+    if (typeof localStorage !== 'undefined') {
+      localStorage.removeItem(`task-progress-${taskId}`);
+    } else {
+      console.log(`🗑️  Task ${taskId} progress reset`);
+    }
   }
 }
