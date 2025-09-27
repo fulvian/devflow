@@ -1120,6 +1120,15 @@ show_status() {
         print_status "❌ Unified Orchestrator: Stopped"
     fi
 
+    # Check CLI Integration Daemon (CRITICAL)
+    if curl -sf --max-time 2 "http://localhost:${CLI_INTEGRATION_PORT}/health" >/dev/null 2>&1; then
+        local cli_health=$(curl -s "http://localhost:${CLI_INTEGRATION_PORT}/health" 2>/dev/null)
+        local cli_status=$(echo "$cli_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        print_status "✅ CLI Integration: Running (Status: $cli_status, Port: $CLI_INTEGRATION_PORT)"
+    else
+        print_status "❌ CLI Integration: Stopped - MCP command execution disabled"
+    fi
+
     # Check Codex Server
     if curl -sf --max-time 2 "http://localhost:${CODEX_SERVER_PORT}/health" >/dev/null 2>&1; then
         print_status "✅ Codex Server: Running (Port: $CODEX_SERVER_PORT)"
