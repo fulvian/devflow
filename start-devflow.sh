@@ -103,6 +103,9 @@ set_defaults() {
     export CODEX_SERVER_PORT=${CODEX_SERVER_PORT:-8013}        # OpenAI Codex MCP Server
     export ENFORCEMENT_DAEMON_PORT=${ENFORCEMENT_DAEMON_PORT:-8787}  # Claude Code Enforcement
 
+    # Monitoring & Metrics Services (range 9000-9999)
+    export DEVFLOW_METRICS_PORT=${DEVFLOW_METRICS_PORT:-9091}  # DevFlow Metrics Collector & Server
+
     # Set DevFlow defaults
     export DEVFLOW_ENABLED=${DEVFLOW_ENABLED:-true}
     export DEVFLOW_DB_PATH=${DEVFLOW_DB_PATH:-./data/devflow_unified.sqlite}
