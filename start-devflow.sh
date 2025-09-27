@@ -784,9 +784,19 @@ start_services() {
         print_warning "⚠️  Embedding Scheduler: Not Running - automatic embedding processing disabled"
     fi
 
+    # Check metrics server status
+    if curl -sf --max-time 2 "http://localhost:$DEVFLOW_METRICS_PORT/health" >/dev/null 2>&1; then
+        local metrics_health=$(curl -s --max-time 2 "http://localhost:$DEVFLOW_METRICS_PORT/json" 2>/dev/null)
+        local context7_quality=$(echo "$metrics_health" | grep -o '"qualityScore":[0-9.]*' | cut -d':' -f2 || echo "unknown")
+        print_status "✅ DevFlow Metrics: Running on port $DEVFLOW_METRICS_PORT (Context7 Quality: ${context7_quality})"
+    else
+        print_warning "⚠️  DevFlow Metrics: Not Running - Performance monitoring disabled"
+    fi
+
     print_status "📊 Health: http://localhost:$ORCHESTRATOR_PORT/health"
     print_status "🎛️  Mode: http://localhost:$ORCHESTRATOR_PORT/api/mode"
-    print_status "📈 Metrics: http://localhost:$ORCHESTRATOR_PORT/api/metrics"
+    print_status "📈 Orchestrator Metrics: http://localhost:$ORCHESTRATOR_PORT/api/metrics"
+    print_status "📊 DevFlow Metrics: http://localhost:$DEVFLOW_METRICS_PORT/metrics (Prometheus)"
     print_status "🧠 Context Bridge: http://localhost:$CONTEXT_BRIDGE_PORT/health"
     print_status "🔧 Enforcement: http://localhost:$ENFORCEMENT_DAEMON_PORT/health"
 
