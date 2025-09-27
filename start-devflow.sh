@@ -122,7 +122,9 @@ set_defaults() {
     export DEVFLOW_VERBOSE=${DEVFLOW_VERBOSE:-false}
     export DEVFLOW_PROJECT_ROOT=${DEVFLOW_PROJECT_ROOT:-$(pwd)}
 
-    print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Context Bridge: $CONTEXT_BRIDGE_PORT, Vector Memory: $VECTOR_MEMORY_PORT, Enhanced Memory: $ENHANCED_MEMORY_PORT"
+    print_info "Core services - Orchestrator: $ORCHESTRATOR_PORT, Database: $DB_MANAGER_PORT, Project API: $PROJECT_API_PORT, Model Registry: $MODEL_REGISTRY_PORT"
+    print_info "Advanced services - Context Bridge: $CONTEXT_BRIDGE_PORT, Vector Memory: $VECTOR_MEMORY_PORT, Enhanced Memory: $ENHANCED_MEMORY_PORT"
+    print_info "Orchestration services - Dream Team: $DREAM_TEAM_PORT, CLI Integration: $CLI_INTEGRATION_PORT, Dashboard: $DASHBOARD_PORT/$WS_PORT"
     print_info "Bridge services - Codex Server: $CODEX_SERVER_PORT, Enforcement: $ENFORCEMENT_DAEMON_PORT"
     print_info "Monitoring services - Metrics: $DEVFLOW_METRICS_PORT"
     print_info "DevFlow config - DB: $DEVFLOW_DB_PATH, Project Root: $DEVFLOW_PROJECT_ROOT"
