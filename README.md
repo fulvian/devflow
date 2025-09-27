@@ -18,22 +18,26 @@ DevFlow is a sophisticated AI orchestration and task management platform designe
 ## Architecture
 
 ```
-DevFlow System
-├── Task Manager
-│   ├── Task Creation
-│   ├── Priority Queue
-│   └── Execution Engine
-├── Memory Subsystem
-│   ├── Data Storage
-│   ├── TTL Management
-│   └── Retrieval Interface
-├── Event System
-│   ├── Lifecycle Events
-│   ├── Error Handling
-│   └── Custom Extensions
-└── Configuration Manager
-    ├── Runtime Settings
-    └── Debug Controls
+DevFlow Unified System v1.0
+├── Infrastructure Services
+│   ├── Database Manager (Port 3002)
+│   ├── Model Registry (Port 3004)
+│   ├── Vector Memory (Port 3008)
+│   └── Context Bridge (Port 3007)
+├── Orchestration Services
+│   ├── Unified Orchestrator (Port 3005)
+│   ├── CLI Integration (Port 3201)
+│   ├── Real Dream Team (Port 3200)
+│   └── Progress Tracking (Daemon)
+├── Management Services
+│   ├── Project Lifecycle API (Port 3003)
+│   ├── Monitoring Dashboard (Port 3202/3203)
+│   ├── Codex MCP Server (Port 8013)
+│   └── Enforcement Daemon (Port 8787)
+└── Background Processing
+    ├── APScheduler Embedding (Daemon)
+    ├── DevFlow Metrics (Port 9091)
+    └── Enhanced Memory System
 ```
 
 ## Installation
