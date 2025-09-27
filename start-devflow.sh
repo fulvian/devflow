@@ -528,6 +528,184 @@ start_cli_integration() {
     fi
 }
 
+# Start Real Dream Team Orchestrator (IMPORTANT SERVICE - Advanced Multi-Agent Coordination)
+start_dream_team_orchestrator() {
+    print_status "Starting Real Dream Team Orchestrator..."
+
+    # Validate dependencies first
+    if ! validate_service_dependencies "Real Dream Team Orchestrator" "model_registry" "cli_integration"; then
+        print_error "Real Dream Team Orchestrator dependency validation failed"
+        return 1
+    fi
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${DREAM_TEAM_PORT}/health" >/dev/null 2>&1; then
+        print_status "Real Dream Team Orchestrator already running on port $DREAM_TEAM_PORT"
+        return 0
+    fi
+
+    # Check if Real Dream Team orchestrator exists
+    if [ ! -f "$PROJECT_ROOT/src/core/orchestration/real-dream-team-daemon.ts" ]; then
+        print_error "Real Dream Team Orchestrator not found at src/core/orchestration/real-dream-team-daemon.ts"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Real Dream Team Orchestrator in background (TypeScript via ts-node)
+    print_info "🎭 Starting Advanced Multi-Agent Orchestrator with Circuit Breakers..."
+    nohup env DREAM_TEAM_PORT=$DREAM_TEAM_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" MODEL_REGISTRY_URL="http://localhost:$MODEL_REGISTRY_PORT" CLI_INTEGRATION_URL="http://localhost:$CLI_INTEGRATION_PORT" npx ts-node "$PROJECT_ROOT/src/core/orchestration/real-dream-team-daemon.ts" > "$PROJECT_ROOT/logs/dream-team-orchestrator.log" 2>&1 &
+    local dream_pid=$!
+
+    # Give it time to start
+    sleep 4
+
+    # Verify it's running with process check
+    if ! check_process_health $dream_pid "Real Dream Team Orchestrator"; then
+        return 1
+    fi
+
+    # Enhanced health check validation with circuit breaker status
+    if wait_for_health_check "http://localhost:${DREAM_TEAM_PORT}/health" "Real Dream Team Orchestrator"; then
+        echo $dream_pid > "$PROJECT_ROOT/.dream-team.pid"
+        print_status "✅ Real Dream Team Orchestrator started (PID: $dream_pid, Port: $DREAM_TEAM_PORT)"
+
+        # Check circuit breaker and multi-agent coordination status
+        local orchestrator_health=$(curl -s --max-time 3 "http://localhost:${DREAM_TEAM_PORT}/status" 2>/dev/null || echo '{"circuitBreakers": [], "agents": []}')
+        local circuit_breaker_count=$(echo "$orchestrator_health" | grep -o '"circuitBreakers":\[.*\]' | grep -o ',' | wc -l 2>/dev/null || echo "0")
+        local active_agents=$(echo "$orchestrator_health" | grep -o '"agents":\[.*\]' | grep -o ',' | wc -l 2>/dev/null || echo "0")
+
+        if [ "$circuit_breaker_count" -gt 0 ]; then
+            print_status "✅ Advanced Orchestration: $((circuit_breaker_count + 1)) circuit breakers active, $((active_agents + 1)) agents coordinated"
+        else
+            print_status "✅ Advanced Orchestration: Multi-agent coordination ready, circuit breakers initializing"
+        fi
+        return 0
+    else
+        print_error "Real Dream Team Orchestrator health check failed"
+        return 1
+    fi
+}
+
+# Start Progress Tracking Daemon (IMPORTANT SERVICE - Real-time Task Monitoring)
+start_progress_tracking() {
+    print_status "Starting Progress Tracking Daemon..."
+
+    # Validate dependencies first
+    if ! validate_service_dependencies "Progress Tracking" "database"; then
+        print_error "Progress Tracking dependency validation failed"
+        return 1
+    fi
+
+    # Check if progress tracking daemon exists
+    if [ ! -f "$PROJECT_ROOT/src/daemon/progress-tracking-daemon.ts" ]; then
+        print_error "Progress Tracking Daemon not found at src/daemon/progress-tracking-daemon.ts"
+        return 1
+    fi
+
+    # Check if already running via process check
+    if pgrep -f "progress-tracking-daemon" >/dev/null 2>&1; then
+        print_status "Progress Tracking Daemon already running"
+        return 0
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Progress Tracking Daemon in background (TypeScript via ts-node)
+    print_info "📊 Starting Real-time Progress Tracking with lifecycle monitoring..."
+    nohup env DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" npx ts-node "$PROJECT_ROOT/src/daemon/progress-tracking-daemon.ts" > "$PROJECT_ROOT/logs/progress-tracking.log" 2>&1 &
+    local progress_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running with process check
+    if ! check_process_health $progress_pid "Progress Tracking Daemon"; then
+        return 1
+    fi
+
+    # Process-based health validation for background service
+    sleep 2
+    if kill -0 $progress_pid 2>/dev/null; then
+        echo $progress_pid > "$PROJECT_ROOT/.progress-tracking.pid"
+        print_status "✅ Progress Tracking Daemon started (PID: $progress_pid)"
+
+        # Check real-time tracking capabilities
+        local log_check=$(tail -5 "$PROJECT_ROOT/logs/progress-tracking.log" 2>/dev/null | grep -i "tracking\|monitoring\|progress" | wc -l)
+        if [ "$log_check" -gt 0 ]; then
+            print_status "✅ Real-time Tracking: Task lifecycle monitoring operational"
+        else
+            print_warning "⚠️  Real-time Tracking: Started but monitoring status unclear"
+        fi
+        return 0
+    else
+        print_error "Progress Tracking Daemon process validation failed"
+        return 1
+    fi
+}
+
+# Start Project Lifecycle API (IMPORTANT SERVICE - Programmatic Project Management)
+start_project_api() {
+    print_status "Starting Project Lifecycle API..."
+
+    # Validate dependencies first
+    if ! validate_service_dependencies "Project API" "database"; then
+        print_error "Project API dependency validation failed"
+        return 1
+    fi
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${PROJECT_API_PORT}/health" >/dev/null 2>&1; then
+        print_status "Project Lifecycle API already running on port $PROJECT_API_PORT"
+        return 0
+    fi
+
+    # Check if project lifecycle API exists
+    if [ ! -f "$PROJECT_ROOT/src/api/project-lifecycle-api.js" ]; then
+        print_error "Project Lifecycle API not found at src/api/project-lifecycle-api.js"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Project Lifecycle API in background (Node.js)
+    print_info "🔧 Starting Project Lifecycle API with automation hooks..."
+    nohup env PROJECT_API_PORT=$PROJECT_API_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" node "$PROJECT_ROOT/src/api/project-lifecycle-api.js" > "$PROJECT_ROOT/logs/project-api.log" 2>&1 &
+    local api_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running with process check
+    if ! check_process_health $api_pid "Project Lifecycle API"; then
+        return 1
+    fi
+
+    # Enhanced health check validation with API endpoints
+    if wait_for_health_check "http://localhost:${PROJECT_API_PORT}/health" "Project Lifecycle API"; then
+        echo $api_pid > "$PROJECT_ROOT/.project-api.pid"
+        print_status "✅ Project Lifecycle API started (PID: $api_pid, Port: $PROJECT_API_PORT)"
+
+        # Check REST API endpoints and automation capabilities
+        local api_health=$(curl -s --max-time 3 "http://localhost:${PROJECT_API_PORT}/api/status" 2>/dev/null || echo '{"endpoints": [], "automation": false}')
+        local endpoint_count=$(echo "$api_health" | grep -o '"endpoints":\[.*\]' | grep -o ',' | wc -l 2>/dev/null || echo "0")
+        local automation_enabled=$(echo "$api_health" | grep -o '"automation":[^,}]*' | cut -d':' -f2 | tr -d ' "' 2>/dev/null || echo "false")
+
+        if [ "$endpoint_count" -gt 0 ]; then
+            print_status "✅ Project API: $((endpoint_count + 1)) REST endpoints active, automation: $automation_enabled"
+        else
+            print_status "✅ Project API: Programmatic management ready, endpoints initializing"
+        fi
+        return 0
+    else
+        print_error "Project Lifecycle API health check failed"
+        return 1
+    fi
+}
+
 # Start Vector Memory Service
 start_vector() {
     print_status "Starting Vector Memory Service..."
