@@ -509,6 +509,60 @@ start_unified_orchestrator() {
     fi
 }
 
+# Start DevFlow Metrics Collector & Server (Native Monitoring Solution)
+start_metrics_server() {
+    print_status "Starting DevFlow Metrics Collector & Server..."
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${DEVFLOW_METRICS_PORT}/health" >/dev/null 2>&1; then
+        print_status "DevFlow Metrics Server already running on port $DEVFLOW_METRICS_PORT"
+        return 0
+    fi
+
+    # Check if metrics server exists
+    if [ ! -f "$PROJECT_ROOT/src/monitoring/index.js" ]; then
+        print_warning "DevFlow Metrics Server not found at src/monitoring/index.js - skipping monitoring"
+        return 0
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start metrics server in background
+    nohup env DEVFLOW_METRICS_PORT=$DEVFLOW_METRICS_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" ORCHESTRATOR_URL="http://localhost:$ORCHESTRATOR_PORT" node "$PROJECT_ROOT/src/monitoring/index.js" start > "$PROJECT_ROOT/logs/devflow-metrics.log" 2>&1 &
+    local metrics_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running
+    if kill -0 $metrics_pid 2>/dev/null; then
+        # Health check validation
+        local health_attempts=0
+        while [ $health_attempts -lt 10 ]; do
+            if curl -sf --max-time 2 "http://localhost:${DEVFLOW_METRICS_PORT}/health" >/dev/null 2>&1; then
+                echo $metrics_pid > "$PROJECT_ROOT/.metrics.pid"
+                print_status "✅ DevFlow Metrics Server started (PID: $metrics_pid, Port: $DEVFLOW_METRICS_PORT)"
+
+                # Brief metrics check
+                local metrics_data=$(curl -s --max-time 2 "http://localhost:${DEVFLOW_METRICS_PORT}/json" 2>/dev/null | grep -o '"qualityScore":[0-9.]*' | cut -d':' -f2 || echo "0")
+                if [ -n "$metrics_data" ] && [ "$metrics_data" != "0" ]; then
+                    print_status "✅ Context7 quality metrics available: ${metrics_data}"
+                fi
+                return 0
+            fi
+            sleep 2
+            health_attempts=$((health_attempts + 1))
+        done
+
+        print_error "Metrics Server started but health check failed"
+        return 1
+    else
+        print_error "Failed to start DevFlow Metrics Server"
+        return 1
+    fi
+}
+
 # Start APScheduler Embedding Background Daemon (Context7 Robust Solution)
 start_embedding_scheduler() {
     print_status "Starting APScheduler Embedding Background Daemon (Context7 Solution)..."
