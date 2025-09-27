@@ -251,7 +251,7 @@ cleanup_services() {
     pkill -f "enhanced-memory-service" 2>/dev/null || true
     pkill -f "enforcement-daemon" 2>/dev/null || true
     pkill -f "codex_server" 2>/dev/null || true
-    pkill -f "embedding-scheduler-daemon" 2>/dev/null || true
+    pkill -f "apscheduler-embedding-daemon" 2>/dev/null || true
     pkill -f "devflow-metrics-collector" 2>/dev/null || true
 
     # Clean up ports brutally (all configurable ports from .env)
@@ -1583,9 +1583,9 @@ show_status() {
     fi
 
     # Check Embedding Background Scheduler
-    if pgrep -f "embedding-scheduler-daemon" >/dev/null 2>&1; then
-        local scheduler_status=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"scheduler_running"' | grep -o 'true\|false' || echo "unknown")
-        local queue_size=$(python3 "$PROJECT_ROOT/.claude/hooks/embedding-background-scheduler.py" --status 2>/dev/null | grep '"pending_entries"' | grep -o '[0-9]*' || echo "0")
+    if pgrep -f "apscheduler-embedding-daemon" >/dev/null 2>&1; then
+        local scheduler_status=$(python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --status 2>/dev/null | grep '"daemon_running"' | grep -o 'true\|false' || echo "unknown")
+        local queue_size=$(python3 "$PROJECT_ROOT/.claude/hooks/apscheduler-embedding-daemon.py" --status 2>/dev/null | grep '"pending_entries"' | grep -o '[0-9]*' || echo "0")
         print_status "✅ Embedding Scheduler: Running (Active: $scheduler_status, Queue: $queue_size entries)"
     else
         print_status "❌ Embedding Scheduler: Stopped - automatic embedding processing disabled"
