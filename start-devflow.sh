@@ -161,6 +161,7 @@ cleanup_services() {
     pkill -f "enforcement-daemon" 2>/dev/null || true
     pkill -f "codex_server" 2>/dev/null || true
     pkill -f "embedding-scheduler-daemon" 2>/dev/null || true
+    pkill -f "devflow-metrics-collector" 2>/dev/null || true
 
     # Clean up ports brutally (all configurable ports from .env)
     local DEVFLOW_PORTS=($ORCHESTRATOR_PORT $DB_MANAGER_PORT $CONTEXT_BRIDGE_PORT $VECTOR_MEMORY_PORT $ENHANCED_MEMORY_PORT $CODEX_SERVER_PORT $ENFORCEMENT_DAEMON_PORT)
