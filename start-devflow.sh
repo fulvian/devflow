@@ -1291,13 +1291,19 @@ start_services() {
         print_warning "Automatic embedding queue processing will not be active"
     fi
 
-    # Phase 3: Monitoring and Support Services (OPTIONAL)
+    # Phase 3: Monitoring and Support Services (ENHANCEMENT)
     print_status "📊 Phase 3: Starting Monitoring and Support Services..."
 
     # Start DevFlow Metrics Server (performance monitoring and Context7 quality tracking)
     if ! start_metrics_server; then
         print_warning "DevFlow Metrics Server failed to start - CONTINUING WITHOUT MONITORING"
         print_warning "Context7 quality tracking and performance metrics will not be available"
+    fi
+
+    # Start Monitoring Dashboard (real-time system visualization)
+    if ! start_monitoring_dashboard; then
+        print_warning "Monitoring Dashboard failed to start - CONTINUING WITHOUT VISUAL MONITORING"
+        print_warning "Real-time dashboard and WebSocket monitoring will not be available"
     fi
 
     print_status "🎉 DevFlow Unified System v1.0 Started Successfully!"
