@@ -151,9 +151,9 @@ class DevFlowMetricsCollector extends EventEmitter {
     try {
       // Get latest quality score
       const qualityQuery = `
-        SELECT quality_score, coherence_score, precision_score, timestamp
+        SELECT composite_score, semantic_coherence, retrieval_precision, created_at
         FROM context7_quality_metrics
-        ORDER BY timestamp DESC
+        ORDER BY created_at DESC
         LIMIT 1
       `;
 
@@ -161,10 +161,10 @@ class DevFlowMetricsCollector extends EventEmitter {
 
       if (qualityResult) {
         this.metrics.context7 = {
-          qualityScore: qualityResult.quality_score || 0,
-          coherenceScore: qualityResult.coherence_score || 0,
-          precisionScore: qualityResult.precision_score || 0,
-          lastUpdate: qualityResult.timestamp
+          qualityScore: qualityResult.composite_score || 0,
+          coherenceScore: qualityResult.semantic_coherence || 0,
+          precisionScore: qualityResult.retrieval_precision || 0,
+          lastUpdate: qualityResult.created_at
         };
       }
 
