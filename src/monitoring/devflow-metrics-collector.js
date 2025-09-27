@@ -266,7 +266,7 @@ class DevFlowMetricsCollector extends EventEmitter {
       const startTime = performance.now();
 
       // Test query performance
-      const testQuery = 'SELECT COUNT(*) as total FROM sqlite_master WHERE type="table"';
+      const testQuery = "SELECT COUNT(*) as total FROM sqlite_master WHERE type='table'";
       const result = this.db.prepare(testQuery).get();
 
       const queryTime = performance.now() - startTime;
