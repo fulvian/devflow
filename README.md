@@ -66,35 +66,51 @@ npm install
 - Codex CLI (for MCP integration)
 - SQLite 3
 
-## Quick Start
+## System Usage
 
-```typescript
-import DevFlowSystem from '@src/index';
+### Starting DevFlow System
 
-// Initialize the system
-const devflow = new DevFlowSystem({
-  debug: true,
-  memoryLimit: 1000,
-  taskTimeout: 30000
-});
+```bash
+# Start all services (recommended)
+./start-devflow.sh
 
-// Initialize system components
-await devflow.initialize();
+# Start specific services
+./start-devflow.sh start
 
-// Create a cognitive task
-const task = devflow.createTask('analyze-user-input', {
-  text: 'Hello world',
-  context: 'greeting'
-}, 5);
+# Check system health
+./start-devflow.sh status
 
-// Store in cognitive memory
-devflow.storeMemory('user-greeting-1', {
-  intent: 'greeting',
-  confidence: 0.95
-}, 3600000); // 1 hour TTL
+# Stop all services
+./start-devflow.sh stop
+```
 
-// Retrieve from memory
-const analysis = devflow.retrieveMemory('user-greeting-1');
+### API Endpoints
+
+```bash
+# System Health
+curl http://localhost:3005/health
+
+# Orchestrator Status
+curl http://localhost:3005/api/metrics
+
+# Model Registry
+curl http://localhost:3004/health
+
+# Real-time Dashboard
+open http://localhost:3202
+
+# Progress Tracking
+curl http://localhost:3005/api/tasks
+```
+
+### Context7 Integration
+
+```bash
+# Access up-to-date documentation
+npx @upstash/context7-mcp --api-key YOUR_KEY
+
+# Codex CLI with MCP
+codex "Help me implement..."
 ```
 
 ## API Documentation
