@@ -1333,6 +1333,13 @@ start_services() {
         print_warning "⚠️  Project Lifecycle API: Not Running - REST API management disabled"
     fi
 
+    # Check Phase 3 Monitoring Dashboard
+    if curl -sf --max-time 2 "http://localhost:$DASHBOARD_PORT/health" >/dev/null 2>&1; then
+        print_status "✅ Monitoring Dashboard: Running on ports $DASHBOARD_PORT/$WS_PORT (Real-time WebSocket monitoring)"
+    else
+        print_warning "⚠️  Monitoring Dashboard: Not Running - Visual monitoring disabled"
+    fi
+
     # Check Context Bridge Service status
     if curl -sf --max-time 2 "http://localhost:$CONTEXT_BRIDGE_PORT/health" >/dev/null 2>&1; then
         print_status "✅ Context Bridge: Running on port $CONTEXT_BRIDGE_PORT (Enhanced embedding with embeddinggemma)"
