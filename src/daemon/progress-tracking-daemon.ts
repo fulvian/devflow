@@ -163,28 +163,46 @@ class ProgressTrackingDaemon {
     return 95; // Final validation
   }
 
-  private async updateFooterState(progressPercentage: number, tokenCount: number): Promise<void> {
+  private async updateFooterState(progressPercentage: number): Promise<void> {
     try {
       const devflowDir = path.resolve(process.cwd(), '.devflow');
       const footerStatePath = path.join(devflowDir, 'footer-state.json');
-      
-      console.log(`[${new Date().toISOString()}] Daemon: Attempting to update footer state at ${footerStatePath}`);
-      
+
       if (fs.existsSync(footerStatePath)) {
         const footerState = JSON.parse(fs.readFileSync(footerStatePath, 'utf-8'));
-        
-        // Update progress information
+
+        // Update progress information with current task
+        footerState.progress = footerState.progress || {};
         footerState.progress.percentage = progressPercentage;
-        footerState.progress.token_count = tokenCount;
+        footerState.progress.task_name = this.currentTask?.title || 'Unknown Task';
+        footerState.progress.task_id = this.currentTask?.id || 'unknown';
+        footerState.progress.daemon_status = 'active';
         footerState.timestamp = new Date().toISOString();
-        
+
         fs.writeFileSync(footerStatePath, JSON.stringify(footerState, null, 2), 'utf-8');
-        console.log(`[${new Date().toISOString()}] Daemon: Successfully updated footer state with progress: ${progressPercentage}% and ${tokenCount} tokens`);
+        console.log(`📊 Updated footer state: ${progressPercentage}% for task "${this.currentTask?.title}"`);
       } else {
-        console.log(`[${new Date().toISOString()}] Daemon: Footer state file not found at ${footerStatePath}`);
+        // Create initial footer state if it doesn't exist
+        const initialState = {
+          progress: {
+            percentage: progressPercentage,
+            task_name: this.currentTask?.title || 'DevFlow Startup Compliance',
+            task_id: this.currentTask?.id || 'startup-compliance',
+            daemon_status: 'active'
+          },
+          timestamp: new Date().toISOString()
+        };
+
+        // Ensure .devflow directory exists
+        if (!fs.existsSync(devflowDir)) {
+          fs.mkdirSync(devflowDir, { recursive: true });
+        }
+
+        fs.writeFileSync(footerStatePath, JSON.stringify(initialState, null, 2), 'utf-8');
+        console.log(`📝 Created footer state file with initial progress: ${progressPercentage}%`);
       }
     } catch (error) {
-      console.error(`[${new Date().toISOString()}] Daemon: Error updating footer state:`, error);
+      console.error(`❌ Error updating footer state:`, error);
     }
   }
 }
