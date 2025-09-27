@@ -6,8 +6,8 @@
 
 import express from 'express';
 import http from 'http';
-import WebSocket from 'ws';
-import Redis from 'ioredis';
+import WebSocket, { WebSocketServer } from 'ws';
+import { Redis } from 'ioredis';
 import { v4 as uuidv4 } from 'uuid';
 
 // Types and interfaces
@@ -57,15 +57,15 @@ const CONFIG = {
 class MCPOrchestrator {
   private app: express.Application;
   private server: http.Server;
-  private wss: WebSocket.Server;
-  private redis: Redis.Redis;
+  private wss: WebSocketServer;
+  private redis: Redis;
   private sessions: Map<string, SessionState>;
   private modelConnections: Map<string, WebSocket[]>;
 
   constructor() {
     this.app = express();
     this.server = http.createServer(this.app);
-    this.wss = new WebSocket.Server({ server: this.server });
+    this.wss = new WebSocketServer({ server: this.server });
     this.redis = new Redis(CONFIG.REDIS_URL);
     this.sessions = new Map();
     this.modelConnections = new Map();
@@ -121,15 +121,16 @@ class MCPOrchestrator {
 
   private setupRedisSubscriptions(): void {
     // Subscribe to model status updates
-    this.redis.subscribe('model:status', (err, count) => {
+    this.redis.subscribe('model:status', (err: Error | null | undefined, result: unknown) => {
       if (err) {
         console.error('Redis subscription error:', err);
       } else {
+        const count = result as number;
         console.log(`Subscribed to ${count} Redis channels`);
       }
     });
 
-    this.redis.on('message', (channel, message) => {
+    this.redis.on('message', (channel: string, message: string) => {
       this.handleRedisMessage(channel, message);
     });
   }

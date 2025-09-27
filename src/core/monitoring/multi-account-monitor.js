@@ -209,28 +209,28 @@ class MultiAccountMonitor {
         ];
         const results = await Promise.all(checks);
         // Process Claude results
-        if (!(results[0] instanceof Error)) {
+        if (!results[0].error) {
             services[0].usage = results[0];
             services[0].available = this.claudeMonitor.isAvailable(results[0]);
         }
         else {
-            services[0].error = results[0].message;
+            services[0].error = results[0].error.message;
         }
         // Process OpenAI results
-        if (!(results[1] instanceof Error)) {
+        if (!results[1].error) {
             services[1].usage = results[1];
             services[1].available = this.openaiMonitor.isAvailable(results[1]);
         }
         else {
-            services[1].error = results[1].message;
+            services[1].error = results[1].error.message;
         }
         // Process Gemini results
-        if (!(results[2] instanceof Error)) {
+        if (!results[2].error) {
             services[2].usage = results[2];
             services[2].available = this.geminiMonitor.isAvailable(results[2]);
         }
         else {
-            services[2].error = results[2].message;
+            services[2].error = results[2].error.message;
         }
         return services;
     }

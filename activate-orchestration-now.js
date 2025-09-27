@@ -2,6 +2,7 @@
  * IMMEDIATE ORCHESTRATION ACTIVATION
  * Activates intelligent routing in the current session
  */
+require('dotenv').config();
 
 console.log('🚀 ACTIVATING DEVFLOW INTELLIGENT ORCHESTRATION - LIVE MODE');
 console.log('=' .repeat(60));

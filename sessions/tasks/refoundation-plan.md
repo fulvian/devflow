@@ -62,13 +62,23 @@ Execute radical refoundation of DevFlow system to address critical degradations:
 2. **Automatic Fallback** - Seamless handoff to Synthetic during limits
 3. **Session Independence** - 99.9% uptime guarantee
 
-### Phase 2: Multi-Platform Integration (3-4 weeks)
-1. **OpenAI Codex CLI** - Native integration with context injection
-2. **Gemini CLI** - Unified API adaptation layer
-3. **Intelligent Routing** - Cost-optimized platform selection
+### Phase 2: Sistema di Memoria Cognitiva (8 months - Implementation Plan)
+**REPLACED WITH**: Piano completo sviluppo_ricerca_cognitiva_1.md (@docs/sviluppo/)
+1. **Foundation** (Months 1-2) - Basic memory structure, session persistence integration
+2. **Intelligence Layer** (Months 3-4) - Context engine, exploration strategies, pattern recognition
+3. **Optimization** (Months 5-6) - Performance optimization, large codebase handling
+4. **Refinement** (Months 7-8) - User feedback integration, adaptive learning
+
+**Orchestration Model**: Sonnet leader + Synthetic agents specialized implementation
+- **Code Agent**: Core components implementation
+- **Reasoning Agent**: Algorithms and decision logic  
+- **Context Agent**: Codebase analysis and pattern recognition
+
+**Former Phase 2** (Multi-Platform Integration) **SCALED TO PHASE 3**
 
 ## Context Files
 - @docs/sviluppo/piano_rifondazione_1.md: Complete refoundation plan and progress tracking
+- @docs/sviluppo/sviluppo_ricerca_cognitiva_1.md: **NEW** - Cognitive memory system implementation plan (Phase 2)
 - @docs/idee_fondanti/piano_strategico_devflow_masterplan_v1.md: Strategic master plan
 - @CHANGELOG.md: Granular progress tracking per modifications
 - @packages/adapters/claude-code/src/adapter.ts: Critical build failure location

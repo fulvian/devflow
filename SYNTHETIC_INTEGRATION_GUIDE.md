@@ -18,7 +18,7 @@
 
 ```bash
 # 1. Imposta la tua API key
-export SYNTHETIC_API_KEY=syn_4f04a1a3108cfbb64ac973367542d361
+export SYNTHETIC_API_KEY=<YOUR_SYNTHETIC_API_KEY>
 export SYNTHETIC_BASE_URL=https://api.synthetic.new/v1
 
 # 2. La configurazione è già presente in .env

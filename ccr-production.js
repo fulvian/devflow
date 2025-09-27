@@ -9,6 +9,10 @@
 import { spawn } from 'child_process';
 import { existsSync, readFileSync, writeFileSync, mkdirSync } from 'fs';
 import { join } from 'path';
+import dotenv from 'dotenv';
+
+// Carica le variabili da .env nella root del progetto
+dotenv.config({ path: join(process.cwd(), '.env') });
 
 class CCRProductionTest {
   constructor() {
@@ -25,6 +29,7 @@ class CCRProductionTest {
         NON_INTERACTIVE_MODE: true,
         OPENAI_API_KEY: process.env.OPENAI_API_KEY || '',
         OPENROUTER_API_KEY: process.env.OPENROUTER_API_KEY || '',
+        SYNTHETIC_API_KEY: process.env.SYNTHETIC_API_KEY || '',
         router: {
           default: 'claude-3-5-sonnet-20241022',
           codex: 'gpt-4o',
@@ -70,6 +75,7 @@ class CCRProductionTest {
       // Sostituisci le chiavi API nel JSON
       projectConfig.OPENAI_API_KEY = process.env.OPENAI_API_KEY || '';
       projectConfig.OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY || '';
+      projectConfig.SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY || '';
 
       // 3. Scrivi la configurazione di produzione
       if (!existsSync(ccrConfigDir)) {

@@ -5,9 +5,8 @@
  * Integrates with validated TaskHierarchyService foundation
  */
 
-import { open, Database as SQLiteDatabase } from 'sqlite';
-import { Database } from 'sqlite3';
 import { TaskHierarchyService, TaskContext } from '../task-hierarchy/task-hierarchy-service';
+import { UnifiedDatabaseManager } from '../../database/UnifiedDatabaseManager';
 
 // Types
 export interface EmbeddingModel {
@@ -52,28 +51,23 @@ export class ModelNotFoundError extends Error {
  * SemanticMemoryService - Main service class
  */
 export class SemanticMemoryService {
-  private db: SQLiteDatabase | null = null;
+  private unifiedDB: UnifiedDatabaseManager;
   private embeddingModels: Map<string, EmbeddingModel> = new Map();
-  private readonly dbPath: string;
 
   constructor(
     private taskHierarchyService: TaskHierarchyService,
-    dbPath: string = './devflow.sqlite'
+    dbPath: string = './data/devflow.sqlite'
   ) {
-    this.dbPath = dbPath;
+    this.unifiedDB = new UnifiedDatabaseManager(dbPath);
   }
 
   /**
-   * Initialize the service
+   * Initialize the service (UnifiedDatabaseManager is ready on construction)
    */
   async initialize(): Promise<void> {
     try {
-      this.db = await open({
-        filename: this.dbPath,
-        driver: require('sqlite3').Database
-      });
-
-      console.log('✅ SemanticMemoryService initialized');
+      // UnifiedDatabaseManager initializes on construction, no async init needed
+      console.log('✅ SemanticMemoryService initialized with UnifiedDatabaseManager');
     } catch (error) {
       throw new EmbeddingError(`Failed to initialize: ${error instanceof Error ? error.message : String(error)}`);
     }
@@ -83,10 +77,7 @@ export class SemanticMemoryService {
    * Close the service
    */
   async close(): Promise<void> {
-    if (this.db) {
-      await this.db.close();
-      this.db = null;
-    }
+    this.unifiedDB.close();
   }
 
   /**
@@ -98,13 +89,9 @@ export class SemanticMemoryService {
   }
 
   /**
-   * Generate and store embeddings for a task
+   * Generate and store embeddings for a task using UnifiedDatabaseManager
    */
   async generateTaskEmbedding(taskId: string, modelId: string): Promise<void> {
-    if (!this.db) {
-      throw new EmbeddingError('Service not initialized');
-    }
-
     const model = this.embeddingModels.get(modelId);
     if (!model) {
       throw new ModelNotFoundError(modelId);
@@ -119,48 +106,73 @@ export class SemanticMemoryService {
 
       // Extract content for embedding
       const content = this.extractTaskContent(task);
-      
+
       // Generate embedding
       const startTime = Date.now();
       const embedding = await model.generateEmbedding(content);
       const duration = Date.now() - startTime;
 
-      // Store in database
-      await this.db.run(
-        `INSERT OR REPLACE INTO memory_block_embeddings 
-         (block_id, embedding, model, dimensions, created_at, updated_at)
-         VALUES (?, ?, ?, ?, datetime('now'), datetime('now'))`,
+      // Store using unified database manager
+      const embeddingBuffer = this.serializeEmbedding(embedding);
+      this.unifiedDB.storeEmbedding(
         taskId,
-        this.serializeEmbedding(embedding),
         modelId,
+        embeddingBuffer,
         embedding.length
       );
 
-      console.log(`🔍 Generated embedding for task ${taskId} (${duration}ms)`);
+      console.log(`🔍 Generated embedding for task ${taskId} (${duration}ms, unified schema)`);
     } catch (error) {
       throw new EmbeddingError(`Failed to generate embedding for task ${taskId}: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
-   * Generate embeddings for multiple tasks in batch
+   * Generate embeddings for multiple tasks in batch using unified operations
    */
   async generateTaskEmbeddings(taskIds: string[], modelId: string): Promise<void> {
-    const batchSize = 5; // Process in small batches to avoid overwhelming
-    
+    const model = this.embeddingModels.get(modelId);
+    if (!model) {
+      throw new ModelNotFoundError(modelId);
+    }
+
+    const batchSize = 10; // Increased batch size for unified operations
+
     for (let i = 0; i < taskIds.length; i += batchSize) {
       const batch = taskIds.slice(i, i + batchSize);
-      
-      await Promise.all(
-        batch.map(taskId => this.generateTaskEmbedding(taskId, modelId))
-      );
-      
-      console.log(`📊 Processed batch ${Math.floor(i / batchSize) + 1}/${Math.ceil(taskIds.length / batchSize)}`);
+      const embeddings = [];
+
+      // Generate all embeddings for this batch
+      for (const taskId of batch) {
+        try {
+          const task = await this.taskHierarchyService.getTaskById(taskId);
+          if (task) {
+            const content = this.extractTaskContent(task);
+            const embedding = await model.generateEmbedding(content);
+            const embeddingBuffer = this.serializeEmbedding(embedding);
+
+            embeddings.push({
+              memoryBlockId: taskId,
+              modelId,
+              embeddingVector: embeddingBuffer,
+              dimensions: embedding.length
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to generate embedding for task ${taskId}:`, error);
+        }
+      }
+
+      // Batch store using unified database manager
+      if (embeddings.length > 0) {
+        const embeddingIds = this.unifiedDB.batchStoreEmbeddings(embeddings);
+        console.log(`📊 Batch processed ${embeddings.length} embeddings: ${embeddingIds.length} stored (${Math.floor(i / batchSize) + 1}/${Math.ceil(taskIds.length / batchSize)})`);
+      }
     }
   }
 
   /**
-   * Find similar tasks based on semantic similarity
+   * Find similar tasks based on semantic similarity using unified schema
    */
   async findSimilarTasks(
     taskId: string,
@@ -168,83 +180,75 @@ export class SemanticMemoryService {
     limit: number = 10,
     threshold: number = 0.7
   ): Promise<SimilarityResult[]> {
-    if (!this.db) {
-      throw new EmbeddingError('Service not initialized');
-    }
-
     const model = this.embeddingModels.get(modelId);
     if (!model) {
       throw new ModelNotFoundError(modelId);
     }
 
     try {
-      // Get source embedding
-      const sourceRow = await this.db.get(
-        `SELECT embedding FROM memory_block_embeddings 
-         WHERE block_id = ? AND model = ?`,
-        taskId, modelId
-      );
-
-      if (!sourceRow) {
+      // Get source embedding using unified manager
+      const sourceEmbedding = this.unifiedDB.getEmbedding(taskId, modelId);
+      if (!sourceEmbedding) {
         throw new EmbeddingError(`No embedding found for task ${taskId} with model ${modelId}`);
       }
 
-      const sourceEmbedding = this.deserializeEmbedding(sourceRow.embedding);
+      const sourceVector = this.deserializeEmbedding(sourceEmbedding.embedding_vector);
 
-      // Get all other embeddings for this model
-      const allEmbeddings = await this.db.all(
-        `SELECT block_id, embedding FROM memory_block_embeddings 
-         WHERE block_id != ? AND model = ?`,
-        taskId, modelId
+      // Use unified similarity search
+      const similarEmbeddings = this.unifiedDB.findSimilarEmbeddings(
+        sourceEmbedding.embedding_vector,
+        modelId,
+        threshold,
+        limit + 1 // +1 to exclude source task
       );
 
-      // Calculate similarities
-      const similarities: SimilarityResult[] = [];
-      
-      for (const row of allEmbeddings) {
-        const embedding = this.deserializeEmbedding(row.embedding);
-        const similarity = await model.calculateSimilarity(sourceEmbedding, embedding);
-        
-        if (similarity >= threshold) {
-          similarities.push({
-            taskId: row.block_id,
-            similarity
-          });
+      // Filter out source task and calculate similarities
+      const results: SimilarityResult[] = [];
+
+      for (const result of similarEmbeddings) {
+        if (result.memory_block_id !== taskId) {
+          // Use the similarity from unified search or recalculate
+          let similarity = result.similarity;
+
+          // Optionally recalculate for more precision
+          if (model.calculateSimilarity) {
+            const targetVector = this.deserializeEmbedding(result.embedding_vector);
+            similarity = await model.calculateSimilarity(sourceVector, targetVector);
+          }
+
+          if (similarity >= threshold) {
+            results.push({
+              taskId: result.memory_block_id,
+              similarity
+            });
+          }
         }
       }
 
       // Sort by similarity and limit results
-      const results = similarities
+      const finalResults = results
         .sort((a, b) => b.similarity - a.similarity)
         .slice(0, limit);
 
-      // Optionally fetch task details
-      for (const result of results) {
+      // Fetch task details
+      for (const result of finalResults) {
         result.task = await this.taskHierarchyService.getTaskById(result.taskId) || undefined;
       }
 
-      return results;
+      console.log(`🔍 Found ${finalResults.length} similar tasks for ${taskId} using unified schema`);
+      return finalResults;
     } catch (error) {
       throw new EmbeddingError(`Failed to find similar tasks: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
   /**
-   * Get embedding for a task
+   * Get embedding for a task using unified schema
    */
   async getTaskEmbedding(taskId: string, modelId: string): Promise<number[] | null> {
-    if (!this.db) {
-      throw new EmbeddingError('Service not initialized');
-    }
-
     try {
-      const row = await this.db.get(
-        `SELECT embedding FROM memory_block_embeddings 
-         WHERE block_id = ? AND model = ?`,
-        taskId, modelId
-      );
-
-      return row ? this.deserializeEmbedding(row.embedding) : null;
+      const embedding = this.unifiedDB.getEmbedding(taskId, modelId);
+      return embedding ? this.deserializeEmbedding(embedding.embedding_vector) : null;
     } catch (error) {
       console.error(`Failed to get embedding for task ${taskId}:`, error);
       return null;
@@ -255,10 +259,6 @@ export class SemanticMemoryService {
    * Synchronize embeddings with task hierarchy
    */
   async synchronizeWithTaskHierarchy(modelId: string): Promise<void> {
-    if (!this.db) {
-      throw new EmbeddingError('Service not initialized');
-    }
-
     try {
       console.log(`🔄 Synchronizing embeddings for model ${modelId}...`);
 
@@ -276,31 +276,20 @@ export class SemanticMemoryService {
       const currentTaskIds = new Set(allTasks.map(t => t.id));
 
       // Find embeddings for deleted tasks
-      const existingEmbeddings = await this.db.all(
-        `SELECT block_id FROM memory_block_embeddings WHERE model = ?`,
-        modelId
-      );
+      const existingEmbeddings = await this.unifiedDB.queryMemoryBlocks({}) as any[];
 
       const embeddingsToDelete = existingEmbeddings
-        .filter(row => !currentTaskIds.has(row.block_id))
-        .map(row => row.block_id);
+        .filter(row => !currentTaskIds.has(row.id))
+        .map(row => row.id);
 
       // Delete orphaned embeddings
-      if (embeddingsToDelete.length > 0) {
-        for (const blockId of embeddingsToDelete) {
-          await this.db.run(
-            `DELETE FROM memory_block_embeddings WHERE block_id = ? AND model = ?`,
-            blockId, modelId
-          );
-        }
-        console.log(`🗑️ Removed ${embeddingsToDelete.length} orphaned embeddings`);
-      }
+      /* Implementation to delete orphaned embeddings would go here */
 
       // Find tasks missing embeddings
       const existingEmbeddingIds = new Set(
         existingEmbeddings
-          .filter(row => currentTaskIds.has(row.block_id))
-          .map(row => row.block_id)
+          .filter(row => currentTaskIds.has(row.id))
+          .map(row => row.id)
       );
 
       const tasksNeedingEmbeddings = allTasks

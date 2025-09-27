@@ -14,12 +14,25 @@ import { existsSync } from 'fs';
 import { spawn } from 'child_process';
 import { AutonomousFileManager, FileOperation } from './file-operations.js';
 import { MCPErrorFactory, MCPResponseBuilder, MCPError, MCPErrorCode } from './enhanced-tools.js';
+import sqlite3 from 'sqlite3';
+import { open } from 'sqlite';
+import { prepareContextForPrompt } from './context-injection.js';
 
-dotenv.config();
+// Load .env from project root (2 levels up from mcp-servers/synthetic/)
+import { fileURLToPath } from 'url';
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+// Force-load project .env and override any pre-set values from parent process
+dotenv.config({ path: resolve(__dirname, '../../../.env'), override: true });
 
 // Synthetic.new API configuration
-const SYNTHETIC_API_URL = 'https://api.synthetic.new/v1';
+const SYNTHETIC_API_URL = process.env.SYNTHETIC_API_BASE_URL || 'https://api.synthetic.new/v1';
 const SYNTHETIC_API_KEY = process.env.SYNTHETIC_API_KEY;
+
+// Debug: Log API configuration (without exposing full key)
+console.log(`[Synthetic MCP] API Configuration:
+- Base URL: ${SYNTHETIC_API_URL}
+- API Key: ${SYNTHETIC_API_KEY ? `${SYNTHETIC_API_KEY.substring(0, 15)}...` : 'NOT LOADED'}`);
 
 // Enhanced configuration
 const DEVFLOW_PROJECT_ROOT = process.env.DEVFLOW_PROJECT_ROOT || process.cwd();
@@ -130,6 +143,7 @@ export class EnhancedSyntheticMCPServer {
   private allowedPaths: string[];
   private fileManager: AutonomousFileManager;
   private requestIdCounter: number = 0;
+  private db: any;
 
   constructor() {
     // Initialize expanded allowed paths for full project control
@@ -158,8 +172,22 @@ export class EnhancedSyntheticMCPServer {
     );
 
     this.allowedPaths = [DEVFLOW_PROJECT_ROOT];
+    this.initDatabase();
     this.setupToolHandlers();
     this.setupErrorHandling();
+  }
+
+  private async initDatabase(): Promise<void> {
+    try {
+      const dbPath = resolve(DEVFLOW_PROJECT_ROOT, 'data/devflow.sqlite');
+      this.db = await open({
+        filename: dbPath,
+        driver: sqlite3.Database
+      });
+      console.log('[Synthetic MCP] Connected to DevFlow database');
+    } catch (error) {
+      console.error('[Synthetic MCP] Error connecting to database:', error);
+    }
   }
 
   private setupErrorHandling(): void {
@@ -770,7 +798,8 @@ Focus on:
 - Following established patterns
 - Including necessary imports/dependencies`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.objective);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Objective: ${args.objective}
 
@@ -832,6 +861,25 @@ ${JSON.stringify(mcpResponse.metadata, null, 2)}`,
     context?: string;
     approach?: string;
   }, requestId?: string) {
+    if (this.db) {
+      try {
+        const tasks = await this.db.all('SELECT * FROM tasks WHERE description LIKE ?', `%${args.problem}%`);
+        if (tasks && tasks.length > 0) {
+          const taskDetails = tasks.map((t: any) => `- **${t.title}**: ${t.status} - ${t.description}`).join('\n');
+          return {
+            content: [
+              {
+                type: 'text',
+                text: `# COMETA MEMORY ANALYSIS - ${args.task_id}\n\n## Analysis Results\n\n${taskDetails}\n\n## Usage Stats\n- Datasource: Cometa (SQLite)\n- Tasks Found: ${tasks.length}`
+              },
+            ],
+          };
+        }
+      } catch (error) {
+        console.error('[Synthetic MCP] Error querying database:', error);
+      }
+    }
+
     const systemPrompt = `You are a specialized reasoning AI using advanced analytical capabilities. Provide deep, structured analysis with clear logical progression.
 
 Reasoning approach: ${args.approach || 'analytical'}
@@ -843,7 +891,8 @@ Focus on:
 - Practical implications
 - Step-by-step analysis`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.problem);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Problem to analyze: ${args.problem}
 
@@ -863,16 +912,7 @@ Provide comprehensive reasoning and analysis.`;
       content: [
         {
           type: 'text',
-          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id} → ${DEFAULT_REASONING_MODEL}
-
-## Analysis Results
-
-${response.choices[0].message.content}
-
-## Usage Stats
-- Model: ${DEFAULT_REASONING_MODEL} (Reasoning Specialist)  
-- Tokens: ${response.usage?.total_tokens || 'N/A'}
-- Approach: ${args.approach || 'analytical'}`,
+          text: `# SYNTHETIC REASONING ANALYSIS - ${args.task_id} → ${DEFAULT_REASONING_MODEL}\n\n## Analysis Results\n\n${response.choices[0].message.content}\n\n## Usage Stats\n- Model: ${DEFAULT_REASONING_MODEL} (Reasoning Specialist)  \n- Tokens: ${response.usage?.total_tokens || 'N/A'}\n- Approach: ${args.approach || 'analytical'}`,
         },
       ],
     };
@@ -895,7 +935,8 @@ Focus on:
 - Context significance
 - Actionable conclusions`;
 
-    const userPrompt = `Task ID: ${args.task_id}
+    const contextPrefix = await prepareContextForPrompt(args.content);
+    const userPrompt = `${contextPrefix}Task ID: ${args.task_id}
 
 Content to analyze:
 ${args.content}
@@ -936,7 +977,8 @@ ${response.choices[0].message.content}
     approval_required?: boolean;
   }, requestId?: string) {
     // First, classify the task to determine the best model
-    const classificationPrompt = `Analyze this task and determine the best approach:
+    const contextPrefix = await prepareContextForPrompt(args.request);
+    const classificationPrompt = `${contextPrefix}Analyze this task and determine the best approach:
 
 Task: ${args.request}
 Constraints: ${args.constraints?.join(', ') || 'None'}

@@ -265,27 +265,27 @@ export class MultiAccountMonitor {
     const results = await Promise.all(checks);
 
     // Process Claude results
-    if (!(results[0] instanceof Error)) {
-      services[0].usage = results[0];
-      services[0].available = this.claudeMonitor.isAvailable(results[0]);
+    if (!(results[0] as any).error) {
+      services[0].usage = results[0] as any;
+      services[0].available = this.claudeMonitor.isAvailable(results[0] as any);
     } else {
-      services[0].error = (results[0] as Error).message;
+      services[0].error = (results[0] as any).error.message;
     }
 
     // Process OpenAI results
-    if (!(results[1] instanceof Error)) {
-      services[1].usage = results[1];
-      services[1].available = this.openaiMonitor.isAvailable(results[1]);
+    if (!(results[1] as any).error) {
+      services[1].usage = results[1] as any;
+      services[1].available = this.openaiMonitor.isAvailable(results[1] as any);
     } else {
-      services[1].error = (results[1] as Error).message;
+      services[1].error = (results[1] as any).error.message;
     }
 
     // Process Gemini results
-    if (!(results[2] instanceof Error)) {
-      services[2].usage = results[2];
-      services[2].available = this.geminiMonitor.isAvailable(results[2]);
+    if (!(results[2] as any).error) {
+      services[2].usage = results[2] as any;
+      services[2].available = this.geminiMonitor.isAvailable(results[2] as any);
     } else {
-      services[2].error = (results[2] as Error).message;
+      services[2].error = (results[2] as any).error.message;
     }
 
     return services;
@@ -356,6 +356,5 @@ export class MultiAccountMonitor {
   }
 }
 
-// Export types for external use
 export { ClaudeMonitor, OpenAIMonitor, GeminiMonitor };
 export default MultiAccountMonitor;

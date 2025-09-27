@@ -1,0 +1,16 @@
+Title: feat: Integra l'implementazione del server GitHub MCP con DevFlow v3.1
+
+Questa pull request integra l'implementazione del server GitHub MCP con il sistema DevFlow v3.1. Include:
+
+- Configurazione completa del server GitHub MCP per tutti e quattro i client CLI (Claude Code, Codex, Qwen)
+- Script di gestione e avvio del server GitHub MCP
+- Documentazione completa per l'installazione e la configurazione
+- Debug e correzione di issue identificati nell'implementazione
+- Integrazione con il sistema di orchestrazione esistente
+
+Le principali modifiche includono:
+
+- Aggiunta di script per la gestione del server GitHub MCP
+- Aggiornamento della configurazione dei client MCP
+- Creazione di documentazione dettagliata per l'implementazione
+- Fix di problemi identificati nell'analisi del sistema
