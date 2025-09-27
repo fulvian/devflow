@@ -409,6 +409,125 @@ start_database() {
     fi
 }
 
+# Start Model Registry Daemon (CRITICAL SERVICE)
+start_model_registry() {
+    print_status "Starting Model Registry Daemon..."
+
+    # Validate dependencies first
+    if ! validate_service_dependencies "Model Registry" "database"; then
+        print_error "Model Registry dependency validation failed"
+        return 1
+    fi
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${MODEL_REGISTRY_PORT}/health" >/dev/null 2>&1; then
+        print_status "Model Registry Daemon already running on port $MODEL_REGISTRY_PORT"
+        return 0
+    fi
+
+    # Check if model registry daemon exists
+    if [ ! -f "$PROJECT_ROOT/src/core/services/model-registry-daemon.ts" ]; then
+        print_error "Model Registry Daemon not found at src/core/services/model-registry-daemon.ts"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start Model Registry Daemon in background (TypeScript via ts-node)
+    print_info "🤖 Starting AI Model Registry with capability tracking..."
+    nohup env MODEL_REGISTRY_PORT=$MODEL_REGISTRY_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" npx ts-node "$PROJECT_ROOT/src/core/services/model-registry-daemon.ts" > "$PROJECT_ROOT/logs/model-registry.log" 2>&1 &
+    local registry_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running with process check
+    if ! check_process_health $registry_pid "Model Registry Daemon"; then
+        return 1
+    fi
+
+    # Enhanced health check validation with AI model availability
+    if wait_for_health_check "http://localhost:${MODEL_REGISTRY_PORT}/health" "Model Registry"; then
+        echo $registry_pid > "$PROJECT_ROOT/.model-registry.pid"
+        print_status "✅ Model Registry Daemon started (PID: $registry_pid, Port: $MODEL_REGISTRY_PORT)"
+
+        # Check AI model availability and capabilities
+        local models_health=$(curl -s --max-time 3 "http://localhost:${MODEL_REGISTRY_PORT}/models" 2>/dev/null || echo '{"models": []}')
+        local model_count=$(echo "$models_health" | grep -o '"models":\[.*\]' | grep -o ',' | wc -l 2>/dev/null || echo "0")
+        model_count=$((model_count + 1))
+
+        if [ "$model_count" -gt 1 ]; then
+            print_status "✅ AI Model Registry: $model_count models registered with capability tracking"
+        else
+            print_warning "⚠️  AI Model Registry: Started but no models registered yet"
+        fi
+        return 0
+    else
+        print_error "Model Registry health check failed"
+        return 1
+    fi
+}
+
+# Start CLI Integration Daemon (CRITICAL SERVICE)
+start_cli_integration() {
+    print_status "Starting CLI Integration Daemon..."
+
+    # Validate dependencies first
+    if ! validate_service_dependencies "CLI Integration" "orchestrator"; then
+        print_error "CLI Integration dependency validation failed"
+        return 1
+    fi
+
+    # Check if already running
+    if curl -sf --max-time 2 "http://localhost:${CLI_INTEGRATION_PORT}/health" >/dev/null 2>&1; then
+        print_status "CLI Integration Daemon already running on port $CLI_INTEGRATION_PORT"
+        return 0
+    fi
+
+    # Check if CLI integration daemon exists
+    if [ ! -f "$PROJECT_ROOT/src/core/mcp/cli-integration-daemon.ts" ]; then
+        print_error "CLI Integration Daemon not found at src/core/mcp/cli-integration-daemon.ts"
+        return 1
+    fi
+
+    # Create logs directory
+    mkdir -p "$PROJECT_ROOT/logs"
+
+    # Start CLI Integration Daemon in background (TypeScript via ts-node)
+    print_info "🔧 Starting CLI Integration with MCP connectivity..."
+    nohup env CLI_INTEGRATION_PORT=$CLI_INTEGRATION_PORT DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" ORCHESTRATOR_URL="http://localhost:$ORCHESTRATOR_PORT" npx ts-node "$PROJECT_ROOT/src/core/mcp/cli-integration-daemon.ts" > "$PROJECT_ROOT/logs/cli-integration.log" 2>&1 &
+    local cli_pid=$!
+
+    # Give it time to start
+    sleep 3
+
+    # Verify it's running with process check
+    if ! check_process_health $cli_pid "CLI Integration Daemon"; then
+        return 1
+    fi
+
+    # Enhanced health check validation with MCP connectivity
+    if wait_for_health_check "http://localhost:${CLI_INTEGRATION_PORT}/health" "CLI Integration"; then
+        echo $cli_pid > "$PROJECT_ROOT/.cli-integration.pid"
+        print_status "✅ CLI Integration Daemon started (PID: $cli_pid, Port: $CLI_INTEGRATION_PORT)"
+
+        # Check MCP connectivity and command execution capabilities
+        local mcp_health=$(curl -s --max-time 3 "http://localhost:${CLI_INTEGRATION_PORT}/mcp/status" 2>/dev/null || echo '{"status": "unknown"}')
+        local mcp_status=$(echo "$mcp_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4 2>/dev/null || echo "unknown")
+
+        if [ "$mcp_status" = "connected" ] || [ "$mcp_status" = "ready" ]; then
+            print_status "✅ MCP Integration: Command execution ready (Status: $mcp_status)"
+        else
+            print_warning "⚠️  MCP Integration: Started but connectivity status unclear ($mcp_status)"
+        fi
+        return 0
+    else
+        print_error "CLI Integration health check failed"
+        return 1
+    fi
+}
+
 # Start Vector Memory Service
 start_vector() {
     print_status "Starting Vector Memory Service..."
