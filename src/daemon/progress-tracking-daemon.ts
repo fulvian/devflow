@@ -23,25 +23,48 @@ class ProgressTrackingDaemon {
   private isRunning = false;
 
   constructor() {
-    this.usageMonitor = new ClaudeCodeUsageMonitor();
-    this.progressTracker = new ProgressTracker(this.usageMonitor);
-    this.taskId = this.getCurrentTaskId();
+    this.progressTracker = new TaskProgressTracker();
+    this.loadCurrentTask();
+    this.setupProgressListener();
   }
 
-  private getCurrentTaskId(): string {
+  private loadCurrentTask(): void {
     const stateDir = path.resolve(process.cwd(), '.claude/state');
     const currentTaskPath = path.join(stateDir, 'current_task.json');
-    
+
     if (fs.existsSync(currentTaskPath)) {
       try {
-        const currentTaskData = JSON.parse(fs.readFileSync(currentTaskPath, 'utf-8'));
-        return currentTaskData.task || 'devflow-v3_1-deployment';
+        const taskData = JSON.parse(fs.readFileSync(currentTaskPath, 'utf-8'));
+        this.currentTask = {
+          id: taskData.id || Date.now().toString(),
+          title: taskData.title || taskData.task || 'devflow-v3_1-deployment',
+          status: taskData.status || 'pending',
+          created_at: taskData.created_at || new Date().toISOString()
+        };
+        console.log(`✅ Loaded current task: ${this.currentTask.title}`);
       } catch (error) {
-        console.error('Could not read current task, using default');
+        console.error('❌ Could not read current task, using default');
+        this.createDefaultTask();
       }
+    } else {
+      this.createDefaultTask();
     }
-    
-    return 'devflow-v3_1-deployment';
+  }
+
+  private createDefaultTask(): void {
+    this.currentTask = {
+      id: Date.now().toString(),
+      title: 'devflow-startup-compliance-implementation',
+      status: 'in_progress',
+      created_at: new Date().toISOString()
+    };
+  }
+
+  private setupProgressListener(): void {
+    this.progressTracker.addProgressListener((progress: number, taskId: string) => {
+      this.updateFooterState(progress);
+      console.log(`📊 Task ${taskId} progress: ${progress}%`);
+    });
   }
 
   async start(): Promise<void> {
