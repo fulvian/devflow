@@ -40,26 +40,31 @@ DevFlow Unified System v1.0
     └── Enhanced Memory System
 ```
 
-## Installation
+## Installation & Quick Start
 
 ```bash
 # Clone the repository
-git clone https://github.com/your-org/devflow-cognitive-system.git
+git clone https://github.com/fulvioventura/devflow.git
 
-cd devflow-cognitive-system
+cd devflow
 
 # Install dependencies
 npm install
 
-# Build the project
-npm run build
+# Start the complete DevFlow system
+./start-devflow.sh
+
+# Check system status
+./start-devflow.sh status
 ```
 
 ### Prerequisites
 
-- Node.js 14+
-- npm 6+
-- TypeScript 4.5+
+- Node.js 18+ (with TypeScript support)
+- Python 3.9+ (for embedding processing)
+- Ollama (for vector embeddings)
+- Codex CLI (for MCP integration)
+- SQLite 3
 
 ## Quick Start
 

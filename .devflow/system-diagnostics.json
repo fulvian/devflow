@@ -1,17 +1,17 @@
 {
-  "timestamp": "2025-09-27T14:49:58.289945",
+  "timestamp": "2025-09-27T14:50:05.812775",
   "database": {
     "status": "healthy",
     "tables_count": 49,
     "missing_tables": [],
-    "last_checked": "2025-09-27T14:49:58.292896"
+    "last_checked": "2025-09-27T14:50:05.814030"
   },
   "hooks": {
     "status": "healthy",
     "total_hooks": 45,
     "critical_hooks_present": 4,
     "missing_critical": [],
-    "last_checked": "2025-09-27T14:49:58.293009"
+    "last_checked": "2025-09-27T14:50:05.814146"
   },
   "filesystem": {
     "status": "healthy",
@@ -33,7 +33,7 @@
         "writable": true
       }
     },
-    "last_checked": "2025-09-27T14:49:58.293072"
+    "last_checked": "2025-09-27T14:50:05.814200"
   },
   "devflow": {
     "status": "healthy",
@@ -44,7 +44,7 @@
       "/Users/fulvioventura/devflow/.claude/settings.json": true,
       "/Users/fulvioventura/devflow/.claude/state/current_task.json": true
     },
-    "last_checked": "2025-09-27T14:49:58.293084"
+    "last_checked": "2025-09-27T14:50:05.814214"
   },
   "overall_health": "excellent"
 }
