@@ -1225,10 +1225,17 @@ EOF
                     return 0
                 fi
                 sleep 2
-            health_attempts=$((health_attempts + 1))
-        done
+                health_attempts=$((health_attempts + 1))
+            done
 
-        print_error "Codex Server started but health check failed"
+            print_error "Codex Server started but health check failed"
+            return 1
+        else
+            print_error "Failed to start Codex MCP Health Service"
+            return 1
+        fi
+    else
+        print_error "Codex CLI is not working properly"
         return 1
     else
         print_error "Failed to start Codex Server"
