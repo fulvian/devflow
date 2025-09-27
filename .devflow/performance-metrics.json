@@ -1,85 +1,5 @@
 [
   {
-    "timestamp": "2025-09-27T12:57:35.594758",
-    "cpu_percent": 14.0380859375,
-    "memory_percent": 0.18329620361328125,
-    "disk_usage": 0.0,
-    "tool_name": "Write",
-    "execution_time": 1758970655.59479
-  },
-  {
-    "timestamp": "2025-09-27T12:57:42.552649",
-    "cpu_percent": 16.63818359375,
-    "memory_percent": 0.18024444580078125,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758970662.552672
-  },
-  {
-    "timestamp": "2025-09-27T13:01:04.299730",
-    "cpu_percent": 29.736328125,
-    "memory_percent": 0.17948150634765625,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758970864.299776
-  },
-  {
-    "timestamp": "2025-09-27T13:01:26.858563",
-    "cpu_percent": 28.082275390625,
-    "memory_percent": 0.177764892578125,
-    "disk_usage": 0.0,
-    "tool_name": "Write",
-    "execution_time": 1758970886.858591
-  },
-  {
-    "timestamp": "2025-09-27T13:01:36.477872",
-    "cpu_percent": 30.364990234375,
-    "memory_percent": 0.1811981201171875,
-    "disk_usage": 0.0,
-    "tool_name": "Read",
-    "execution_time": 1758970896.477907
-  },
-  {
-    "timestamp": "2025-09-27T13:01:42.018277",
-    "cpu_percent": 29.931640625,
-    "memory_percent": 0.18138885498046875,
-    "disk_usage": 0.0,
-    "tool_name": "Edit",
-    "execution_time": 1758970902.018304
-  },
-  {
-    "timestamp": "2025-09-27T13:01:51.146321",
-    "cpu_percent": 28.2470703125,
-    "memory_percent": 0.1861572265625,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758970911.146345
-  },
-  {
-    "timestamp": "2025-09-27T13:02:26.735084",
-    "cpu_percent": 26.03759765625,
-    "memory_percent": 0.17547607421875,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__resolve-library-id",
-    "execution_time": 1758970946.735126
-  },
-  {
-    "timestamp": "2025-09-27T13:02:32.097787",
-    "cpu_percent": 24.951171875,
-    "memory_percent": 0.1758575439453125,
-    "disk_usage": 0.0,
-    "tool_name": "mcp__context7__get-library-docs",
-    "execution_time": 1758970952.097816
-  },
-  {
-    "timestamp": "2025-09-27T13:02:39.549934",
-    "cpu_percent": 24.951171875,
-    "memory_percent": 0.18367767333984375,
-    "disk_usage": 0.0,
-    "tool_name": "TodoWrite",
-    "execution_time": 1758970959.550221
-  },
-  {
     "timestamp": "2025-09-27T13:03:29.025694",
     "cpu_percent": 20.977783203125,
     "memory_percent": 0.18596649169921875,
@@ -798,5 +718,85 @@
     "disk_usage": 0.0,
     "tool_name": "Edit",
     "execution_time": 1758976582.9731112
+  },
+  {
+    "timestamp": "2025-09-27T14:37:03.549873",
+    "cpu_percent": 34.43603515625,
+    "memory_percent": 0.18310546875,
+    "disk_usage": 0.0,
+    "tool_name": "Bash",
+    "execution_time": 1758976623.5499048
+  },
+  {
+    "timestamp": "2025-09-27T14:37:10.563721",
+    "cpu_percent": 33.67919921875,
+    "memory_percent": 0.180816650390625,
+    "disk_usage": 0.0,
+    "tool_name": "TodoWrite",
+    "execution_time": 1758976630.563751
+  },
+  {
+    "timestamp": "2025-09-27T14:37:56.562572",
+    "cpu_percent": 24.86572265625,
+    "memory_percent": 0.180816650390625,
+    "disk_usage": 0.0,
+    "tool_name": "Bash",
+    "execution_time": 1758976676.562603
+  },
+  {
+    "timestamp": "2025-09-27T14:38:28.789871",
+    "cpu_percent": 25.531005859375,
+    "memory_percent": 0.1766204833984375,
+    "disk_usage": 0.0,
+    "tool_name": "Bash",
+    "execution_time": 1758976708.789899
+  },
+  {
+    "timestamp": "2025-09-27T14:38:32.802002",
+    "cpu_percent": 25.531005859375,
+    "memory_percent": 0.18329620361328125,
+    "disk_usage": 0.0,
+    "tool_name": "Bash",
+    "execution_time": 1758976712.802027
+  },
+  {
+    "timestamp": "2025-09-27T14:38:36.877591",
+    "cpu_percent": 43.505859375,
+    "memory_percent": 0.18711090087890625,
+    "disk_usage": 0.0,
+    "tool_name": "Read",
+    "execution_time": 1758976716.8776162
+  },
+  {
+    "timestamp": "2025-09-27T14:38:42.972375",
+    "cpu_percent": 45.025634765625,
+    "memory_percent": 0.17719268798828125,
+    "disk_usage": 0.0,
+    "tool_name": "Bash",
+    "execution_time": 1758976722.972398
+  },
+  {
+    "timestamp": "2025-09-27T14:38:46.975611",
+    "cpu_percent": 48.42529296875,
+    "memory_percent": 0.17490386962890625,
+    "disk_usage": 0.0,
+    "tool_name": "Read",
+    "execution_time": 1758976726.975636
+  },
+  {
+    "timestamp": "2025-09-27T14:38:52.084019",
+    "cpu_percent": 46.54541015625,
+    "memory_percent": 0.1773834228515625,
+    "disk_usage": 0.0,
+    "tool_name": "Read",
+    "execution_time": 1758976732.08405
+  },
+  {
+    "timestamp": "2025-09-27T14:39:12.542933",
+    "cpu_percent": 38.56201171875,
+    "memory_percent": 0.18787384033203125,
+    "disk_usage": 0.0,
+    "tool_name": "Edit",
+    "execution_time": 1758976752.542965
   }
 ]
