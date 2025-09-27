@@ -80,10 +80,15 @@ class SemanticCoherenceOptimizer:
         self.project_root = Path(project_root)
         self.db_path = self.project_root / "data" / "devflow_unified.sqlite"
 
-        # Initialize embedding model per semantic similarity
+        # Initialize embedding model per semantic similarity (fallback to None if not available)
+        self.embedding_model = None
         try:
+            # Try to import and initialize SentenceTransformer
+            from sentence_transformers import SentenceTransformer
             self.embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
             logger.info("✅ Sentence transformer model loaded")
+        except ImportError:
+            logger.info("📝 SentenceTransformer not available, using TF-IDF fallback")
         except Exception as e:
             logger.warning(f"⚠️ Failed to load sentence transformer: {e}")
             self.embedding_model = None
