@@ -124,8 +124,8 @@ set_defaults() {
 cleanup_services() {
     print_status "🧹 Cleaning up existing DevFlow processes..."
 
-    # Clean up PID files first (including enforcement, codex, and embedding scheduler)
-    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enhanced-memory.pid" ".enforcement.pid" ".codex.pid" ".embedding-scheduler.pid")
+    # Clean up PID files first (including enforcement, codex, embedding scheduler, and metrics)
+    local pid_files=(".orchestrator.pid" ".database.pid" ".context-bridge.pid" ".vector.pid" ".enhanced-memory.pid" ".enforcement.pid" ".codex.pid" ".embedding-scheduler.pid" ".metrics.pid")
     for pid_file in "${pid_files[@]}"; do
         if [ -f "$PROJECT_ROOT/$pid_file" ]; then
             local pid=$(cat "$PROJECT_ROOT/$pid_file")
