@@ -938,9 +938,19 @@ start_services() {
         print_warning "Semantic memory features may be limited"
     fi
 
+    # Phase 2: Core Orchestration Services (CRITICAL)
+    print_status "🎯 Phase 2: Starting Core Orchestration Services..."
+
     # Start Unified Orchestrator (orchestrates other services)
     if ! start_unified_orchestrator; then
         print_error "Failed to start Unified Orchestrator - CRITICAL ERROR"
+        return 1
+    fi
+
+    # Start CLI Integration Daemon (depends on orchestrator - CRITICAL for MCP functionality)
+    if ! start_cli_integration; then
+        print_error "Failed to start CLI Integration Daemon - CRITICAL ERROR"
+        print_error "MCP command execution functionality will be unavailable"
         return 1
     fi
 
