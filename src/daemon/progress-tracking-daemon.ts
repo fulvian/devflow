@@ -5,7 +5,7 @@
  * Real-time task progress monitoring using modern ts-node patterns
  */
 
-import { TaskProgressTracker } from '../core/orchestration/task-progress-tracker.js';
+import { TaskProgressTracker } from '../core/orchestration/task-progress-tracker';
 import * as fs from 'fs';
 import * as path from 'path';
 
