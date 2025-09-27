@@ -1132,6 +1132,27 @@ start_services() {
         return 1
     fi
 
+    # Phase 2.5: Advanced Orchestration Services (IMPORTANT)
+    print_status "🎭 Phase 2.5: Starting Advanced Orchestration Services..."
+
+    # Start Real Dream Team Orchestrator (depends on model registry and CLI integration)
+    if ! start_dream_team_orchestrator; then
+        print_warning "Real Dream Team Orchestrator failed to start - CONTINUING WITHOUT ADVANCED ORCHESTRATION"
+        print_warning "Multi-agent coordination and circuit breakers will not be available"
+    fi
+
+    # Start Progress Tracking Daemon (depends on database)
+    if ! start_progress_tracking; then
+        print_warning "Progress Tracking Daemon failed to start - CONTINUING WITHOUT REAL-TIME TRACKING"
+        print_warning "Task lifecycle monitoring will not be available"
+    fi
+
+    # Start Project Lifecycle API (depends on database)
+    if ! start_project_api; then
+        print_warning "Project Lifecycle API failed to start - CONTINUING WITHOUT PROGRAMMATIC MANAGEMENT"
+        print_warning "REST API project management will not be available"
+    fi
+
     # Start Codex Server (MCP integration for OpenAI Codex)
     if ! start_codex_server; then
         print_warning "Codex Server failed to start - CONTINUING WITHOUT CODEX"
