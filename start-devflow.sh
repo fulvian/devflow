@@ -791,9 +791,9 @@ start_progress_tracking_fixed() {
     # Create logs directory
     mkdir -p "$PROJECT_ROOT/logs"
 
-    # Start Progress Tracking Daemon with enhanced environment
-    print_info "📊 Starting Enhanced Real-time Progress Tracking..."
-    nohup env DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" NODE_ENV="production" npx ts-node --transpile-only "$PROJECT_ROOT/src/daemon/progress-tracking-daemon.ts" > "$PROJECT_ROOT/logs/progress-tracking.log" 2>&1 &
+    # Start Progress Tracking Daemon with Context7 standalone implementation
+    print_info "📊 Starting Context7 Standalone Progress Tracking..."
+    nohup env DEVFLOW_DB_PATH="$DEVFLOW_DB_PATH" DEVFLOW_ENABLED="$DEVFLOW_ENABLED" NODE_ENV="production" npx ts-node --transpile-only "$PROJECT_ROOT/src/daemon/progress-tracking-daemon-standalone.ts" > "$PROJECT_ROOT/logs/progress-tracking.log" 2>&1 &
     local progress_pid=$!
 
     # Give it extended time to start
