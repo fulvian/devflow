@@ -1507,6 +1507,15 @@ show_status() {
         print_status "❌ Project Lifecycle API: Stopped - Programmatic management disabled"
     fi
 
+    # Check Monitoring Dashboard (ENHANCEMENT)
+    if curl -sf --max-time 2 "http://localhost:${DASHBOARD_PORT}/health" >/dev/null 2>&1; then
+        local dashboard_health=$(curl -s "http://localhost:${DASHBOARD_PORT}/health" 2>/dev/null)
+        local dashboard_status=$(echo "$dashboard_health" | grep -o '"status":"[^"]*"' | cut -d'"' -f4)
+        print_status "✅ Monitoring Dashboard: Running (Status: $dashboard_status, HTTP: $DASHBOARD_PORT, WS: $WS_PORT)"
+    else
+        print_status "❌ Monitoring Dashboard: Stopped - Real-time visual monitoring disabled"
+    fi
+
     # Check Codex Server
     if curl -sf --max-time 2 "http://localhost:${CODEX_SERVER_PORT}/health" >/dev/null 2>&1; then
         print_status "✅ Codex Server: Running (Port: $CODEX_SERVER_PORT)"
