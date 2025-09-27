@@ -28,7 +28,7 @@ from collections import Counter
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
 from sklearn.cluster import KMeans
-from sentence_transformers import SentenceTransformer
+# from sentence_transformers import SentenceTransformer  # Optional dependency
 
 # Setup logging
 logging.basicConfig(level=logging.INFO)
