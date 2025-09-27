@@ -899,6 +899,16 @@ show_status() {
         print_status "❌ Embedding Scheduler: Stopped - automatic embedding processing disabled"
     fi
 
+    # Check DevFlow Metrics Server
+    if curl -sf --max-time 2 "http://localhost:$DEVFLOW_METRICS_PORT/health" >/dev/null 2>&1; then
+        local metrics_health=$(curl -s --max-time 2 "http://localhost:$DEVFLOW_METRICS_PORT/json" 2>/dev/null)
+        local context7_quality=$(echo "$metrics_health" | grep -o '"qualityScore":[0-9.]*' | cut -d':' -f2 || echo "unknown")
+        local total_tasks=$(echo "$metrics_health" | grep -o '"total":[0-9]*' | cut -d':' -f2 | head -1 || echo "unknown")
+        print_status "✅ DevFlow Metrics: Running (Port: $DEVFLOW_METRICS_PORT, Context7: ${context7_quality}, Tasks: ${total_tasks})"
+    else
+        print_status "❌ DevFlow Metrics: Stopped - Performance monitoring disabled"
+    fi
+
     # Check Enhanced Memory System
     if verify_enhanced_memory >/dev/null 2>&1; then
         print_status "✅ Enhanced Memory: Semantic memory system operational (Ollama + Phase 1-3)"
