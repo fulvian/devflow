@@ -996,7 +996,17 @@ main() {
             echo "  claude   - Launch Claude Code with DevFlow environment variables"
             echo "  help     - Show this help message"
             echo ""
-            echo "Architecture: Unified Orchestrator v1.0"
+            echo "Services included:"
+            echo "  • Database Manager (SQLite unified database)"
+            echo "  • Vector Memory Service (embedding storage)"
+            echo "  • Context Bridge Service (enhanced context injection)"
+            echo "  • Unified Orchestrator (task coordination)"
+            echo "  • Codex Server (OpenAI integration)"
+            echo "  • Enforcement Daemon (100-line limit)"
+            echo "  • Embedding Scheduler (background processing)"
+            echo "  • Metrics Server (Context7 quality & performance monitoring)"
+            echo ""
+            echo "Architecture: Unified Orchestrator v1.0 + Native Monitoring"
             echo "Port mapping: See .env file for port assignments"
             exit 0
             ;;
