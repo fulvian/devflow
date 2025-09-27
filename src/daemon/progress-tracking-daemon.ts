@@ -1,19 +1,24 @@
 #!/usr/bin/env node
 
 /**
- * Progress Tracking Daemon
- * Periodically updates the progress percentage to simulate real token usage
+ * Progress Tracking Daemon - Context7 Compliant
+ * Real-time task progress monitoring using modern ts-node patterns
  */
 
-import { ProgressTracker } from '../core/orchestration/task-progress-tracker.js';
-import { UsageMonitor } from '../core/ui/enhanced-footer/task-progress-tracker.js';
+import { TaskProgressTracker } from '../core/orchestration/task-progress-tracker.js';
 import * as fs from 'fs';
 import * as path from 'path';
 
+interface TaskState {
+  id: string;
+  title: string;
+  status: string;
+  created_at: string;
+}
+
 class ProgressTrackingDaemon {
-  private usageMonitor: ClaudeCodeUsageMonitor;
-  private progressTracker: ProgressTracker;
-  private taskId: string;
+  private progressTracker: TaskProgressTracker;
+  private currentTask: TaskState | null = null;
   private intervalId: NodeJS.Timeout | null = null;
   private isRunning = false;
 
